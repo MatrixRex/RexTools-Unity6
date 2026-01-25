@@ -216,14 +216,25 @@ namespace RexTools.TextureRepacker.Editor
             // --- BRANDED HEADER ---
             var header = new VisualElement();
             header.AddToClassList("rex-header-row");
-            var brand = new Label("REX TOOLS");
-            brand.AddToClassList("rex-brand-label");
+
+            var brandStack = new VisualElement();
+            brandStack.AddToClassList("rex-header-stack");
+
+            var brandLabel = new Label("Rex Tools");
+            brandLabel.AddToClassList("rex-brand-label");
+            brandStack.Add(brandLabel);
+
+            var titleLabel = new Label("Texture Repacker");
+            titleLabel.AddToClassList("rex-tool-title");
+            brandStack.Add(titleLabel);
+
+            header.Add(brandStack);
+
             var helpBtn = new Button { text = "?" };
             helpBtn.AddToClassList("rex-help-btn");
-            header.Add(brand);
             header.Add(helpBtn);
-            root.Add(header);
 
+            root.Add(header);
             // --- HELP BOX ---
             helpBox = new VisualElement { style = { display = DisplayStyle.None } };
             helpBox.AddToClassList("rex-box");
