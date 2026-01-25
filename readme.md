@@ -13,10 +13,18 @@ Adds a powerful search bar to the ShaderGraph editor, inspired by IDE-style navi
     3.  Type a node name or type (e.g., "Add", "Texture", "Variable").
     4.  Select a result from the dropdown to frame it instantly.
     5.  Use the **Up/Down** buttons to cycle through multiple instances of the same node type.
-*   **Features**:
-    *   Search by Name, Title, or Internal Type.
-    *   Automatic grouping of similar nodes.
-    *   Finds Blackboard properties instantly.
+
+
+### 🖼️ Texture Repacker
+A utility for packing multiple textures into individual RGBA channels or extracting existing channels into separate images.
+
+*   **Usage**:
+    1.  Go to `Tools > Texture Repacker`.
+    2.  **PACK**: Drag up to 4 textures into the RGBA slots. Swizzle channels using the (R|G|B|A) buttons, or use the **VAL** override for constant values.
+    3.  **UNPACK**: Drag a source texture to extract its channels. Choose which channels to extract and set custom suffixes.
+    4.  Set the **Output Name** and **Path**, then click **PACK** or **UNPACK**.
+
+
 
 ---
 

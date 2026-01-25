@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-01-25
+
+### Added
+- Texture Repacker: A comprehensive tool for RGBA channel packing and unpacking.
+- Reusable USS design system for RexTools editor extensions.
+- Branded header and interactive help system for tools.
+
 ## [0.0.1] - 2026-01-25
 
 ### Added
