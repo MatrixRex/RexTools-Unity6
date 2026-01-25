@@ -1,0 +1,16 @@
+{
+    "name": "com.matrixrex.rextools",
+    "displayName": "RexTools",
+    "version": "0.0.1",
+    "unity": "6000.0",
+    "description": "Several Unity Utility Tools",
+    "keywords": [
+        "tool",
+        "utility"
+    ],
+    "author": {
+        "name": "Matrix Rex",
+        "email": "matrixrex@gmail.com"
+    },
+    "bugs": "https://github.com/MatrixRex/Unity6-Rex-Tools/issues"
+}
