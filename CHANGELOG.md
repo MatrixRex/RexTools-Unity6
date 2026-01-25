@@ -14,3 +14,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial project setup.
 - Initial RexTools utility implementation.
 - ShaderGraph Search extension for searching nodes in ShaderGraph.
+- New `.agent` workflows for automated documentation and changelog management.
+- Standardized `README.md` structure for tool guides.
