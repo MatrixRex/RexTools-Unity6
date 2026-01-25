@@ -1,0 +1,154 @@
+/* RexTools Common Editor Styles */
+
+.rex-header {
+    -unity-font-style: bold;
+    font-size: 16px;
+    margin-bottom: 15px;
+    color: #66CCFF;
+}
+
+.rex-box {
+    background-color: rgba(51, 51, 51, 0.4);
+    padding: 10px;
+    padding-top : 7px;
+    padding-bottom : 7px;
+    border-radius: 4px; /* Note: USS supports borderRadius unlike C# IStyle in some versions */
+    border-width: 1px;
+    border-color: #222;
+    margin-bottom: 12px;
+    
+}
+
+.rex-section-label {
+    -unity-font-style: bold;
+    font-size: 10px;
+    margin-bottom: 5px;
+    color: #888;
+    text-transform: uppercase;
+}
+
+/* Tab System */
+.rex-tabs-container {
+    flex-direction: row;
+    margin-bottom: 15px;
+    height: 30px;
+}
+
+.rex-tab-button {
+    flex-grow: 1;
+    margin-right: 2px;
+    -unity-font-style: bold;
+    background-color: #383838;
+    border-radius: 0;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+.rex-tab-button--active {
+    background-color: #666;
+    color: white;
+}
+
+.rex-tab-button--inactive {
+    background-color: #383838;
+    color: #AAA;
+}
+
+/* Drag and Drop Field */
+.rex-drag-drop-field {
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(30, 30, 30, 0.9);
+    border-width: 1px;
+    border-color: #1a1a1a;
+    border-radius: 4px;
+}
+
+.rex-drag-drop-field--active {
+    border-color: #4D99FF;
+}
+
+.rex-drag-drop-preview {
+    margin-bottom: 4px;
+}
+
+.rex-drag-drop-label {
+    color: #888;
+    font-size: 10px;
+}
+
+/* Action Button */
+.rex-action-button {
+    height: 50px;
+    margin-top: 15px;
+    -unity-font-style: bold;
+    font-size: 14px;
+    border-radius: 4px;
+}
+
+.rex-action-button--pack {
+    background-color: #3380FF;
+}
+
+.rex-action-button--unpack {
+    background-color: #33B373;
+}
+
+/* Small Selector Buttons */
+.rex-button-small {
+    background-color: #282828;
+    border-radius: 2px;
+}
+
+.rex-button-small--active {
+    background-color: #4D99FF;
+    color: white;
+}
+
+/* Header & Help */
+.rex-header-row {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.rex-brand-label {
+    -unity-font-style: bold;
+    font-size: 12px;
+    color: #646464;
+}
+
+.rex-help-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    -unity-font-style: bold;
+    background-color: #383838;
+    color: #AAA;
+    border-width: 0;
+    padding: 0;
+    justify-content: center;
+    align-items: center;
+}
+
+.rex-help-btn:hover {
+    background-color: #4D99FF;
+    color: white;
+}
+
+.rex-help-box {
+    background-color: rgba(38, 64, 89, 0.4);
+    margin-bottom: 10px;
+}
+
+.rex-help-text-title {
+    -unity-font-style: bold;
+    font-size: 10px;
+    margin-bottom: 5px;
+}
+
+.rex-help-text-item {
+    font-size: 9px;
+    white-space: normal;
+}
