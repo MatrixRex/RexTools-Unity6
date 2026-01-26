@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-01-27
+
+### Added
+- Unused Assets Finder: New UI Toolkit implementation.
+- Unused Assets Finder: Collapsible subfolder tree view for recursive asset scans.
+- RexToolsStyles: Added new utility classes (`.rex-row`, `.rex-result-item`, `.rex-hidden`) for standardized layouts.
+
+### Changed
+
+
+### Fixed
+
+
 ## [0.1.0] - 2026-01-25
 
 ### Added
