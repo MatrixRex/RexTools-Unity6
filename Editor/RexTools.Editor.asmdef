@@ -2,7 +2,8 @@
     "name": "RexTools.Editor",
     "rootNamespace": "",
     "references": [
-        "Unity.ShaderGraph.Editor"
+        "Unity.ShaderGraph.Editor",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [
         "Editor"
@@ -13,6 +14,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.render-pipelines.universal",
+            "expression": "",
+            "define": "REX_URP"
+        }
+    ],
     "noEngineReferences": false
 }

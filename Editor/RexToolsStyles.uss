@@ -261,3 +261,8 @@
 .rex-hidden {
     display: none;
 }
+
+.rex-toggle-on {
+    background-color: #4D99FF;
+    color: white;
+}
