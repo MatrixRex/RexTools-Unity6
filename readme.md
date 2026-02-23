@@ -24,6 +24,16 @@ A utility for packing multiple textures into individual RGBA channels or extract
     3.  **UNPACK**: Drag a source texture to extract its channels. Choose which channels to extract and set custom suffixes.
     4.  Set the **Output Name** and **Path**, then click **PACK** or **UNPACK**.
 
+### 📐 ShaderGraph Organizer
+Adds alignment and distribution tools to the ShaderGraph editor context menu. Quickly organize selected nodes to clean up your graph layout.
+
+*   **Usage**:
+    1.  Open any ShaderGraph.
+    2.  Select 2 or more nodes in the graph.
+    3.  Right-click to open the context menu.
+    4.  **Align**: Choose **Left**, **Right**, **Up**, or **Down** to snap nodes to a common edge.
+    5.  **Distribute**: Choose **Horizontal** or **Vertical** to evenly space nodes with a consistent gap.
+
 
 
 ---

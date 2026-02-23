@@ -164,6 +164,11 @@ namespace RexTools.TextureRepacker.Editor
         private string outputPath = "";
         private int currentTabIndex = 0;
 
+        // Performance: pixel cache and debounce
+        private Dictionary<int, Color[]> pixelCache = new Dictionary<int, Color[]>();
+        private bool _previewDirty = false;
+        private IVisualElementScheduledItem _previewSchedule;
+
         // Unpack settings
         private Texture2D unpackSource;
         private bool[] unpackModes = { true, true, true, false }; // R, G, B, A
@@ -467,6 +472,8 @@ namespace RexTools.TextureRepacker.Editor
         private void OnSlotTextureDropped(Texture2D tex)
         {
             if (tex == null) return;
+            // Invalidate cache for this texture so fresh pixels are read
+            if (tex != null) pixelCache.Remove(tex.GetInstanceID());
             // Auto name from first dropped texture
             if (outputName == "PackedTexture" || string.IsNullOrEmpty(outputName)) {
                 outputName = GenerateBaseName(tex.name);
@@ -548,23 +555,35 @@ namespace RexTools.TextureRepacker.Editor
             unpackContainer.Add(channelsBox);
         }
 
+        /// <summary>
+        /// Marks the preview as dirty and schedules a deferred rebuild.
+        /// Coalesces rapid UI changes (sliders, toggles) into one rebuild per ~100ms.
+        /// </summary>
         private void UpdatePreview()
         {
             if (combinedPreview == null) return;
 
-            // Update debug buttons visual state
+            // Always update button visual states immediately (cheap)
+            UpdateButtonStates();
+
+            // Debounce the expensive pixel rebuild
+            _previewDirty = true;
+            if (_previewSchedule == null) {
+                _previewSchedule = rootVisualElement.schedule.Execute(RebuildPreview).Every(100);
+            }
+        }
+
+        private void UpdateButtonStates()
+        {
             for (int i = 0; i < debugButtons.Count; i++) {
                 if (debugPreviewMode == i) debugButtons[i].AddToClassList("rex-button-small--active");
                 else debugButtons[i].RemoveFromClassList("rex-button-small--active");
             }
-
-            // Update slot channel buttons visual state
             for (int i = 0; i < slotChannelButtons.Count; i++) {
                 for (int c = 0; c < slotChannelButtons[i].Count; c++) {
                     if (packSlots[i].channelIndex == c) slotChannelButtons[i][c].AddToClassList("rex-button-small--active");
                     else slotChannelButtons[i][c].RemoveFromClassList("rex-button-small--active");
                 }
-                
                 if (packSlots[i].useCustom) {
                     slotValButtons[i].AddToClassList("rex-button-small--active");
                     slotDropZones[i].SetColor(new Color(packSlots[i].customValue, packSlots[i].customValue, packSlots[i].customValue, 1f));
@@ -573,28 +592,34 @@ namespace RexTools.TextureRepacker.Editor
                     slotDropZones[i].ClearColor();
                 }
             }
-            int size = 128;
+        }
+
+        /// <summary>
+        /// Performs the actual preview pixel rebuild. Only runs when _previewDirty is set.
+        /// Uses float[] arrays and cached bulk pixel reads for speed.
+        /// </summary>
+        private void RebuildPreview()
+        {
+            if (!_previewDirty) return;
+            _previewDirty = false;
+
+            const int size = 128;
+            int totalPixels = size * size;
             if (previewBuffer == null) previewBuffer = new Texture2D(size, size, TextureFormat.RGBA32, false);
 
-            Color[] pixels = new Color[size * size];
-            Color[][] slotSamples = new Color[4][];
+            // Sample each slot into a float array (single channel value per pixel)
+            float[][] slotValues = new float[4][];
             for (int i = 0; i < 4; i++) {
-                if (packSlots[i].useCustom) {
-                    float val = packSlots[i].invert ? 1f - packSlots[i].customValue : packSlots[i].customValue;
-                    slotSamples[i] = Enumerable.Repeat(new Color(val, val, val, 1f), size * size).ToArray();
-                } else if (packSlots[i].texture != null) {
-                    slotSamples[i] = SampleTexture(packSlots[i].texture, size, packSlots[i].channelIndex, packSlots[i].invert);
-                } else {
-                    float val = (i == 3) ? 1f : 0f;
-                    slotSamples[i] = Enumerable.Repeat(new Color(val, val, val, 1f), size * size).ToArray();
-                }
+                slotValues[i] = SampleSlotChannel(packSlots[i], size);
             }
 
-            for (int i = 0; i < pixels.Length; i++) {
-                float r = slotSamples[0][i].r;
-                float g = slotSamples[1][i].r;
-                float b = slotSamples[2][i].r;
-                float a = slotSamples[3][i].r;
+            // Compose final preview pixels
+            Color[] pixels = new Color[totalPixels];
+            for (int i = 0; i < totalPixels; i++) {
+                float r = slotValues[0][i];
+                float g = slotValues[1][i];
+                float b = slotValues[2][i];
+                float a = slotValues[3][i];
 
                 switch (debugPreviewMode) {
                     case 1: pixels[i] = new Color(r, r, r, 1f); break;
@@ -610,23 +635,45 @@ namespace RexTools.TextureRepacker.Editor
             combinedPreview.image = previewBuffer;
         }
 
-        private Color[] SampleTexture(Texture2D tex, int size, int channel, bool invert)
+        /// <summary>
+        /// Samples a single slot's selected channel into a flat float[] at the given preview size.
+        /// Uses cached bulk pixel reads + nearest-neighbor resampling instead of per-pixel GetPixelBilinear.
+        /// </summary>
+        private float[] SampleSlotChannel(ChannelSlotData slot, int size)
         {
-            Color[] res = new Color[size * size];
-            if (!tex.isReadable) { EnsureReadable(tex); }
-            if (!tex.isReadable) { return Enumerable.Repeat(new Color(0.2f, 0.2f, 0.2f, 1), size * size).ToArray(); }
+            int totalPixels = size * size;
+            float[] result = new float[totalPixels];
+
+            if (slot.useCustom) {
+                float val = slot.invert ? 1f - slot.customValue : slot.customValue;
+                System.Array.Fill(result, val);
+                return result;
+            }
+
+            if (slot.texture == null) {
+                float val = (slot.channelIndex == 3) ? 1f : 0f;
+                System.Array.Fill(result, val);
+                return result;
+            }
+
+            // Bulk read source pixels via cache (handles non-readable textures via GPU blit)
+            Color[] srcPixels = GetReadablePixels(slot.texture);
+            int srcW = slot.texture.width;
+            int srcH = slot.texture.height;
+            int channel = slot.channelIndex;
+            bool invert = slot.invert;
 
             for (int y = 0; y < size; y++) {
+                int srcY = Mathf.Clamp(y * srcH / size, 0, srcH - 1);
                 for (int x = 0; x < size; x++) {
-                    float u = (float)x / size;
-                    float v = (float)y / size;
-                    Color p = tex.GetPixelBilinear(u, v);
+                    int srcX = Mathf.Clamp(x * srcW / size, 0, srcW - 1);
+                    Color p = srcPixels[srcY * srcW + srcX];
                     float val = channel == 0 ? p.r : channel == 1 ? p.g : channel == 2 ? p.b : p.a;
                     if (invert) val = 1f - val;
-                    res[y * size + x] = new Color(val, val, val, 1f);
+                    result[y * size + x] = val;
                 }
             }
-            return res;
+            return result;
         }
 
         private void Process() {
@@ -648,34 +695,60 @@ namespace RexTools.TextureRepacker.Editor
                 h = nonNull.Max(s => s.texture.height);
             }
 
-            foreach (var slot in packSlots) if (!slot.useCustom && slot.texture != null) EnsureReadable(slot.texture);
+            foreach (var slot in packSlots) {
+                if (!slot.useCustom && slot.texture != null) GetReadablePixels(slot.texture);
+            }
 
             try {
-                EditorUtility.DisplayProgressBar("Packing Texture", "Generating high-res image...", 0.5f);
+                EditorUtility.DisplayProgressBar("Packing Texture", "Reading source textures...", 0f);
+
+                // Pre-read all source pixels into cached arrays
+                Color[][] slotPixels = new Color[4][];
+                int[] slotW = new int[4];
+                int[] slotH = new int[4];
+                for (int c = 0; c < 4; c++) {
+                    if (!packSlots[c].useCustom && packSlots[c].texture != null) {
+                        slotPixels[c] = GetReadablePixels(packSlots[c].texture);
+                        slotW[c] = packSlots[c].texture.width;
+                        slotH[c] = packSlots[c].texture.height;
+                    }
+                }
+
                 Texture2D result = new Texture2D(w, h, TextureFormat.RGBA32, false);
                 Color[] pixels = new Color[w * h];
 
-                for (int i = 0; i < pixels.Length; i++) {
-                    int x = i % w;
-                    int y = i / w;
-                    float u = (float)x / w;
-                    float v = (float)y / h;
-
-                    float[] channels = new float[4];
-                    for (int c = 0; c < 4; c++) {
-                        if (packSlots[c].useCustom) {
-                            channels[c] = packSlots[c].invert ? 1f - packSlots[c].customValue : packSlots[c].customValue;
-                        } else if (packSlots[c].texture != null) {
-                            Color p = packSlots[c].texture.GetPixelBilinear(u, v);
-                            channels[c] = packSlots[c].channelIndex == 0 ? p.r : packSlots[c].channelIndex == 1 ? p.g : packSlots[c].channelIndex == 2 ? p.b : p.a;
-                            if (packSlots[c].invert) channels[c] = 1f - channels[c];
-                        } else {
-                            channels[c] = (c == 3) ? 1f : 0f;
-                        }
-                    }
-                    pixels[i] = new Color(channels[0], channels[1], channels[2], channels[3]);
+                // Pre-compute custom values
+                float[] customVals = new float[4];
+                for (int c = 0; c < 4; c++) {
+                    if (packSlots[c].useCustom)
+                        customVals[c] = packSlots[c].invert ? 1f - packSlots[c].customValue : packSlots[c].customValue;
+                    else if (packSlots[c].texture == null)
+                        customVals[c] = (c == 3) ? 1f : 0f;
                 }
 
+                int progressInterval = Mathf.Max(1, h / 20);
+                for (int y = 0; y < h; y++) {
+                    if (y % progressInterval == 0)
+                        EditorUtility.DisplayProgressBar("Packing Texture", $"Processing row {y}/{h}...", (float)y / h);
+
+                    for (int x = 0; x < w; x++) {
+                        float[] channels = new float[4];
+                        for (int c = 0; c < 4; c++) {
+                            if (packSlots[c].useCustom || packSlots[c].texture == null) {
+                                channels[c] = customVals[c];
+                            } else {
+                                int srcX = Mathf.Clamp(x * slotW[c] / w, 0, slotW[c] - 1);
+                                int srcY = Mathf.Clamp(y * slotH[c] / h, 0, slotH[c] - 1);
+                                Color p = slotPixels[c][srcY * slotW[c] + srcX];
+                                channels[c] = packSlots[c].channelIndex == 0 ? p.r : packSlots[c].channelIndex == 1 ? p.g : packSlots[c].channelIndex == 2 ? p.b : p.a;
+                                if (packSlots[c].invert) channels[c] = 1f - channels[c];
+                            }
+                        }
+                        pixels[y * w + x] = new Color(channels[0], channels[1], channels[2], channels[3]);
+                    }
+                }
+
+                EditorUtility.DisplayProgressBar("Packing Texture", "Encoding PNG...", 0.95f);
                 result.SetPixels(pixels);
                 result.Apply();
 
@@ -691,7 +764,6 @@ namespace RexTools.TextureRepacker.Editor
         private void Unpack()
         {
             if (unpackSource == null) return;
-            EnsureReadable(unpackSource);
             
             string finalPath = string.IsNullOrEmpty(unpackOutputPath) 
                 ? Path.GetDirectoryName(AssetDatabase.GetAssetPath(unpackSource)) 
@@ -711,7 +783,8 @@ namespace RexTools.TextureRepacker.Editor
             if (anyExists && !EditorUtility.DisplayDialog("Overwrite Files", "One or more files already exist. Do you want to overwrite them?", "Overwrite", "Cancel"))
                 return;
 
-            var pixels = unpackSource.GetPixels();
+            // Use cached GPU blit read instead of requiring readable import
+            var pixels = GetReadablePixels(unpackSource);
             int w = unpackSource.width;
             int h = unpackSource.height;
 
@@ -734,15 +807,41 @@ namespace RexTools.TextureRepacker.Editor
             EditorUtility.DisplayDialog("Success", "Unpacking complete!", "OK");
         }
 
-        private void EnsureReadable(Texture2D tex)
+        /// <summary>
+        /// Creates a readable copy of a texture via GPU blit — avoids slow asset reimport for PSD files.
+        /// </summary>
+        private Texture2D MakeReadableCopy(Texture2D tex)
         {
-            if (tex.isReadable) return;
-            string path = AssetDatabase.GetAssetPath(tex);
-            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
-            if (importer != null) {
-                importer.isReadable = true;
-                AssetDatabase.ImportAsset(path);
+            RenderTexture tmp = RenderTexture.GetTemporary(tex.width, tex.height, 0, RenderTextureFormat.ARGB32);
+            Graphics.Blit(tex, tmp);
+            RenderTexture prev = RenderTexture.active;
+            RenderTexture.active = tmp;
+            Texture2D readable = new Texture2D(tex.width, tex.height, TextureFormat.RGBA32, false);
+            readable.ReadPixels(new Rect(0, 0, tex.width, tex.height), 0, 0);
+            readable.Apply();
+            RenderTexture.active = prev;
+            RenderTexture.ReleaseTemporary(tmp);
+            return readable;
+        }
+
+        /// <summary>
+        /// Returns cached pixel array for a texture. Uses GPU blit if texture is not readable.
+        /// </summary>
+        private Color[] GetReadablePixels(Texture2D tex)
+        {
+            int id = tex.GetInstanceID();
+            if (pixelCache.TryGetValue(id, out var cached)) return cached;
+
+            Color[] pixels;
+            if (tex.isReadable) {
+                pixels = tex.GetPixels();
+            } else {
+                var copy = MakeReadableCopy(tex);
+                pixels = copy.GetPixels();
+                DestroyImmediate(copy);
             }
+            pixelCache[id] = pixels;
+            return pixels;
         }
 
         private string GenerateBaseName(string name) {
