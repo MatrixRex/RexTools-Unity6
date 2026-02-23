@@ -1,7 +1,7 @@
 {
     "name": "com.matrixrex.rextools",
     "displayName": "RexTools",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "unity": "6000.0",
     "description": "Several Unity Utility Tools",
     "keywords": [

@@ -195,7 +195,7 @@ namespace RexTools.TextureRepacker.Editor
         private List<List<Button>> slotChannelButtons = new List<List<Button>>();
         private List<Button> slotValButtons = new List<Button>();
         private List<DragAndDropTextureField> slotDropZones = new List<DragAndDropTextureField>();
-        [MenuItem("Tools/Texture Repacker")]
+        [MenuItem("Tools/Rex Tools/Texture Repacker")]
         public static void ShowWindow() {
             var window = GetWindow<TexturePackSeparator>("Texture Repacker");
             window.minSize = new Vector2(400, 750);
