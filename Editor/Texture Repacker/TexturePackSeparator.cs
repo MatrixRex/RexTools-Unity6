@@ -176,17 +176,36 @@ namespace RexTools.TextureRepacker.Editor
         private string unpackOutputName = "UnpackedTexture";
         private string unpackOutputPath = "";
 
+        // Mix settings
+        public enum BlendMode { Multiply, Add, Screen, Overlay, Subtract, Divide, Darken, Lighten, SoftLight, HardLight }
+        private Texture2D mixBase;
+        private Texture2D mixLayer;
+        private int mixBaseChannel  = -1; // -1 = Full RGBA, 0-3 = R/G/B/A
+        private int mixLayerChannel = -1;
+        private BlendMode mixBlendMode = BlendMode.Multiply;
+        private float mixOpacity = 1f;
+        private string mixOutputName = "MixedTexture";
+        private string mixOutputPath = "";
+
         // UI
         private Image combinedPreview;
         private VisualElement packContainer;
         private VisualElement unpackContainer;
+        private VisualElement mixContainer;
         private Button actionButton;
         private Button packTabBtn;
         private Button unpackTabBtn;
+        private Button mixTabBtn;
         private TextField nameField;
         private FolderDropZone folderZone;
         private TextField unpackNameField;
         private FolderDropZone unpackFolderZone;
+        private TextField mixNameField;
+        private FolderDropZone mixFolderZone;
+        private Image mixPreviewImage;
+        private Texture2D mixPreviewBuffer;
+        private bool _mixPreviewDirty = false;
+        private IVisualElementScheduledItem _mixPreviewSchedule;
         private Texture2D previewBuffer;
         private int debugPreviewMode = 0; // 0=RGBA, 1=R, 2=G, 3=B, 4=A
         private bool showHelp = false;
@@ -260,6 +279,10 @@ namespace RexTools.TextureRepacker.Editor
             var unpackTip = new Label("• UNPACK: Drop a texture to extract its channels into separate files.");
             unpackTip.AddToClassList("rex-help-text-item");
             helpBox.Add(unpackTip);
+
+            var mixTip = new Label("• MIX: Drop Base + Layer textures. Select blend mode and optional channel. Click MIX to save result.");
+            mixTip.AddToClassList("rex-help-text-item");
+            helpBox.Add(mixTip);
             
             root.Add(helpBox);
 
@@ -271,8 +294,9 @@ namespace RexTools.TextureRepacker.Editor
             // Tabs Header
             var tabs = new VisualElement { style = { flexDirection = FlexDirection.Row, height = 30, marginBottom = 15, flexShrink = 0 } };
             tabs.AddToClassList("rex-tabs-container");
-            packTabBtn = CreateTabButton("PACK", 0, tabs);
+            packTabBtn   = CreateTabButton("PACK",   0, tabs);
             unpackTabBtn = CreateTabButton("UNPACK", 1, tabs);
+            mixTabBtn    = CreateTabButton("MIX",    2, tabs);
             root.Add(tabs);
 
             // Scrollable Content Area
@@ -281,13 +305,16 @@ namespace RexTools.TextureRepacker.Editor
             root.Add(scrollView);
 
             // Container Logic
-            packContainer = new VisualElement { style = { flexShrink = 0 } };
+            packContainer   = new VisualElement { style = { flexShrink = 0 } };
             unpackContainer = new VisualElement { style = { flexShrink = 0 } };
+            mixContainer    = new VisualElement { style = { flexShrink = 0 } };
             scrollView.Add(packContainer);
             scrollView.Add(unpackContainer);
+            scrollView.Add(mixContainer);
 
             SetupPackUI();
             SetupUnpackUI();
+            SetupMixUI();
 
             // Footer Button (Fixed at Bottom)
             actionButton = new Button { style = { flexShrink = 0 } };
@@ -310,27 +337,28 @@ namespace RexTools.TextureRepacker.Editor
         private void SwitchTab(int index)
         {
             currentTabIndex = index;
-            packContainer.style.display = index == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            packContainer.style.display   = index == 0 ? DisplayStyle.Flex : DisplayStyle.None;
             unpackContainer.style.display = index == 1 ? DisplayStyle.Flex : DisplayStyle.None;
-            actionButton.text = index == 0 ? "PACK" : "UNPACK";
+            mixContainer.style.display    = index == 2 ? DisplayStyle.Flex : DisplayStyle.None;
+
+            string[] labels = { "PACK", "UNPACK", "MIX" };
+            actionButton.text = labels[index];
             
             actionButton.RemoveFromClassList("rex-action-button--pack");
             actionButton.RemoveFromClassList("rex-action-button--unpack");
             actionButton.AddToClassList(index == 0 ? "rex-action-button--pack" : "rex-action-button--unpack");
 
             // Toggle Tab Classes
-            if (packTabBtn != null) {
-                packTabBtn.RemoveFromClassList("rex-tab-button--active");
-                packTabBtn.RemoveFromClassList("rex-tab-button--inactive");
-                packTabBtn.AddToClassList(index == 0 ? "rex-tab-button--active" : "rex-tab-button--inactive");
+            Button[] tabs = { packTabBtn, unpackTabBtn, mixTabBtn };
+            for (int t = 0; t < tabs.Length; t++) {
+                if (tabs[t] == null) continue;
+                tabs[t].RemoveFromClassList("rex-tab-button--active");
+                tabs[t].RemoveFromClassList("rex-tab-button--inactive");
+                tabs[t].AddToClassList(t == index ? "rex-tab-button--active" : "rex-tab-button--inactive");
             }
-            if (unpackTabBtn != null) {
-                unpackTabBtn.RemoveFromClassList("rex-tab-button--active");
-                unpackTabBtn.RemoveFromClassList("rex-tab-button--inactive");
-                unpackTabBtn.AddToClassList(index == 1 ? "rex-tab-button--active" : "rex-tab-button--inactive");
-            }
-            
+
             if (index == 0) UpdatePreview();
+            if (index == 2) UpdateMixPreview();
         }
 
         private void SetupPackUI()
@@ -677,7 +705,9 @@ namespace RexTools.TextureRepacker.Editor
         }
 
         private void Process() {
-            if (currentTabIndex == 0) Pack(); else Unpack();
+            if (currentTabIndex == 0) Pack();
+            else if (currentTabIndex == 1) Unpack();
+            else Mix();
         }
 
         private void Pack()
@@ -806,6 +836,280 @@ namespace RexTools.TextureRepacker.Editor
             AssetDatabase.Refresh();
             EditorUtility.DisplayDialog("Success", "Unpacking complete!", "OK");
         }
+
+        // ─── MIX TAB ──────────────────────────────────────────────────────────────
+
+        private void SetupMixUI()
+        {
+            // ── Preview ──
+            var previewSection = new VisualElement { style = { marginBottom = 15, flexDirection = FlexDirection.Row, justifyContent = Justify.Center, alignItems = Align.Center, flexShrink = 0, height = 180 } };
+            mixPreviewImage = new Image { style = { width = 160, height = 160, backgroundColor = Color.black } };
+            mixPreviewImage.scaleMode = ScaleMode.ScaleToFit;
+            previewSection.Add(mixPreviewImage);
+            mixContainer.Add(previewSection);
+
+            // ── Blend Mode ──
+            var blendBox = new VisualElement { style = { flexShrink = 0, marginBottom = 10 } };
+            blendBox.AddToClassList("rex-box");
+            blendBox.Add(new Label("BLEND SETTINGS") { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 6, color = Color.gray } });
+
+            var blendRow = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginBottom = 6 } };
+            blendRow.Add(new Label("Mode:") { style = { width = 50 } });
+            var blendEnum = new EnumField(mixBlendMode) { style = { flexGrow = 1 } };
+            blendEnum.RegisterValueChangedCallback(e => { mixBlendMode = (BlendMode)e.newValue; UpdateMixPreview(); });
+            blendRow.Add(blendEnum);
+            blendBox.Add(blendRow);
+
+            var opacityRow = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
+            opacityRow.Add(new Label("Opacity:") { style = { width = 50 } });
+            var opacitySlider = new Slider(0f, 1f) { value = mixOpacity, style = { flexGrow = 1, marginRight = 6 } };
+            var opacityNum = new FloatField { value = mixOpacity, style = { width = 40, fontSize = 9 } };
+            opacitySlider.RegisterValueChangedCallback(e => {
+                mixOpacity = e.newValue;
+                opacityNum.SetValueWithoutNotify(e.newValue);
+                UpdateMixPreview();
+            });
+            opacityNum.RegisterValueChangedCallback(e => {
+                float v = Mathf.Clamp01(e.newValue);
+                mixOpacity = v;
+                opacitySlider.SetValueWithoutNotify(v);
+                UpdateMixPreview();
+            });
+            opacityRow.Add(opacitySlider);
+            opacityRow.Add(opacityNum);
+            blendBox.Add(opacityRow);
+            mixContainer.Add(blendBox);
+
+            // ── Texture Inputs ──
+            string[] texLabels = { "BASE", "LAYER" };
+            for (int t = 0; t < 2; t++) {
+                int ti = t;
+                var box = new VisualElement { style = { flexShrink = 0, marginBottom = 10 } };
+                box.AddToClassList("rex-box");
+                box.Add(new Label(texLabels[t]) { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 5, color = ti == 0 ? new Color(0.5f, 0.8f, 1f) : new Color(1f, 0.7f, 0.4f) } });
+
+                var drop = new DragAndDropTextureField("Drop " + texLabels[t] + " Texture", 90);
+                drop.OnTextureChanged = tex => {
+                    if (ti == 0) {
+                        mixBase = tex;
+                        if (tex != null) { pixelCache.Remove(tex.GetInstanceID()); }
+                        // Auto name/path from base texture
+                        if (tex != null && (mixOutputName == "MixedTexture" || string.IsNullOrEmpty(mixOutputName))) {
+                            mixOutputName = GenerateBaseName(tex.name) + "_mixed";
+                            if (mixNameField != null) mixNameField.value = mixOutputName;
+                        }
+                        if (tex != null && string.IsNullOrEmpty(mixOutputPath)) {
+                            mixOutputPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(tex));
+                            if (mixFolderZone != null) mixFolderZone.SetPath(mixOutputPath);
+                        }
+                    } else {
+                        mixLayer = tex;
+                        if (tex != null) { pixelCache.Remove(tex.GetInstanceID()); }
+                    }
+                    UpdateMixPreview();
+                };
+                box.Add(drop);
+
+                // Channel selector: Full | R | G | B | A
+                var chanRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginTop = 5, alignItems = Align.Center } };
+                chanRow.Add(new Label("Channel:") { style = { width = 55, fontSize = 10, color = Color.gray } });
+                string[] chanLabels = { "Full", "R", "G", "B", "A" };
+                var chanBtns = new List<Button>();
+                for (int c = 0; c < 5; c++) {
+                    int ci = c;
+                    var btn = new Button { text = chanLabels[c], style = { width = 34, height = 20, fontSize = 9, marginRight = 2 } };
+                    btn.AddToClassList("rex-button-small");
+                    int channelValue = ci - 1; // Full=-1 (ci=0 → -1), R=0, G=1, B=2, A=3
+                    btn.clicked += () => {
+                        if (ti == 0) mixBaseChannel  = channelValue;
+                        else         mixLayerChannel = channelValue;
+                        // Update active state
+                        for (int j = 0; j < chanBtns.Count; j++) {
+                            chanBtns[j].RemoveFromClassList("rex-button-small--active");
+                        }
+                        chanBtns[ci].AddToClassList("rex-button-small--active");
+                        UpdateMixPreview();
+                    };
+                    chanBtns.Add(btn);
+                    chanRow.Add(btn);
+                }
+                // Default active = Full
+                chanBtns[0].AddToClassList("rex-button-small--active");
+                box.Add(chanRow);
+                mixContainer.Add(box);
+            }
+
+            // ── Output Settings ──
+            var outBox = new VisualElement { style = { flexShrink = 0 } };
+            outBox.AddToClassList("rex-box");
+            outBox.Add(new Label("OUTPUT SETTINGS") { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 5, color = Color.gray } });
+
+            var nameRow2 = new VisualElement();
+            nameRow2.AddToClassList("rex-row");
+            nameRow2.style.marginBottom = 5;
+            nameRow2.Add(new Label("Name:") { style = { width = 40 } });
+            mixNameField = new TextField { value = mixOutputName, style = { flexGrow = 1 } };
+            mixNameField.RegisterValueChangedCallback(e => mixOutputName = e.newValue);
+            nameRow2.Add(mixNameField);
+            outBox.Add(nameRow2);
+
+            mixFolderZone = new FolderDropZone();
+            mixFolderZone.OnPathChanged = p => mixOutputPath = p;
+            var pathRow2 = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
+            pathRow2.Add(new Label("Path:") { style = { width = 40 } });
+            pathRow2.Add(mixFolderZone);
+            mixFolderZone.style.flexGrow = 1;
+            outBox.Add(pathRow2);
+            mixContainer.Add(outBox);
+        }
+
+        private void UpdateMixPreview()
+        {
+            _mixPreviewDirty = true;
+            if (_mixPreviewSchedule == null) {
+                _mixPreviewSchedule = rootVisualElement.schedule.Execute(RebuildMixPreview).Every(100);
+            }
+        }
+
+        private void RebuildMixPreview()
+        {
+            if (!_mixPreviewDirty || mixPreviewImage == null) return;
+            _mixPreviewDirty = false;
+
+            const int size = 128;
+            int total = size * size;
+            if (mixPreviewBuffer == null) mixPreviewBuffer = new Texture2D(size, size, TextureFormat.RGBA32, false);
+
+            Color[] basePixels  = mixBase  != null ? GetReadablePixels(mixBase)  : null;
+            Color[] layerPixels = mixLayer != null ? GetReadablePixels(mixLayer) : null;
+            int bW = mixBase  != null ? mixBase.width  : 1;
+            int bH = mixBase  != null ? mixBase.height : 1;
+            int lW = mixLayer != null ? mixLayer.width  : 1;
+            int lH = mixLayer != null ? mixLayer.height : 1;
+
+            Color[] pixels = new Color[total];
+            for (int y = 0; y < size; y++) {
+                int by = Mathf.Clamp(y * bH / size, 0, bH - 1);
+                int ly = Mathf.Clamp(y * lH / size, 0, lH - 1);
+                for (int x = 0; x < size; x++) {
+                    int bx = Mathf.Clamp(x * bW / size, 0, bW - 1);
+                    int lx = Mathf.Clamp(x * lW / size, 0, lW - 1);
+
+                    Color bc = basePixels  != null ? basePixels [by * bW + bx] : Color.black;
+                    Color lc = layerPixels != null ? layerPixels[ly * lW + lx] : Color.black;
+
+                    Color finalBase  = ApplyChannelSelect(bc, mixBaseChannel);
+                    Color finalLayer = ApplyChannelSelect(lc, mixLayerChannel);
+
+                    Color blended = BlendColors(finalBase, finalLayer, mixBlendMode);
+                    pixels[y * size + x] = Color.Lerp(finalBase, blended, mixOpacity);
+                }
+            }
+
+            mixPreviewBuffer.SetPixels(pixels);
+            mixPreviewBuffer.Apply();
+            mixPreviewImage.image = mixPreviewBuffer;
+        }
+
+        /// <summary>Converts a pixel to a greyscale-spread version when a single channel is selected.</summary>
+        private Color ApplyChannelSelect(Color c, int channel)
+        {
+            if (channel < 0) return c; // Full
+            float v = channel == 0 ? c.r : channel == 1 ? c.g : channel == 2 ? c.b : c.a;
+            return new Color(v, v, v, 1f);
+        }
+
+        private Color BlendColors(Color b, Color l, BlendMode mode)
+        {
+            Color result = b;
+            switch (mode) {
+                case BlendMode.Multiply:  result = new Color(b.r*l.r, b.g*l.g, b.b*l.b, b.a*l.a); break;
+                case BlendMode.Add:       result = new Color(Mathf.Clamp01(b.r+l.r), Mathf.Clamp01(b.g+l.g), Mathf.Clamp01(b.b+l.b), Mathf.Clamp01(b.a+l.a)); break;
+                case BlendMode.Screen:    result = new Color(1-(1-b.r)*(1-l.r), 1-(1-b.g)*(1-l.g), 1-(1-b.b)*(1-l.b), 1-(1-b.a)*(1-l.a)); break;
+                case BlendMode.Subtract:  result = new Color(Mathf.Clamp01(b.r-l.r), Mathf.Clamp01(b.g-l.g), Mathf.Clamp01(b.b-l.b), Mathf.Clamp01(b.a-l.a)); break;
+                case BlendMode.Divide:    result = new Color(Mathf.Clamp01(l.r < 0.001f ? 1f : b.r/l.r), Mathf.Clamp01(l.g < 0.001f ? 1f : b.g/l.g), Mathf.Clamp01(l.b < 0.001f ? 1f : b.b/l.b), Mathf.Clamp01(l.a < 0.001f ? 1f : b.a/l.a)); break;
+                case BlendMode.Darken:    result = new Color(Mathf.Min(b.r,l.r), Mathf.Min(b.g,l.g), Mathf.Min(b.b,l.b), Mathf.Min(b.a,l.a)); break;
+                case BlendMode.Lighten:   result = new Color(Mathf.Max(b.r,l.r), Mathf.Max(b.g,l.g), Mathf.Max(b.b,l.b), Mathf.Max(b.a,l.a)); break;
+                case BlendMode.Overlay:   result = new Color(OverlayChannel(b.r,l.r), OverlayChannel(b.g,l.g), OverlayChannel(b.b,l.b), OverlayChannel(b.a,l.a)); break;
+                case BlendMode.SoftLight: result = new Color(SoftLightChannel(b.r,l.r), SoftLightChannel(b.g,l.g), SoftLightChannel(b.b,l.b), SoftLightChannel(b.a,l.a)); break;
+                case BlendMode.HardLight: result = new Color(OverlayChannel(l.r,b.r), OverlayChannel(l.g,b.g), OverlayChannel(l.b,b.b), OverlayChannel(l.a,b.a)); break;
+            }
+            return result;
+        }
+
+        private float OverlayChannel(float b, float l)
+            => b < 0.5f ? 2f * b * l : 1f - 2f * (1f - b) * (1f - l);
+
+        private float SoftLightChannel(float b, float l)
+            => l < 0.5f
+                ? b - (1f - 2f * l) * b * (1f - b)
+                : b + (2f * l - 1f) * (D(b) - b);
+
+        private float D(float b) => b <= 0.25f ? ((16f * b - 12f) * b + 4f) * b : Mathf.Sqrt(b);
+
+        private void Mix()
+        {
+            if (mixBase == null) {
+                EditorUtility.DisplayDialog("Mix", "Please drop a Base texture first.", "OK");
+                return;
+            }
+
+            int w = mixBase.width;
+            int h = mixBase.height;
+
+            string finalPath = Path.Combine(
+                string.IsNullOrEmpty(mixOutputPath) ? Path.GetDirectoryName(AssetDatabase.GetAssetPath(mixBase)) : mixOutputPath,
+                (string.IsNullOrEmpty(mixOutputName) ? "MixedTexture" : mixOutputName) + ".png"
+            ).Replace('\\', '/');
+
+            if (File.Exists(finalPath)) {
+                if (!EditorUtility.DisplayDialog("File Exists", $"An asset already exists at {finalPath}. Overwrite?", "Overwrite", "Cancel"))
+                    return;
+            }
+
+            try {
+                EditorUtility.DisplayProgressBar("Mixing Textures", "Reading textures...", 0f);
+
+                Color[] basePixels  = GetReadablePixels(mixBase);
+                Color[] layerPixels = mixLayer != null ? GetReadablePixels(mixLayer) : null;
+                int lW = mixLayer != null ? mixLayer.width  : 1;
+                int lH = mixLayer != null ? mixLayer.height : 1;
+
+                Texture2D result = new Texture2D(w, h, TextureFormat.RGBA32, false);
+                Color[] pixels = new Color[w * h];
+
+                int progressInterval = Mathf.Max(1, h / 20);
+                for (int y = 0; y < h; y++) {
+                    if (y % progressInterval == 0)
+                        EditorUtility.DisplayProgressBar("Mixing Textures", $"Row {y}/{h}", (float)y / h);
+                    for (int x = 0; x < w; x++) {
+                        Color bc = basePixels[y * w + x];
+                        Color lc = Color.black;
+                        if (layerPixels != null) {
+                            int lx = Mathf.Clamp(x * lW / w, 0, lW - 1);
+                            int ly = Mathf.Clamp(y * lH / h, 0, lH - 1);
+                            lc = layerPixels[ly * lW + lx];
+                        }
+                        Color fb = ApplyChannelSelect(bc, mixBaseChannel);
+                        Color fl = ApplyChannelSelect(lc, mixLayerChannel);
+                        Color blended = BlendColors(fb, fl, mixBlendMode);
+                        pixels[y * w + x] = Color.Lerp(fb, blended, mixOpacity);
+                    }
+                }
+
+                EditorUtility.DisplayProgressBar("Mixing Textures", "Encoding PNG...", 0.95f);
+                result.SetPixels(pixels);
+                result.Apply();
+                File.WriteAllBytes(finalPath, result.EncodeToPNG());
+                AssetDatabase.Refresh();
+                EditorUtility.DisplayDialog("Success", "Mixed texture saved to:\n" + finalPath, "OK");
+                DestroyImmediate(result);
+            } finally {
+                EditorUtility.ClearProgressBar();
+            }
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────
 
         /// <summary>
         /// Creates a readable copy of a texture via GPU blit — avoids slow asset reimport for PSD files.

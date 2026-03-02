@@ -31,6 +31,9 @@ namespace Rextools.ShaderGraphSearch.Editor
         private static ToolbarSearchField currentSearchField = null;
         private static bool isUpdatingSearchFieldProgrammatically = false;
 
+        // Connection navigator
+        private static ShaderGraphNodeNavigator nodeNavigator = null;
+
         static ShaderGraphSearchExtension()
         {
             // Get types via reflection since they're internal
@@ -64,6 +67,9 @@ namespace Rextools.ShaderGraphSearch.Editor
                     AddSearchBar(editorWindow, window);
                 }
             }
+
+            // Poll for selection changes to update the connection navigator
+            nodeNavigator?.CheckSelectionChanged();
         }
 
         private static void AddSearchBar(EditorWindow editorWindow, object windowInstance)
@@ -99,7 +105,7 @@ namespace Rextools.ShaderGraphSearch.Editor
             var searchContainer = new VisualElement { name = "search-container" };
             searchContainer.style.flexDirection = FlexDirection.Row;
             searchContainer.style.alignItems = Align.Center;
-            searchContainer.style.marginLeft = 500;       // LEFT MARGIN: gap from left elements
+            searchContainer.style.marginLeft = 0;         // LEFT MARGIN: gap from nav buttons
             searchContainer.style.marginRight = 5;      // RIGHT MARGIN: gap from right edge
 
             // ==================== SEARCH FIELD ====================
@@ -251,6 +257,78 @@ namespace Rextools.ShaderGraphSearch.Editor
             searchContainer.Add(navContainer);
             searchContainer.Add(resultsContainer);
 
+            // ==================== CONNECTION NAVIGATION CONTAINER ====================
+            var connNavContainer = new VisualElement { name = "conn-nav-container" };
+            connNavContainer.style.flexDirection = FlexDirection.Row;
+            connNavContainer.style.alignItems = Align.Center;
+            connNavContainer.style.flexShrink = 0;
+            connNavContainer.style.marginRight = 50;     // Gap before search container
+
+            // --- Back Button ---
+            var connBackButton = new Button { name = "conn-back-btn" };
+            var connBackIcon = new Image();
+            connBackIcon.image = EditorGUIUtility.IconContent("d_tab_prev").image;
+            connBackButton.Add(connBackIcon);
+            StyleToolbarButton(connBackButton, connBackIcon);
+
+            // --- Forward Button ---
+            var connForwardButton = new Button { name = "conn-forward-btn" };
+            var connForwardIcon = new Image();
+            connForwardIcon.image = EditorGUIUtility.IconContent("d_tab_next").image;
+            connForwardButton.Add(connForwardIcon);
+            StyleToolbarButton(connForwardButton, connForwardIcon);
+
+            // --- Separator 1 ---
+            var sep1 = CreateSeparator();
+
+            // --- Up Button ---
+            var connUpButton = new Button { name = "conn-up-btn" };
+            var connUpIcon = new Image();
+            connUpIcon.image = EditorGUIUtility.IconContent("d_scrollup").image;
+            connUpButton.Add(connUpIcon);
+            StyleToolbarButton(connUpButton, connUpIcon);
+
+            // --- Down Button ---
+            var connDownButton = new Button { name = "conn-down-btn" };
+            var connDownIcon = new Image();
+            connDownIcon.image = EditorGUIUtility.IconContent("d_scrolldown").image;
+            connDownButton.Add(connDownIcon);
+            StyleToolbarButton(connDownButton, connDownIcon);
+
+            // --- Branch Label ---
+            var connBranchLabel = new Label { name = "conn-branch-label" };
+            connBranchLabel.style.fontSize = 11;
+            connBranchLabel.style.color = new Color(0.7f, 0.7f, 0.7f);
+            connBranchLabel.style.marginLeft = 2;
+            connBranchLabel.style.marginRight = 2;
+            connBranchLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            connBranchLabel.style.minWidth = 35;
+            connBranchLabel.text = "(-/-)";
+
+            // --- Separator 2 ---
+            var sep2 = CreateSeparator();
+
+            connNavContainer.Add(connBackButton);
+            connNavContainer.Add(connForwardButton);
+            connNavContainer.Add(sep1);
+            connNavContainer.Add(connUpButton);
+            connNavContainer.Add(connDownButton);
+            connNavContainer.Add(connBranchLabel);
+            connNavContainer.Add(sep2);
+
+            // ==================== CREATE NAVIGATOR INSTANCE ====================
+            nodeNavigator = new ShaderGraphNodeNavigator(
+                materialGraphViewType,
+                materialNodeViewType,
+                propertyNodeViewType,
+                graphEditorViewType,
+                connBackButton,
+                connForwardButton,
+                connUpButton,
+                connDownButton,
+                connBranchLabel);
+            nodeNavigator.SetGraphEditorView(graphEditorView);
+
             // Try to inject into toolbar if found, otherwise use absolute positioning
             if (toolbar != null)
             {
@@ -258,6 +336,7 @@ namespace Rextools.ShaderGraphSearch.Editor
                 var spacer = new VisualElement();
                 spacer.style.flexGrow = 1;
                 toolbar.Add(spacer);
+                toolbar.Add(connNavContainer);
                 toolbar.Add(searchContainer);
             }
             else
@@ -267,6 +346,12 @@ namespace Rextools.ShaderGraphSearch.Editor
                 searchContainer.style.top = -0.5f;
                 searchContainer.style.right = 350;
                 root.Add(searchContainer);
+
+                // Also add the connection navigator in absolute mode
+                connNavContainer.style.position = Position.Absolute;
+                connNavContainer.style.top = -0.5f;
+                connNavContainer.style.right = 550;
+                root.Add(connNavContainer);
             }
         }
 
@@ -301,6 +386,7 @@ namespace Rextools.ShaderGraphSearch.Editor
 
             // Store graphView reference for navigation
             currentGraphView = graphView;
+            nodeNavigator?.SetGraphView(graphView);
 
             // Group results by DisplayName + NodeType
             var grouped = results
@@ -321,6 +407,20 @@ namespace Rextools.ShaderGraphSearch.Editor
                 var resultItem = CreateGroupedResultItem(group, graphView, resultsContainer);
                 scrollView.Add(resultItem);
             }
+        }
+
+        // ==================== SEPARATOR HELPER ====================
+
+        private static VisualElement CreateSeparator()
+        {
+            var separator = new VisualElement();
+            separator.style.width = 1;
+            separator.style.height = 16;
+            separator.style.backgroundColor = new Color(0.15f, 0.15f, 0.15f);
+            separator.style.marginLeft = 4;
+            separator.style.marginRight = 4;
+            separator.style.alignSelf = Align.Center;
+            return separator;
         }
 
         // ==================== NAVIGATION METHODS ====================

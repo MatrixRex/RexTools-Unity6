@@ -67,7 +67,7 @@ To install RexTools in your Unity project:
 2. Click the **+** button in the top-left corner.
 3. Select **Add package from git URL...**.
 4. Paste the following URL:
-   `https://github.com/MatrixRex/Unity6-Rex-Tools.git`
+   `https://github.com/MatrixRex/RexTools-Unity6.git`
 5. Click **Add**.
 
 ## 📜 License

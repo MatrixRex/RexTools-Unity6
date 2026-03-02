@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- ShaderGraph Search: Connection-based node navigator with back/forward traversal and branch memory for multi-output nodes.
+
 ## [0.4.0] - 2026-02-23
 
 ### Added
