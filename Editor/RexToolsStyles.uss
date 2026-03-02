@@ -109,6 +109,27 @@
     color: white;
 }
 
+.rex-maximize-btn {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    width: 24px;
+    height: 24px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    color: #CCC;
+    border-width: 0;
+    font-size: 14px;
+    -unity-font-style: bold;
+    justify-content: center;
+    align-items: center;
+}
+
+.rex-maximize-btn:hover {
+    background-color: #4D99FF;
+    color: white;
+}
+
 /* Header & Help */
 .rex-header-row {
     flex-direction: row;
@@ -177,6 +198,23 @@
 
 .rex-label-w50 {
     width: 50px;
+}
+
+.rex-field-flex {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+/* Ensure Unity fields don't push out of containers */
+.rex-row > TextField,
+.rex-row > EnumField,
+.rex-row > FloatField,
+.rex-row > Slider,
+.rex-row > ObjectField {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
 }
 
 .rex-flex-grow {
