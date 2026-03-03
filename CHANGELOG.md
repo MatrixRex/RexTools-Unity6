@@ -5,10 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0] - 2026-03-03
 
 ### Added
-- ShaderGraph Search: Connection-based node navigator with back/forward traversal and branch memory for multi-output nodes.
+- Texture Repacker: New **Mix** tab for blending textures with modes (Multiply, Add, Screen, etc.).
+- Texture Repacker: High-resolution **Live Preview** window for inspecting details at original size.
+- ShaderGraph Search: Connection-based node navigator with back/forward traversal and branch memory.
+
+### Fixed
+- Texture Repacker: Fixed UI clipping issues and improved field scaling in smaller windows.
+- RexToolsStyles: Enhanced responsive layout constraints for multi-column tool grids.
+
+## [Unreleased]
 
 ## [0.4.0] - 2026-02-23
 

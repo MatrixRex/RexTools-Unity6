@@ -13,7 +13,26 @@ Adds a powerful search bar to the ShaderGraph editor, inspired by IDE-style navi
     3.  Type a node name or type (e.g., "Add", "Texture", "Variable").
     4.  Select a result from the dropdown to frame it instantly.
     5.  Use the **Up/Down** buttons to cycle through multiple instances of the same node type.
-    
+
+### 🔗 ShaderGraph Node Navigator
+A connection-aware navigation system for ShaderGraph. It allows you to traverse through node inputs and outputs connections.
+
+*   **Usage**:
+    1.  Select any node in the ShaderGraph.
+    2.  Use the **Back/Forward** buttons in the toolbar to navigate through connected nodes.
+    3.  Use the **Next/Previous Connection** (Up/Down) buttons to cycle through multiple nodes connected to the same port.
+    4.  The branch selector shows your current position in the connection list (e.g., `(2/5)`).
+
+### 📐 ShaderGraph Organizer
+Adds alignment and distribution tools to the ShaderGraph editor context menu. Quickly organize selected nodes to clean up your graph layout.
+
+*   **Usage**:
+    1.  Open any ShaderGraph.
+    2.  Select 2 or more nodes in the graph.
+    3.  Right-click to open the context menu.
+    4.  **Align**: Choose **Left**, **Right**, **Up**, or **Down** to snap nodes to a common edge.
+    5.  **Distribute**: Choose **Horizontal** or **Vertical** to evenly space nodes with a consistent gap.
+
 ### 📸 Quick Shot
 A high-resolution screenshot utility that allows you to capture the Scene view or Game view with custom scaling and transparency.
 
@@ -42,19 +61,12 @@ A utility for packing multiple textures into individual RGBA channels or extract
 
 *   **Usage**:
     1.  Go to `Tools > Rex Tools > Texture Repacker`.
-    2.  **PACK**: Drag up to 4 textures into the RGBA slots. Swizzle channels using the (R|G|B|A) buttons, or use the **VAL** override for constant values.
+    2.  **PACK**: Drag up to 4 textures into the RGBA slots. Swizzle channels using the (R\|G\|B\|A) buttons, or use the **VAL** override for constant values.
     3.  **UNPACK**: Drag a source texture to extract its channels. Choose which channels to extract and set custom suffixes.
-    4.  Set the **Output Name** and **Path**, then click **PACK** or **UNPACK**.
+    4.  **MIX**: Combine a **Base** and **Layer** texture using blend modes (Multiply, Overlay, Soft Light, etc.). Customize channels and opacity for each layer.
+    5.  **PREVIEW**: Use the **⛶ Maximize** button on any tab to open a high-resolution, original-size preview window for detailed inspection.
+    6.  Set the **Output Name** and **Path**, then click the action button to save your PNG.
 
-### 📐 ShaderGraph Organizer
-Adds alignment and distribution tools to the ShaderGraph editor context menu. Quickly organize selected nodes to clean up your graph layout.
-
-*   **Usage**:
-    1.  Open any ShaderGraph.
-    2.  Select 2 or more nodes in the graph.
-    3.  Right-click to open the context menu.
-    4.  **Align**: Choose **Left**, **Right**, **Up**, or **Down** to snap nodes to a common edge.
-    5.  **Distribute**: Choose **Horizontal** or **Vertical** to evenly space nodes with a consistent gap.
 
 
 
