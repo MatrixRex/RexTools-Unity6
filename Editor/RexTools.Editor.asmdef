@@ -2,6 +2,7 @@
     "name": "RexTools.Editor",
     "rootNamespace": "",
     "references": [
+        "RexTools.Runtime",
         "Unity.ShaderGraph.Editor",
         "Unity.RenderPipelines.Universal.Runtime"
     ],
