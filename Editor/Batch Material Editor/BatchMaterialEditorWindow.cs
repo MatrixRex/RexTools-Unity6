@@ -93,9 +93,11 @@ namespace RexTools.BatchMaterialEditor.Editor
         private class ConvPropertyMapping
         {
             public string sourcePropName;
+            public string sourcePropDesc;
             public ConvPropertyType type;
             public string targetPropName = "None";
             public string[] targetOptions = new string[] { "None" };
+            public string[] targetDisplayOptions = new string[] { "None" };
             public int selectedIndex = 0;
             public bool isValid = false;
         }
@@ -760,24 +762,38 @@ namespace RexTools.BatchMaterialEditor.Editor
             int targetPropCount = ShaderUtil.GetPropertyCount(tShader);
 
             for (int i = 0; i < propCount; i++) {
+                if (ShaderUtil.IsShaderPropertyHidden(sShader, i)) continue;
+
                 string name = ShaderUtil.GetPropertyName(sShader, i);
+                string desc = ShaderUtil.GetPropertyDescription(sShader, i);
                 var type = GetConvType(ShaderUtil.GetPropertyType(sShader, i));
 
                 var options = new List<string> { "None" };
+                var displayOptions = new List<string> { "None" };
+
                 for (int j = 0; j < targetPropCount; j++) {
                     if (GetConvType(ShaderUtil.GetPropertyType(tShader, j)) == type) {
-                        options.Add(ShaderUtil.GetPropertyName(tShader, j));
+                        string tName = ShaderUtil.GetPropertyName(tShader, j);
+                        string tDesc = ShaderUtil.GetPropertyDescription(tShader, j);
+                        options.Add(tName);
+                        displayOptions.Add($"{tDesc} ({tName})");
                     }
                 }
 
                 convMappings.Add(new ConvPropertyMapping {
                     sourcePropName = name,
+                    sourcePropDesc = desc,
                     type = type,
                     targetOptions = options.ToArray(),
+                    targetDisplayOptions = displayOptions.ToArray(),
                     targetPropName = "None",
                     selectedIndex = 0
                 });
             }
+            
+            // Sort: Type first, then Description alphabetical
+            convMappings = convMappings.OrderBy(m => m.type).ThenBy(m => m.sourcePropDesc).ToList();
+
             RefreshMappingsUI();
         }
 
@@ -787,24 +803,73 @@ namespace RexTools.BatchMaterialEditor.Editor
             foreach (var mapping in convMappings) {
                 var row = new VisualElement();
                 row.AddToClassList("rex-result-item");
-                row.style.height = 24;
+                row.style.height = 36; // Extra height for preview box
 
+                // 1. Type
                 var typeLabel = new Label(mapping.type.ToString().ToUpper().Substring(0, 3));
                 typeLabel.style.width = 30; typeLabel.style.fontSize = 9; typeLabel.style.color = new Color(0.5f, 0.5f, 0.5f);
                 row.Add(typeLabel);
 
-                var sName = new Label(mapping.sourcePropName);
-                sName.style.flexGrow = 1; sName.style.unityFontStyleAndWeight = FontStyle.Bold;
-                row.Add(sName);
+                // 2. Preview Values Box
+                var previewBox = new VisualElement();
+                previewBox.style.width = 24; previewBox.style.height = 24;
+                previewBox.style.marginRight = 10;
+                previewBox.style.borderTopWidth = 1;
+                previewBox.style.borderBottomWidth = 1;
+                previewBox.style.borderLeftWidth = 1;
+                previewBox.style.borderRightWidth = 1;
+
+                var borderColor = new Color(0.2f, 0.2f, 0.2f);
+                previewBox.style.borderTopColor = borderColor;
+                previewBox.style.borderBottomColor = borderColor;
+                previewBox.style.borderLeftColor = borderColor;
+                previewBox.style.borderRightColor = borderColor;
+                previewBox.style.backgroundColor = new Color(0.15f, 0.15f, 0.15f);
+
+                if (sourcePreviewMat != null && sourcePreviewMat.HasProperty(mapping.sourcePropName)) {
+                    if (mapping.type == ConvPropertyType.Color) {
+                        previewBox.style.backgroundColor = sourcePreviewMat.GetColor(mapping.sourcePropName);
+                    } else if (mapping.type == ConvPropertyType.Texture) {
+                        var tex = sourcePreviewMat.GetTexture(mapping.sourcePropName);
+                        if (tex != null && tex is Texture2D t2d) {
+                            previewBox.style.backgroundImage = t2d;
+                        }
+                    } else if (mapping.type == ConvPropertyType.Float) {
+                        var floatLabel = new Label(sourcePreviewMat.GetFloat(mapping.sourcePropName).ToString("0.0"));
+                        floatLabel.style.fontSize = 9; floatLabel.style.unityTextAlign = TextAnchor.MiddleCenter; 
+                        floatLabel.style.color = Color.white;
+                        floatLabel.style.marginTop = 4; // center rough
+                        previewBox.Add(floatLabel);
+                    }
+                }
+                row.Add(previewBox);
+
+                // 3. Name Column
+                var nameCol = new VisualElement();
+                nameCol.style.flexGrow = 1;
+
+                var descName = new Label(mapping.sourcePropDesc);
+                descName.style.unityFontStyleAndWeight = FontStyle.Bold;
+                descName.style.fontSize = 12;
+                nameCol.Add(descName);
+
+                var internalName = new Label(mapping.sourcePropName);
+                internalName.style.color = new Color(0.6f, 0.6f, 0.6f);
+                internalName.style.fontSize = 9;
+                internalName.style.marginTop = -2;
+                nameCol.Add(internalName);
+
+                row.Add(nameCol);
 
                 var arrow = new Label("→"); arrow.style.marginRight = 5; arrow.style.marginLeft = 5;
                 row.Add(arrow);
 
-                var dropdown = new PopupField<string>(mapping.targetOptions.ToList(), mapping.selectedIndex);
-                dropdown.style.width = 180;
+                // 4. Dropdown
+                var dropdown = new PopupField<string>(mapping.targetDisplayOptions.ToList(), mapping.selectedIndex);
+                dropdown.style.width = 200;
                 dropdown.RegisterValueChangedCallback(evt => {
-                    mapping.targetPropName = evt.newValue;
                     mapping.selectedIndex = dropdown.index;
+                    mapping.targetPropName = mapping.targetOptions[dropdown.index];
                     mapping.isValid = mapping.targetPropName != "None";
                     SyncMappingsToSettings();
                 });
@@ -839,14 +904,77 @@ namespace RexTools.BatchMaterialEditor.Editor
         private void SmartMatch()
         {
             foreach (var m in convMappings) {
-                string best = m.targetOptions.FirstOrDefault(opt => opt.Equals(m.sourcePropName, StringComparison.OrdinalIgnoreCase));
-                if (best == null) {
-                    string cleanSource = m.sourcePropName.TrimStart('_');
-                    best = m.targetOptions.FirstOrDefault(opt => opt.TrimStart('_').Equals(cleanSource, StringComparison.OrdinalIgnoreCase));
+                string bestTarget = null;
+                List<int> exactVisualMatches = new List<int>();
+                List<int> fuzzyVisualMatches = new List<int>();
+
+                // 1 & 2. Find All Visual Name Matches
+                if (!string.IsNullOrEmpty(m.sourcePropDesc)) {
+                    for (int i = 1; i < m.targetDisplayOptions.Length; i++) {
+                        string targetDesc = m.targetDisplayOptions[i].Split('(')[0].Trim();
+                        // Exact visual match
+                        if (string.Equals(targetDesc, m.sourcePropDesc, StringComparison.OrdinalIgnoreCase)) {
+                            exactVisualMatches.Add(i);
+                        } 
+                        // Fuzzy visual match
+                        else if (targetDesc.IndexOf(m.sourcePropDesc, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                   m.sourcePropDesc.IndexOf(targetDesc, StringComparison.OrdinalIgnoreCase) >= 0) {
+                            fuzzyVisualMatches.Add(i);
+                        }
+                    }
                 }
-                if (best != null) {
-                    m.targetPropName = best;
-                    m.selectedIndex = Array.IndexOf(m.targetOptions, best);
+
+                // Prioritize Exact Visual Matches, fallback to Fuzzy
+                List<int> activeMatches = exactVisualMatches.Count > 0 ? exactVisualMatches : fuzzyVisualMatches;
+
+                int finalMatchIdx = -1;
+
+                if (activeMatches.Count == 1) {
+                    finalMatchIdx = activeMatches[0];
+                } else if (activeMatches.Count > 1) {
+                    // Tie-breaker 1: Exact internal name match among collision candidates
+                    foreach (int idx in activeMatches) {
+                        if (m.targetOptions[idx].Equals(m.sourcePropName, StringComparison.OrdinalIgnoreCase)) {
+                            finalMatchIdx = idx;
+                            break;
+                        }
+                    }
+
+                    // Tie-breaker 2: Trimmed internal name match
+                    if (finalMatchIdx == -1) {
+                        string cleanSource = m.sourcePropName.TrimStart('_');
+                        foreach (int idx in activeMatches) {
+                            if (m.targetOptions[idx].TrimStart('_').Equals(cleanSource, StringComparison.OrdinalIgnoreCase)) {
+                                finalMatchIdx = idx;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Tie-breaker 3: If internal names still don't match, pick the first visual match
+                    if (finalMatchIdx == -1) {
+                        finalMatchIdx = activeMatches[0];
+                    }
+                }
+
+                if (finalMatchIdx != -1) {
+                    bestTarget = m.targetOptions[finalMatchIdx];
+                }
+
+                // 3. Exact internal name match
+                if (bestTarget == null) {
+                    bestTarget = m.targetOptions.FirstOrDefault(opt => opt.Equals(m.sourcePropName, StringComparison.OrdinalIgnoreCase));
+                }
+                
+                // 4. Trimmed internal match (e.g. _Color vs Color)
+                if (bestTarget == null) {
+                    string cleanSource = m.sourcePropName.TrimStart('_');
+                    bestTarget = m.targetOptions.FirstOrDefault(opt => opt.TrimStart('_').Equals(cleanSource, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (bestTarget != null) {
+                    m.targetPropName = bestTarget;
+                    m.selectedIndex = Array.IndexOf(m.targetOptions, bestTarget);
                     m.isValid = true;
                 }
             }
