@@ -10,6 +10,16 @@ namespace RexTools.BatchMaterialEditor
         public Shader targetShader;
         public Material sourcePreviewMat;
         public Material targetPreviewMat;
+
+        // Path storage for fallback/missing asset detection
+        public string sourceShaderPath;
+        public string targetShaderPath;
+        public string sourceMatPath;
+        public string targetMatPath;
+
+        public string sourceShaderName;
+        public string targetShaderName;
+
         public List<PropertyPair> propertyPairs = new List<PropertyPair>();
     }
 

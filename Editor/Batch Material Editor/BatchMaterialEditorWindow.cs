@@ -82,6 +82,7 @@ namespace RexTools.BatchMaterialEditor.Editor
         private ReplaceMode replaceMode = ReplaceMode.Scene;
         private List<UnityEngine.Object> affectedObjects = new List<UnityEngine.Object>();
         private Button btnConvert;
+        private Button btnPerformConverter;
 
         // Switcher Data
         private Shader sourceShader;
@@ -191,21 +192,101 @@ namespace RexTools.BatchMaterialEditor.Editor
 
         private void OnInspectorUpdate()
         {
-            if (activeSwitcherSettings != null && (activeSwitcherSettings.sourceShader != sourceShader || activeSwitcherSettings.targetShader != targetShader))
+            if (activeSwitcherSettings != null)
             {
-                sourceShader = activeSwitcherSettings.sourceShader;
-                targetShader = activeSwitcherSettings.targetShader;
-                sourcePreviewMat = activeSwitcherSettings.sourcePreviewMat;
-                targetPreviewMat = activeSwitcherSettings.targetPreviewMat;
-                
-                // If shaders changed, we likely need to reload mappings
-                SyncSettingsToMappings();
-                
-                // Update UI fields if they exist
-                var sourceField = rootVisualElement.Query<ObjectField>("Source (Mat/Shader)").First();
-                if (sourceField != null) sourceField.value = sourcePreviewMat != null ? (UnityEngine.Object)sourcePreviewMat : sourceShader;
-                var targetField = rootVisualElement.Query<ObjectField>("Target (Mat/Shader)").First();
-                if (targetField != null) targetField.value = targetPreviewMat != null ? (UnityEngine.Object)targetPreviewMat : targetShader;
+                // check for missing assets and try fallback
+                ValidateAndFallbackAssets();
+
+                if (activeSwitcherSettings.sourceShader != sourceShader || activeSwitcherSettings.targetShader != targetShader)
+                {
+                    sourceShader = activeSwitcherSettings.sourceShader;
+                    targetShader = activeSwitcherSettings.targetShader;
+                    sourcePreviewMat = activeSwitcherSettings.sourcePreviewMat;
+                    targetPreviewMat = activeSwitcherSettings.targetPreviewMat;
+                    
+                    // If shaders changed, we likely need to reload mappings
+                    SyncSettingsToMappings();
+                    
+                    // Update UI fields if they exist
+                    var sourceField = rootVisualElement.Query<ObjectField>("Source (Mat/Shader)").First();
+                    if (sourceField != null) sourceField.value = sourcePreviewMat != null ? (UnityEngine.Object)sourcePreviewMat : sourceShader;
+                    var targetField = rootVisualElement.Query<ObjectField>("Target (Mat/Shader)").First();
+                    if (targetField != null) targetField.value = targetPreviewMat != null ? (UnityEngine.Object)targetPreviewMat : targetShader;
+                }
+            }
+        }
+
+        private void ValidateAndFallbackAssets()
+        {
+            if (activeSwitcherSettings == null) return;
+
+            bool recovered = false;
+
+            // 1. Source Fallback
+            if (activeSwitcherSettings.sourcePreviewMat == null && !string.IsNullOrEmpty(activeSwitcherSettings.sourceMatPath))
+            {
+                activeSwitcherSettings.sourcePreviewMat = AssetDatabase.LoadAssetAtPath<Material>(activeSwitcherSettings.sourceMatPath);
+                if (activeSwitcherSettings.sourcePreviewMat != null) recovered = true;
+            }
+
+            if (activeSwitcherSettings.sourceShader == null)
+            {
+                if (!string.IsNullOrEmpty(activeSwitcherSettings.sourceShaderPath))
+                {
+                    activeSwitcherSettings.sourceShader = AssetDatabase.LoadAssetAtPath<Shader>(activeSwitcherSettings.sourceShaderPath);
+                    if (activeSwitcherSettings.sourceShader != null) recovered = true;
+                }
+
+                // If still null, try name-based search
+                if (activeSwitcherSettings.sourceShader == null && !string.IsNullOrEmpty(activeSwitcherSettings.sourceShaderName))
+                {
+                    string[] guids = AssetDatabase.FindAssets($"{activeSwitcherSettings.sourceShaderName} t:Shader");
+                    if (guids.Length > 0)
+                    {
+                        activeSwitcherSettings.sourceShader = AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath(guids[0]));
+                        if (activeSwitcherSettings.sourceShader != null) recovered = true;
+                    }
+                }
+            }
+
+            // 2. Target Fallback
+            if (activeSwitcherSettings.targetPreviewMat == null && !string.IsNullOrEmpty(activeSwitcherSettings.targetMatPath))
+            {
+                activeSwitcherSettings.targetPreviewMat = AssetDatabase.LoadAssetAtPath<Material>(activeSwitcherSettings.targetMatPath);
+                if (activeSwitcherSettings.targetPreviewMat != null) recovered = true;
+            }
+
+            if (activeSwitcherSettings.targetShader == null)
+            {
+                if (!string.IsNullOrEmpty(activeSwitcherSettings.targetShaderPath))
+                {
+                    activeSwitcherSettings.targetShader = AssetDatabase.LoadAssetAtPath<Shader>(activeSwitcherSettings.targetShaderPath);
+                    if (activeSwitcherSettings.targetShader != null) recovered = true;
+                }
+
+                // If still null, try name-based search
+                if (activeSwitcherSettings.targetShader == null && !string.IsNullOrEmpty(activeSwitcherSettings.targetShaderName))
+                {
+                    string[] guids = AssetDatabase.FindAssets($"{activeSwitcherSettings.targetShaderName} t:Shader");
+                    if (guids.Length > 0)
+                    {
+                        activeSwitcherSettings.targetShader = AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath(guids[0]));
+                        if (activeSwitcherSettings.targetShader != null) recovered = true;
+                    }
+                }
+            }
+
+            // Check if still missing critical shaders
+            bool shadersValid = activeSwitcherSettings.sourceShader != null && activeSwitcherSettings.targetShader != null;
+            if (btnPerformConverter != null)
+            {
+                btnPerformConverter.SetEnabled(shadersValid);
+                btnPerformConverter.text = shadersValid ? "CONVERT SELECTED MATERIALS" : "MISSING SHADERS (CHECK SETTINGS)";
+            }
+
+            if (recovered)
+            {
+                EditorUtility.SetDirty(activeSwitcherSettings);
             }
         }
 
@@ -213,8 +294,8 @@ namespace RexTools.BatchMaterialEditor.Editor
         {
             if (activeSwitcherSettings == null) return;
             
-            // First ensure we have the candidate mappings loaded for the current shaders
-            LoadMappings(false); 
+            // First ensure we have the candidate mappings loaded for the current shaders, DO NOT trigger smart match
+            LoadMappings(false, false); 
 
             if (activeSwitcherSettings.propertyPairs.Count == 0) return;
             
@@ -672,12 +753,21 @@ namespace RexTools.BatchMaterialEditor.Editor
                 if (obj is Material mat) {
                     activeSwitcherSettings.sourcePreviewMat = mat;
                     activeSwitcherSettings.sourceShader = mat.shader;
+                    activeSwitcherSettings.sourceMatPath = AssetDatabase.GetAssetPath(mat);
+                    activeSwitcherSettings.sourceShaderPath = AssetDatabase.GetAssetPath(mat.shader);
+                    activeSwitcherSettings.sourceShaderName = mat.shader.name;
                 } else if (obj is Shader shader) {
                     activeSwitcherSettings.sourcePreviewMat = null;
                     activeSwitcherSettings.sourceShader = shader;
+                    activeSwitcherSettings.sourceMatPath = "";
+                    activeSwitcherSettings.sourceShaderPath = AssetDatabase.GetAssetPath(shader);
+                    activeSwitcherSettings.sourceShaderName = shader.name;
                 } else {
                     activeSwitcherSettings.sourcePreviewMat = null;
                     activeSwitcherSettings.sourceShader = null;
+                    activeSwitcherSettings.sourceMatPath = "";
+                    activeSwitcherSettings.sourceShaderPath = "";
+                    activeSwitcherSettings.sourceShaderName = "";
                 }
                 sourceShader = activeSwitcherSettings.sourceShader;
                 sourcePreviewMat = activeSwitcherSettings.sourcePreviewMat;
@@ -691,12 +781,21 @@ namespace RexTools.BatchMaterialEditor.Editor
                 if (obj is Material mat) {
                     activeSwitcherSettings.targetPreviewMat = mat;
                     activeSwitcherSettings.targetShader = mat.shader;
+                    activeSwitcherSettings.targetMatPath = AssetDatabase.GetAssetPath(mat);
+                    activeSwitcherSettings.targetShaderPath = AssetDatabase.GetAssetPath(mat.shader);
+                    activeSwitcherSettings.targetShaderName = mat.shader.name;
                 } else if (obj is Shader shader) {
                     activeSwitcherSettings.targetPreviewMat = null;
                     activeSwitcherSettings.targetShader = shader;
+                    activeSwitcherSettings.targetMatPath = "";
+                    activeSwitcherSettings.targetShaderPath = AssetDatabase.GetAssetPath(shader);
+                    activeSwitcherSettings.targetShaderName = shader.name;
                 } else {
                     activeSwitcherSettings.targetPreviewMat = null;
                     activeSwitcherSettings.targetShader = null;
+                    activeSwitcherSettings.targetMatPath = "";
+                    activeSwitcherSettings.targetShaderPath = "";
+                    activeSwitcherSettings.targetShaderName = "";
                 }
                 targetShader = activeSwitcherSettings.targetShader;
                 targetPreviewMat = activeSwitcherSettings.targetPreviewMat;
@@ -711,13 +810,9 @@ namespace RexTools.BatchMaterialEditor.Editor
             var toolbar = new VisualElement();
             toolbar.AddToClassList("rex-row");
 
-            var btnLoadProps = new Button(LoadMappings) { text = "LOAD PROPERTIES" };
+            var btnLoadProps = new Button(() => LoadMappings(true, true)) { text = "LOAD PROPERTIES" };
             btnLoadProps.AddToClassList("rex-flex-grow");
             toolbar.Add(btnLoadProps);
-
-            var btnSmartMatch = new Button(SmartMatch) { text = "SMART MATCH" };
-            btnSmartMatch.AddToClassList("rex-flex-grow");
-            toolbar.Add(btnSmartMatch);
 
             converterContainer.Add(toolbar);
 
@@ -735,7 +830,7 @@ namespace RexTools.BatchMaterialEditor.Editor
 
             converterContainer.Add(mappingsBox);
 
-            var btnPerformConverter = new Button(PerformConverterConversion) { text = "CONVERT SELECTED MATERIALS" };
+            btnPerformConverter = new Button(PerformConverterConversion) { text = "CONVERT SELECTED MATERIALS" };
             btnPerformConverter.AddToClassList("rex-action-button");
             btnPerformConverter.AddToClassList("rex-action-button--pack");
             converterContainer.Add(btnPerformConverter);
@@ -743,9 +838,9 @@ namespace RexTools.BatchMaterialEditor.Editor
             container.Add(converterContainer);
         }
 
-        private void LoadMappings() => LoadMappings(true);
+        private void LoadMappings() => LoadMappings(true, true);
 
-        private void LoadMappings(bool showDialogOnError)
+        private void LoadMappings(bool showDialogOnError, bool runSmartMatch = true)
         {
             switcherMappingList.Clear();
             convMappings.Clear();
@@ -794,7 +889,11 @@ namespace RexTools.BatchMaterialEditor.Editor
             // Sort: Type first, then Description alphabetical
             convMappings = convMappings.OrderBy(m => m.type).ThenBy(m => m.sourcePropDesc).ToList();
 
-            RefreshMappingsUI();
+            if (runSmartMatch) {
+                SmartMatch();
+            } else {
+                RefreshMappingsUI();
+            }
         }
 
         private void RefreshMappingsUI()
@@ -998,12 +1097,51 @@ namespace RexTools.BatchMaterialEditor.Editor
 
         private void PerformConverterConversion()
         {
-            var mats = Selection.objects.OfType<Material>().ToList();
-            if (mats.Count == 0) { EditorUtility.DisplayDialog("Error", "Select materials in Project window.", "OK"); return; }
-            if (targetShader == null) { EditorUtility.DisplayDialog("Error", "Target shader not set.", "OK"); return; }
+            HashSet<Material> matsToConvert = new HashSet<Material>();
 
-            Undo.RecordObjects(mats.ToArray(), "Batch Switch Shader");
-            foreach (var mat in mats) {
+            // 1. Direct material selection
+            foreach (var obj in Selection.objects)
+            {
+                if (obj is Material m) matsToConvert.Add(m);
+            }
+
+            // 2. Hierarchy selection (Scene Assets)
+            foreach (var go in Selection.gameObjects)
+            {
+                var renderers = go.GetComponentsInChildren<Renderer>(true);
+                foreach (var renderer in renderers)
+                {
+                    foreach (var sharedMat in renderer.sharedMaterials)
+                    {
+                        if (sharedMat != null) matsToConvert.Add(sharedMat);
+                    }
+                }
+            }
+
+            if (targetShader == null)
+            {
+                EditorUtility.DisplayDialog("Error", "Target shader not set or missing.", "OK");
+                return;
+            }
+
+            // Skip materials already using target shader
+            matsToConvert.RemoveWhere(m => m.shader == targetShader);
+
+            if (matsToConvert.Count == 0)
+            {
+                EditorUtility.DisplayDialog("Selection Processed", "No materials need conversion (all selected materials already use the target shader or selection is empty).", "OK");
+                return;
+            }
+
+            if (!EditorUtility.DisplayDialog("Confirm Conversion", $"Are you sure you want to convert {matsToConvert.Count} unique materials to {targetShader.name}?\n\nThis will modify the material files directly.", "Convert", "Cancel"))
+            {
+                return;
+            }
+
+            List<Material> matList = matsToConvert.ToList();
+            Undo.RecordObjects(matList.ToArray(), "Batch Switch Shader");
+
+            foreach (var mat in matList) {
                 // 1. Cache ALL values before shader switch
                 var valueCache = new Dictionary<string, object>();
                 var texDataCache = new Dictionary<string, (Vector2 offset, Vector2 scale)>();
@@ -1047,7 +1185,7 @@ namespace RexTools.BatchMaterialEditor.Editor
                 EditorUtility.SetDirty(mat);
             }
             AssetDatabase.SaveAssets();
-            EditorUtility.DisplayDialog("Success", $"Converted {mats.Count} materials.", "OK");
+            EditorUtility.DisplayDialog("Success", $"Converted {matsToConvert.Count} unique materials.", "OK");
         }
 
         #endregion
