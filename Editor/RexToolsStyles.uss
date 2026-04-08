@@ -331,4 +331,20 @@
 .rex-preset-button:hover {
     background-color: #4D99FF;
     color: white;
-}
+}
+
+.rex-preset-icon-btn {
+    width: 20px;
+    height: 20px;
+    background-image: url("Icons/preset.png");
+    -unity-background-scale-mode: scale-to-fit;
+    background-color: transparent;
+    border-width: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.rex-preset-icon-btn:hover {
+    -unity-background-image-tint-color: #4D99FF;
+}
+

@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System;
 using RexTools.BatchMaterialEditor;
+using RexTools.Editor.Core;
 
 namespace RexTools.BatchMaterialEditor.Editor
 {
@@ -100,6 +101,11 @@ namespace RexTools.BatchMaterialEditor.Editor
         }
         private List<ConvPropertyMapping> convMappings = new List<ConvPropertyMapping>();
 
+        // New Preset-based settings
+        [SerializeField]
+        private MaterialConverterPreset activeSwitcherSettings;
+        private SerializedObject serializedSwitcherSettings;
+
         [MenuItem("Tools/Rex Tools/Batch Material Editor")]
         public static void ShowWindow()
         {
@@ -158,6 +164,14 @@ namespace RexTools.BatchMaterialEditor.Editor
             }
             root.Add(tabsContainer);
 
+            // Init Settings
+            if (activeSwitcherSettings == null)
+            {
+                activeSwitcherSettings = ScriptableObject.CreateInstance<MaterialConverterPreset>();
+                activeSwitcherSettings.hideFlags = HideFlags.HideAndDontSave;
+            }
+            serializedSwitcherSettings = new SerializedObject(activeSwitcherSettings);
+
             // --- TAB CONTAINERS ---
             CreateScannerUI(root);
             CreateEditorUI(root);
@@ -166,6 +180,40 @@ namespace RexTools.BatchMaterialEditor.Editor
 
             SwitchTab(0);
             RefreshGroupsUI();
+        }
+
+        private void OnInspectorUpdate()
+        {
+            if (activeSwitcherSettings != null && (activeSwitcherSettings.sourceShader != sourceShader || activeSwitcherSettings.targetShader != targetShader))
+            {
+                sourceShader = activeSwitcherSettings.sourceShader;
+                targetShader = activeSwitcherSettings.targetShader;
+                sourcePreviewMat = activeSwitcherSettings.sourcePreviewMat;
+                targetPreviewMat = activeSwitcherSettings.targetPreviewMat;
+                
+                // If shaders changed, we likely need to reload mappings
+                LoadMappings();
+                SyncSettingsToMappings();
+                rootVisualElement.Query<ObjectField>("Source Shader").First().value = sourceShader;
+                rootVisualElement.Query<ObjectField>("Target Shader").First().value = targetShader;
+            }
+        }
+
+        private void SyncSettingsToMappings()
+        {
+            if (activeSwitcherSettings == null || activeSwitcherSettings.propertyPairs.Count == 0) return;
+            
+            foreach (var pair in activeSwitcherSettings.propertyPairs)
+            {
+                var m = convMappings.FirstOrDefault(x => x.sourcePropName == pair.sourceProperty);
+                if (m != null)
+                {
+                    m.targetPropName = pair.targetProperty;
+                    m.selectedIndex = pair.selectedIndex;
+                    m.isValid = m.targetPropName != "None";
+                }
+            }
+            RefreshMappingsUI();
         }
 
         private void SwitchTab(int index)
@@ -581,42 +629,71 @@ namespace RexTools.BatchMaterialEditor.Editor
             var configBox = new VisualElement();
             configBox.AddToClassList("rex-box");
             
+            // Header row for label + preset icon
+            var headerRow = new VisualElement();
+            headerRow.style.flexDirection = FlexDirection.Row;
+            headerRow.style.justifyContent = Justify.SpaceBetween;
+            headerRow.style.alignItems = Align.Center;
+            headerRow.style.marginBottom = 5;
+
             var configLabel = new Label("SHADER CONVERTER SETUP");
             configLabel.AddToClassList("rex-section-label");
-            configBox.Add(configLabel);
+            configLabel.style.marginBottom = 0;
+            
+            var presetBtn = RexTools.Editor.Core.RexPresetManager.CreatePresetIconButton(activeSwitcherSettings);
+            
+            headerRow.Add(configLabel);
+            headerRow.Add(presetBtn);
+            configBox.Add(headerRow);
 
-            var sourceShaderField = new ObjectField("Source Shader") { objectType = typeof(Shader), value = sourceShader };
-            sourceShaderField.RegisterValueChangedCallback(evt => sourceShader = (Shader)evt.newValue);
+            // Using local variables that sync to ScriptableObject
+            var sourceShaderField = new ObjectField("Source Shader") { objectType = typeof(Shader), value = activeSwitcherSettings.sourceShader };
+            sourceShaderField.RegisterValueChangedCallback(evt => {
+                sourceShader = (Shader)evt.newValue;
+                activeSwitcherSettings.sourceShader = sourceShader;
+            });
             configBox.Add(sourceShaderField);
 
-            var targetShaderField = new ObjectField("Target Shader") { objectType = typeof(Shader), value = targetShader };
-            targetShaderField.RegisterValueChangedCallback(evt => targetShader = (Shader)evt.newValue);
+            var targetShaderField = new ObjectField("Target Shader") { objectType = typeof(Shader), value = activeSwitcherSettings.targetShader };
+            targetShaderField.RegisterValueChangedCallback(evt => {
+                targetShader = (Shader)evt.newValue;
+                activeSwitcherSettings.targetShader = targetShader;
+            });
             configBox.Add(targetShaderField);
 
             var previewRow = new VisualElement();
             previewRow.AddToClassList("rex-row");
             previewRow.style.marginTop = 5;
 
-            var sourcePreviewField = new ObjectField("Source Mat (Preview)") { objectType = typeof(Material), value = sourcePreviewMat };
+            var sourcePreviewField = new ObjectField("Source Mat (Preview)") { objectType = typeof(Material), value = activeSwitcherSettings.sourcePreviewMat };
             sourcePreviewField.AddToClassList("rex-flex-grow");
             sourcePreviewField.RegisterValueChangedCallback(evt => {
                 sourcePreviewMat = (Material)evt.newValue;
-                if (sourcePreviewMat != null) sourceShader = sourcePreviewMat.shader;
-                sourceShaderField.value = sourceShader;
+                activeSwitcherSettings.sourcePreviewMat = sourcePreviewMat;
+                if (sourcePreviewMat != null) {
+                    sourceShader = sourcePreviewMat.shader;
+                    activeSwitcherSettings.sourceShader = sourceShader;
+                    sourceShaderField.value = sourceShader;
+                }
             });
             previewRow.Add(sourcePreviewField);
 
-            var targetPreviewField = new ObjectField("Target Mat (Preview)") { objectType = typeof(Material), value = targetPreviewMat };
+            var targetPreviewField = new ObjectField("Target Mat (Preview)") { objectType = typeof(Material), value = activeSwitcherSettings.targetPreviewMat };
             targetPreviewField.AddToClassList("rex-flex-grow");
             targetPreviewField.RegisterValueChangedCallback(evt => {
                 targetPreviewMat = (Material)evt.newValue;
-                if (targetPreviewMat != null) targetShader = targetPreviewMat.shader;
-                targetShaderField.value = targetShader;
+                activeSwitcherSettings.targetPreviewMat = targetPreviewMat;
+                if (targetPreviewMat != null) {
+                    targetShader = targetPreviewMat.shader;
+                    activeSwitcherSettings.targetShader = targetShader;
+                    targetShaderField.value = targetShader;
+                }
             });
             previewRow.Add(targetPreviewField);
             
             configBox.Add(previewRow);
             switcherContainer.Add(configBox);
+
 
             var toolbar = new VisualElement();
             toolbar.AddToClassList("rex-row");
@@ -628,12 +705,6 @@ namespace RexTools.BatchMaterialEditor.Editor
             var btnSmartMatch = new Button(SmartMatch) { text = "SMART MATCH" };
             btnSmartMatch.AddToClassList("rex-flex-grow");
             toolbar.Add(btnSmartMatch);
-
-            var btnSavePreset = new Button(SaveSwitcherPreset) { text = "SAVE" };
-            toolbar.Add(btnSavePreset);
-
-            var btnLoadPreset = new Button(LoadSwitcherPreset) { text = "LOAD" };
-            toolbar.Add(btnLoadPreset);
 
             switcherContainer.Add(toolbar);
 
@@ -722,10 +793,30 @@ namespace RexTools.BatchMaterialEditor.Editor
                     mapping.targetPropName = evt.newValue;
                     mapping.selectedIndex = dropdown.index;
                     mapping.isValid = mapping.targetPropName != "None";
+                    SyncMappingsToSettings();
                 });
                 row.Add(dropdown);
 
                 switcherMappingList.Add(row);
+            }
+        }
+
+        private void SyncMappingsToSettings()
+        {
+            if (activeSwitcherSettings == null) return;
+            activeSwitcherSettings.propertyPairs.Clear();
+            foreach (var m in convMappings)
+            {
+                if (m.isValid)
+                {
+                    activeSwitcherSettings.propertyPairs.Add(new PropertyPair 
+                    { 
+                        sourceProperty = m.sourcePropName, 
+                        targetProperty = m.targetPropName, 
+                        propertyType = (int)m.type,
+                        selectedIndex = m.selectedIndex
+                    });
+                }
             }
         }
 
@@ -743,6 +834,7 @@ namespace RexTools.BatchMaterialEditor.Editor
                     m.isValid = true;
                 }
             }
+            SyncMappingsToSettings();
             RefreshMappingsUI();
         }
 
@@ -756,38 +848,9 @@ namespace RexTools.BatchMaterialEditor.Editor
             };
         }
 
-        private void SaveSwitcherPreset()
-        {
-            string path = EditorUtility.SaveFilePanelInProject("Save Preset", "SwitcherPreset", "asset", "");
-            if (string.IsNullOrEmpty(path)) return;
-            var preset = ScriptableObject.CreateInstance<MaterialConverterPreset>();
-            preset.sourceShaderName = sourceShader?.name;
-            preset.targetShaderName = targetShader?.name;
-            foreach (var m in convMappings) {
-                if (m.isValid) preset.propertyPairs.Add(new PropertyPair { sourceProperty = m.sourcePropName, targetProperty = m.targetPropName, propertyType = (int)m.type });
-            }
-            AssetDatabase.CreateAsset(preset, path); AssetDatabase.SaveAssets();
-        }
-
-        private void LoadSwitcherPreset()
-        {
-            string path = EditorUtility.OpenFilePanel("Load Preset", "Assets", "asset");
-            if (string.IsNullOrEmpty(path)) return;
-            path = "Assets" + path.Substring(Application.dataPath.Length);
-            var preset = AssetDatabase.LoadAssetAtPath<MaterialConverterPreset>(path);
-            if (preset == null) return;
-            sourceShader = Shader.Find(preset.sourceShaderName);
-            targetShader = Shader.Find(preset.targetShaderName);
-            LoadMappings();
-            foreach (var pair in preset.propertyPairs) {
-                var m = convMappings.FirstOrDefault(x => x.sourcePropName == pair.sourceProperty);
-                if (m != null) {
-                    int idx = Array.IndexOf(m.targetOptions, pair.targetProperty);
-                    if (idx >= 0) { m.targetPropName = pair.targetProperty; m.selectedIndex = idx; m.isValid = true; }
-                }
-            }
-            RefreshMappingsUI();
-        }
+        // Old methods kept for compatibility or removed if no longer used
+        private void SaveSwitcherPreset() { /* RexPresetManager handles this now */ }
+        private void LoadSwitcherPreset() { /* RexPresetManager handles this now */ }
 
         private void PerformSwitcherConversion()
         {
