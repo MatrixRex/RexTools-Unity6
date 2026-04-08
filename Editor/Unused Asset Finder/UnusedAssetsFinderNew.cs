@@ -74,7 +74,9 @@ namespace RexTools.UnusedAssetFinder.Editor
 
             header.Add(brandStack);
 
-            var helpBtn = new Button { text = "?" };
+            // --- HELP BUTTON ---
+            // The text property has been removed. Icon is handled by USS.
+            var helpBtn = new Button();
             helpBtn.AddToClassList("rex-help-btn");
             header.Add(helpBtn);
 
@@ -338,19 +340,23 @@ namespace RexTools.UnusedAssetFinder.Editor
         {
             var row = new VisualElement();
             row.AddToClassList("rex-result-item");
+            // Set flex direction to ensure button and icon sit side-by-side
+            row.style.flexDirection = FlexDirection.Row;
 
             var fileName = Path.GetFileName(path);
             var nameBtn = new Button { text = fileName };
             nameBtn.AddToClassList("rex-result-name-btn");
+            nameBtn.style.flexGrow = 1; // Take up remaining space
             nameBtn.clicked += () => PingAsset(path);
             row.Add(nameBtn);
 
+            // --- DELETE BUTTON ---
+            // The text property has been removed here as well.
             var deleteBtn = new Button();
             deleteBtn.AddToClassList("rex-result-delete-btn");
             
-            var icon = new VisualElement();
+            var icon = new VisualElement(); 
             icon.AddToClassList("rex-result-delete-icon");
-            icon.style.backgroundImage = (Texture2D)EditorGUIUtility.IconContent("TreeEditor.Trash").image;
             deleteBtn.Add(icon);
             
             deleteBtn.clicked += () => {
