@@ -168,15 +168,20 @@ namespace RexTools.BatchMaterialEditor.Editor
             if (activeSwitcherSettings == null)
             {
                 activeSwitcherSettings = ScriptableObject.CreateInstance<MaterialConverterPreset>();
-                activeSwitcherSettings.hideFlags = HideFlags.HideAndDontSave;
+                activeSwitcherSettings.name = "MaterialConverterSettings_Runtime";
             }
             serializedSwitcherSettings = new SerializedObject(activeSwitcherSettings);
 
+            // --- TAB CONTENT ---
+            var contentContainer = new VisualElement();
+            contentContainer.AddToClassList("rex-tab-content-container");
+            root.Add(contentContainer);
+
             // --- TAB CONTAINERS ---
-            CreateScannerUI(root);
-            CreateEditorUI(root);
-            CreateReplaceUI(root);
-            CreateSwitcherUI(root);
+            CreateScannerUI(contentContainer);
+            CreateEditorUI(contentContainer);
+            CreateReplaceUI(contentContainer);
+            CreateSwitcherUI(contentContainer);
 
             SwitchTab(0);
             RefreshGroupsUI();
@@ -192,16 +197,24 @@ namespace RexTools.BatchMaterialEditor.Editor
                 targetPreviewMat = activeSwitcherSettings.targetPreviewMat;
                 
                 // If shaders changed, we likely need to reload mappings
-                LoadMappings();
                 SyncSettingsToMappings();
-                rootVisualElement.Query<ObjectField>("Source Shader").First().value = sourceShader;
-                rootVisualElement.Query<ObjectField>("Target Shader").First().value = targetShader;
+                
+                // Update UI fields if they exist
+                var sourceField = rootVisualElement.Query<ObjectField>("Source Shader").First();
+                if (sourceField != null) sourceField.value = sourceShader;
+                var targetField = rootVisualElement.Query<ObjectField>("Target Shader").First();
+                if (targetField != null) targetField.value = targetShader;
             }
         }
 
         private void SyncSettingsToMappings()
         {
-            if (activeSwitcherSettings == null || activeSwitcherSettings.propertyPairs.Count == 0) return;
+            if (activeSwitcherSettings == null) return;
+            
+            // First ensure we have the candidate mappings loaded for the current shaders
+            LoadMappings(false); 
+
+            if (activeSwitcherSettings.propertyPairs.Count == 0) return;
             
             foreach (var pair in activeSwitcherSettings.propertyPairs)
             {
@@ -233,7 +246,7 @@ namespace RexTools.BatchMaterialEditor.Editor
 
         #region Scanner Logic
 
-        private void CreateScannerUI(VisualElement root)
+        private void CreateScannerUI(VisualElement container)
         {
             scannerContainer = new VisualElement { style = { flexGrow = 1 } };
             
@@ -256,7 +269,7 @@ namespace RexTools.BatchMaterialEditor.Editor
             scannerList.AddToClassList("rex-result-list");
             scannerContainer.Add(scannerList);
 
-            root.Add(scannerContainer);
+            container.Add(scannerContainer);
         }
 
         private void PerformScan()
@@ -339,7 +352,7 @@ namespace RexTools.BatchMaterialEditor.Editor
 
         #region Editor Logic
 
-        private void CreateEditorUI(VisualElement root)
+        private void CreateEditorUI(VisualElement container)
         {
             editorContainer = new VisualElement { style = { flexGrow = 1, display = DisplayStyle.None } };
             var editorToolbar = new VisualElement();
@@ -360,7 +373,7 @@ namespace RexTools.BatchMaterialEditor.Editor
             groupsList = new ScrollView { style = { flexGrow = 1 } };
             editorContainer.Add(groupsList);
 
-            root.Add(editorContainer);
+            container.Add(editorContainer);
         }
 
         private void SaveData()
@@ -539,7 +552,7 @@ namespace RexTools.BatchMaterialEditor.Editor
 
         #region Replace Logic
 
-        private void CreateReplaceUI(VisualElement root)
+        private void CreateReplaceUI(VisualElement container)
         {
             replaceContainer = new VisualElement { style = { flexGrow = 1, display = DisplayStyle.None } };
             var findReplaceBox = new VisualElement();
@@ -578,7 +591,7 @@ namespace RexTools.BatchMaterialEditor.Editor
             btnConvert.SetEnabled(false);
             replaceContainer.Add(btnConvert);
 
-            root.Add(replaceContainer);
+            container.Add(replaceContainer);
         }
 
         private void InitReplaceScan()
@@ -622,7 +635,7 @@ namespace RexTools.BatchMaterialEditor.Editor
 
         #region Switcher Logic
 
-        private void CreateSwitcherUI(VisualElement root)
+        private void CreateSwitcherUI(VisualElement container)
         {
             switcherContainer = new VisualElement { style = { flexGrow = 1, display = DisplayStyle.None } };
 
@@ -651,6 +664,7 @@ namespace RexTools.BatchMaterialEditor.Editor
             sourceShaderField.RegisterValueChangedCallback(evt => {
                 sourceShader = (Shader)evt.newValue;
                 activeSwitcherSettings.sourceShader = sourceShader;
+                EditorUtility.SetDirty(activeSwitcherSettings);
             });
             configBox.Add(sourceShaderField);
 
@@ -658,6 +672,7 @@ namespace RexTools.BatchMaterialEditor.Editor
             targetShaderField.RegisterValueChangedCallback(evt => {
                 targetShader = (Shader)evt.newValue;
                 activeSwitcherSettings.targetShader = targetShader;
+                EditorUtility.SetDirty(activeSwitcherSettings);
             });
             configBox.Add(targetShaderField);
 
@@ -675,6 +690,7 @@ namespace RexTools.BatchMaterialEditor.Editor
                     activeSwitcherSettings.sourceShader = sourceShader;
                     sourceShaderField.value = sourceShader;
                 }
+                EditorUtility.SetDirty(activeSwitcherSettings);
             });
             previewRow.Add(sourcePreviewField);
 
@@ -688,6 +704,7 @@ namespace RexTools.BatchMaterialEditor.Editor
                     activeSwitcherSettings.targetShader = targetShader;
                     targetShaderField.value = targetShader;
                 }
+                EditorUtility.SetDirty(activeSwitcherSettings);
             });
             previewRow.Add(targetPreviewField);
             
@@ -727,10 +744,12 @@ namespace RexTools.BatchMaterialEditor.Editor
             btnPerformSwitcher.AddToClassList("rex-action-button--pack");
             switcherContainer.Add(btnPerformSwitcher);
 
-            root.Add(switcherContainer);
+            container.Add(switcherContainer);
         }
 
-        private void LoadMappings()
+        private void LoadMappings() => LoadMappings(true);
+
+        private void LoadMappings(bool showDialogOnError)
         {
             switcherMappingList.Clear();
             convMappings.Clear();
@@ -739,7 +758,7 @@ namespace RexTools.BatchMaterialEditor.Editor
             Shader tShader = targetShader != null ? targetShader : (targetPreviewMat != null ? targetPreviewMat.shader : null);
 
             if (sShader == null || tShader == null) {
-                EditorUtility.DisplayDialog("Error", "Source and Target shaders must be assigned.", "OK");
+                if (showDialogOnError) EditorUtility.DisplayDialog("Error", "Source and Target shaders must be assigned.", "OK");
                 return;
             }
 
@@ -804,6 +823,8 @@ namespace RexTools.BatchMaterialEditor.Editor
         private void SyncMappingsToSettings()
         {
             if (activeSwitcherSettings == null) return;
+            
+            Undo.RecordObject(activeSwitcherSettings, "Sync Material Converter Mappings");
             activeSwitcherSettings.propertyPairs.Clear();
             foreach (var m in convMappings)
             {
@@ -818,6 +839,7 @@ namespace RexTools.BatchMaterialEditor.Editor
                     });
                 }
             }
+            EditorUtility.SetDirty(activeSwitcherSettings);
         }
 
         private void SmartMatch()
@@ -860,25 +882,42 @@ namespace RexTools.BatchMaterialEditor.Editor
 
             Undo.RecordObjects(mats.ToArray(), "Batch Switch Shader");
             foreach (var mat in mats) {
-                Dictionary<string, (Texture, Vector2, Vector2)> texStore = new Dictionary<string, (Texture, Vector2, Vector2)>();
+                // 1. Cache ALL values before shader switch
+                var valueCache = new Dictionary<string, object>();
+                var texDataCache = new Dictionary<string, (Vector2 offset, Vector2 scale)>();
+
                 foreach (var m in convMappings) {
-                    if (m.type == ConvPropertyType.Texture && mat.HasProperty(m.sourcePropName))
-                        texStore[m.sourcePropName] = (mat.GetTexture(m.sourcePropName), mat.GetTextureOffset(m.sourcePropName), mat.GetTextureScale(m.sourcePropName));
+                    if (!mat.HasProperty(m.sourcePropName)) continue;
+                    
+                    switch (m.type) {
+                        case ConvPropertyType.Color: valueCache[m.sourcePropName] = mat.GetColor(m.sourcePropName); break;
+                        case ConvPropertyType.Float: valueCache[m.sourcePropName] = mat.GetFloat(m.sourcePropName); break;
+                        case ConvPropertyType.Vector: valueCache[m.sourcePropName] = mat.GetVector(m.sourcePropName); break;
+                        case ConvPropertyType.Texture: 
+                            valueCache[m.sourcePropName] = mat.GetTexture(m.sourcePropName);
+                            texDataCache[m.sourcePropName] = (mat.GetTextureOffset(m.sourcePropName), mat.GetTextureScale(m.sourcePropName));
+                            break;
+                    }
                 }
 
+                // 2. Switch Shader
                 mat.shader = targetShader;
 
+                // 3. Apply cached values to target properties
                 foreach (var m in convMappings) {
                     if (!m.isValid || !mat.HasProperty(m.targetPropName)) continue;
+                    if (!valueCache.ContainsKey(m.sourcePropName)) continue;
+
+                    var val = valueCache[m.sourcePropName];
                     switch (m.type) {
-                        case ConvPropertyType.Color: mat.SetColor(m.targetPropName, mat.GetColor(m.sourcePropName)); break;
-                        case ConvPropertyType.Float: mat.SetFloat(m.targetPropName, mat.GetFloat(m.sourcePropName)); break;
-                        case ConvPropertyType.Vector: mat.SetVector(m.targetPropName, mat.GetVector(m.sourcePropName)); break;
+                        case ConvPropertyType.Color: mat.SetColor(m.targetPropName, (Color)val); break;
+                        case ConvPropertyType.Float: mat.SetFloat(m.targetPropName, (float)val); break;
+                        case ConvPropertyType.Vector: mat.SetVector(m.targetPropName, (Vector4)val); break;
                         case ConvPropertyType.Texture: 
-                            if (texStore.TryGetValue(m.sourcePropName, out var data)) {
-                                mat.SetTexture(m.targetPropName, data.Item1);
-                                mat.SetTextureOffset(m.targetPropName, data.Item2);
-                                mat.SetTextureScale(m.targetPropName, data.Item3);
+                            mat.SetTexture(m.targetPropName, (Texture)val);
+                            if (texDataCache.TryGetValue(m.sourcePropName, out var texData)) {
+                                mat.SetTextureOffset(m.targetPropName, texData.offset);
+                                mat.SetTextureScale(m.targetPropName, texData.scale);
                             }
                             break;
                     }
