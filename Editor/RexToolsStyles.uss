@@ -35,6 +35,7 @@
     flex-direction: row;
     margin-bottom: 15px;
     height: 30px;
+    flex-shrink: 0;
 }
 
 .rex-tab-button {
@@ -108,6 +109,49 @@
     color: white;
 }
 
+.rex-icon-button {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    background-color: #282828;
+    border-width: 1px;
+    border-color: #383838;
+    border-radius: 4px;
+    padding: 4px;
+    justify-content: center;
+    align-items: center;
+}
+
+.rex-icon-button:hover {
+    background-color: #4D99FF;
+}
+
+.rex-icon-copy {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    background-image: url('Icons/Copy.png');
+    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-image-tint-color: #AAA;
+}
+
+.rex-icon-button:hover .rex-icon-copy {
+    -unity-background-image-tint-color: white;
+}
+
+.rex-icon-remove {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    background-image: url('Icons/remove.png');
+    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-image-tint-color: #AAA;
+}
+
+.rex-icon-button:hover .rex-icon-remove {
+    -unity-background-image-tint-color: white;
+}
+
 .rex-maximize-btn {
     position: absolute;
     right: 4px;
@@ -135,6 +179,7 @@
     justify-content: space-between;
     margin-bottom: 15px;
     align-items: flex-start;
+    flex-shrink: 0;
 }
 
 .rex-header-stack {
@@ -174,6 +219,10 @@
 
 .rex-help-btn:hover {
     opacity: 0.7;
+}
+
+.rex-help-btn--active {
+    -unity-background-image-tint-color: #66CCFF;
 }
 
 .rex-help-box {
@@ -334,8 +383,8 @@
 }
 
 .rex-preset-icon-btn {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     background-image: url("Icons/preset.png");
     -unity-background-scale-mode: scale-to-fit;
     background-color: transparent;
@@ -346,5 +395,10 @@
 
 .rex-preset-icon-btn:hover {
     -unity-background-image-tint-color: #4D99FF;
+}
+
+.rex-tab-content-container {
+    flex-grow: 1;
+    overflow: hidden;
 }
 

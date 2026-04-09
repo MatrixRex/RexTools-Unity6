@@ -53,6 +53,15 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
                         if (group.materials.Count > 0) lastPropName = group.materials[group.materials.Count - 1].propertyName;
                         group.materials.Add(new MaterialEntry() { propertyName = lastPropName });
                     },
+                    onDropMaterials: (List<Material> droppedMats) => {
+                        string lastPropName = "_BaseColor";
+                        if (group.materials.Count > 0) lastPropName = group.materials[group.materials.Count - 1].propertyName;
+                        foreach (var mat in droppedMats) {
+                            if (!group.materials.Exists(entry => entry.material == mat)) {
+                                group.materials.Add(new MaterialEntry() { material = mat, propertyName = lastPropName });
+                            }
+                        }
+                    },
                     refreshRoot: () => RefreshGroupsUI()
                 );
                 ui.GroupsList.Add(groupElement);

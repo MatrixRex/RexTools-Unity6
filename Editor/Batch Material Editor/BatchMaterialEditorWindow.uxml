@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:uie="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd"
+>
+    <ui:VisualElement name="root" class="rex-root-padding">
+        <!-- Header -->
+        <ui:VisualElement name="header" class="rex-header-row">
+            <ui:VisualElement name="brand-stack" class="rex-header-stack">
+                <ui:Label name="brand-label" class="rex-brand-label" text="Rex Tools" />
+                <ui:Label name="title-label" class="rex-tool-title" text="Batch Material Editor" />
+            </ui:VisualElement>
+            <ui:Button name="help-btn" class="rex-help-btn" />
+        </ui:VisualElement>
+
+        <!-- Help Box -->
+        <ui:VisualElement name="help-box" class="rex-box rex-help-box rex-hidden" />
+
+        <!-- Tabs -->
+        <ui:VisualElement name="tabs-container" class="rex-tabs-container">
+            <ui:Button name="tab-scanner" class="rex-tab-button" text="Scanner" />
+            <ui:Button name="tab-editor" class="rex-tab-button" text="Editor" />
+            <ui:Button name="tab-replace" class="rex-tab-button" text="Replace" />
+            <ui:Button name="tab-converter" class="rex-tab-button" text="Converter" />
+        </ui:VisualElement>
+
+        <!-- Content -->
+        <ui:VisualElement name="content-container" class="rex-tab-content-container" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:uie="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <ui:VisualElement name="converter-root" style="flex-grow: 1;">
+        <ui:VisualElement class="rex-box">
+            <ui:VisualElement class="rex-row" style="justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <ui:Label text="SHADER CONVERTER SETUP" class="rex-section-label" style="margin-bottom: 0;" />
+                <ui:VisualElement name="preset-btn-container" />
+            </ui:VisualElement>
+
+            <ui:VisualElement style="flex-direction: column; margin-top: 5px;">
+                <uie:ObjectField name="source-drop" label="Source (Mat/Shader)" />
+                <uie:ObjectField name="target-drop" label="Target (Mat/Shader)" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement class="rex-row">
+            <ui:Button name="btn-load-props" text="LOAD PROPERTIES" class="rex-flex-grow" />
+        </ui:VisualElement>
+
+        <ui:VisualElement class="rex-box" style="flex-grow: 1;">
+            <ui:Label text="PROPERTY MAPPINGS" class="rex-section-label" />
+            <ui:ScrollView name="mapping-list" class="rex-result-list" />
+        </ui:VisualElement>
+
+        <ui:Button name="btn-convert" text="CONVERT SELECTED MATERIALS" class="rex-action-button rex-action-button--pack" />
+    </ui:VisualElement>
+</ui:UXML>

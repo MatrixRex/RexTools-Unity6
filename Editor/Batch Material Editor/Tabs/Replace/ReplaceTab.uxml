@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:uie="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <ui:VisualElement name="replace-root" style="flex-grow: 1;">
+        <ui:VisualElement class="rex-box">
+            <ui:Label text="SEARCH &amp; REPLACE" class="rex-section-label" />
+            <uie:ObjectField name="find-mat" label="Find Material" />
+            <uie:ObjectField name="replace-mat" label="Replace Material" />
+            <uie:EnumField name="mode" label="Replacement Mode" />
+        </ui:VisualElement>
+
+        <ui:Button name="btn-scan" text="1. SCAN AFFECTED OBJECTS" class="rex-action-button rex-action-button--pack" />
+
+        <ui:VisualElement class="rex-box" style="flex-grow: 1;">
+            <ui:Label text="AFFECTED OBJECTS" class="rex-section-label" />
+            <ui:ScrollView name="affected-list" class="rex-result-list" />
+        </ui:VisualElement>
+
+        <ui:Button name="btn-convert" text="2. START CONVERSION" class="rex-action-button rex-action-button--unpack" />
+    </ui:VisualElement>
+</ui:UXML>

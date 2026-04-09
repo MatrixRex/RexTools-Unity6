@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:uie="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <ui:VisualElement name="scanner-root" style="flex-grow: 1;">
+        <ui:Button name="btn-scan" text="SCAN SCENE MATERIALS" class="rex-action-button rex-action-button--pack" />
+        <ui:Button name="btn-create-group" text="CREATE GROUP FROM SELECTION" class="rex-action-button rex-action-button--unpack rex-hidden" />
+        <ui:ScrollView name="scanner-list" class="rex-box rex-result-list" style="flex-grow: 1;" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:uie="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <ui:VisualElement name="editor-root" style="flex-grow: 1;">
+        <ui:VisualElement name="toolbar" class="rex-row" style="margin-bottom: 10px;">
+            <ui:Button name="btn-add-group" text="Add Property Group" class="rex-flex-grow" />
+            <ui:Button name="btn-save" text="Save" tooltip="Save groups to .asset" />
+            <ui:Button name="btn-load" text="Load" tooltip="Load groups from .asset" />
+        </ui:VisualElement>
+        <ui:ScrollView name="groups-list" style="flex-grow: 1;" />
+    </ui:VisualElement>
+</ui:UXML>

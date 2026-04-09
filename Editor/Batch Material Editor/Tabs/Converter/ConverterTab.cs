@@ -224,33 +224,22 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
             }
 
             int propCount = ShaderUtil.GetPropertyCount(sShader);
-            int targetPropCount = ShaderUtil.GetPropertyCount(tShader);
 
             for (int i = 0; i < propCount; i++) {
                 if (ShaderUtil.IsShaderPropertyHidden(sShader, i)) continue;
 
                 string name = ShaderUtil.GetPropertyName(sShader, i);
                 string desc = ShaderUtil.GetPropertyDescription(sShader, i);
-                var type = GetConvType(ShaderUtil.GetPropertyType(sShader, i));
+                var type = BatchMaterialEditorHelpers.GetMatPropType(ShaderUtil.GetPropertyType(sShader, i));
 
-                var options = new List<string> { "None" };
-                var displayOptions = new List<string> { "None" };
-
-                for (int j = 0; j < targetPropCount; j++) {
-                    if (GetConvType(ShaderUtil.GetPropertyType(tShader, j)) == type) {
-                        string tName = ShaderUtil.GetPropertyName(tShader, j);
-                        string tDesc = ShaderUtil.GetPropertyDescription(tShader, j);
-                        options.Add(tName);
-                        displayOptions.Add($"{tDesc} ({tName})");
-                    }
-                }
+                var tProps = BatchMaterialEditorHelpers.GetShaderProperties(tShader, type);
 
                 convMappings.Add(new ConvPropertyMapping {
                     sourcePropName = name,
                     sourcePropDesc = desc,
                     type = type,
-                    targetOptions = options.ToArray(),
-                    targetDisplayOptions = displayOptions.ToArray(),
+                    targetOptions = tProps.Names.ToArray(),
+                    targetDisplayOptions = tProps.DisplayNames.ToArray(),
                     targetPropName = "None",
                     selectedIndex = 0
                 });
@@ -363,15 +352,7 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
             RefreshMappingsUI();
         }
 
-        private ConvPropertyType GetConvType(ShaderUtil.ShaderPropertyType type)
-        {
-            return type switch {
-                ShaderUtil.ShaderPropertyType.Color => ConvPropertyType.Color,
-                ShaderUtil.ShaderPropertyType.Vector => ConvPropertyType.Vector,
-                ShaderUtil.ShaderPropertyType.TexEnv => ConvPropertyType.Texture,
-                _ => ConvPropertyType.Float
-            };
-        }
+
 
         private void PerformConverterConversion()
         {
@@ -424,10 +405,10 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
                     if (!mat.HasProperty(m.sourcePropName)) continue;
                     
                     switch (m.type) {
-                        case ConvPropertyType.Color: valueCache[m.sourcePropName] = mat.GetColor(m.sourcePropName); break;
-                        case ConvPropertyType.Float: valueCache[m.sourcePropName] = mat.GetFloat(m.sourcePropName); break;
-                        case ConvPropertyType.Vector: valueCache[m.sourcePropName] = mat.GetVector(m.sourcePropName); break;
-                        case ConvPropertyType.Texture: 
+                        case MatPropType.Color: valueCache[m.sourcePropName] = mat.GetColor(m.sourcePropName); break;
+                        case MatPropType.Float: valueCache[m.sourcePropName] = mat.GetFloat(m.sourcePropName); break;
+                        case MatPropType.Vector: valueCache[m.sourcePropName] = mat.GetVector(m.sourcePropName); break;
+                        case MatPropType.Texture: 
                             valueCache[m.sourcePropName] = mat.GetTexture(m.sourcePropName);
                             texDataCache[m.sourcePropName] = (mat.GetTextureOffset(m.sourcePropName), mat.GetTextureScale(m.sourcePropName));
                             break;
@@ -442,10 +423,10 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
 
                     var val = valueCache[m.sourcePropName];
                     switch (m.type) {
-                        case ConvPropertyType.Color: mat.SetColor(m.targetPropName, (Color)val); break;
-                        case ConvPropertyType.Float: mat.SetFloat(m.targetPropName, (float)val); break;
-                        case ConvPropertyType.Vector: mat.SetVector(m.targetPropName, (Vector4)val); break;
-                        case ConvPropertyType.Texture: 
+                        case MatPropType.Color: mat.SetColor(m.targetPropName, (Color)val); break;
+                        case MatPropType.Float: mat.SetFloat(m.targetPropName, (float)val); break;
+                        case MatPropType.Vector: mat.SetVector(m.targetPropName, (Vector4)val); break;
+                        case MatPropType.Texture: 
                             mat.SetTexture(m.targetPropName, (Texture)val);
                             if (texDataCache.TryGetValue(m.sourcePropName, out var texData)) {
                                 mat.SetTextureOffset(m.targetPropName, texData.offset);

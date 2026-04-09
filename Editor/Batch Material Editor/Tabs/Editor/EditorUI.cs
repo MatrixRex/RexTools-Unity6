@@ -13,117 +13,141 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
         public Button BtnLoad { get; private set; }
         public ScrollView GroupsList { get; private set; }
 
+        private VisualTreeAsset tabTemplate;
+        private VisualTreeAsset groupTemplate;
+
         public EditorUI(VisualElement container)
         {
-            Root = new VisualElement { style = { flexGrow = 1, display = DisplayStyle.None } };
+            // Load Tab UXML
+            string tabPath = "Editor/Batch Material Editor/Tabs/Editor/EditorTab.uxml";
+            string fullTabPath = "Assets/" + tabPath;
+            tabTemplate = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(fullTabPath);
+            if (tabTemplate == null) tabTemplate = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Packages/com.matrixrex.rextools/" + tabPath);
 
-            var editorToolbar = new VisualElement();
-            editorToolbar.AddToClassList("rex-row");
-            editorToolbar.style.marginBottom = 10;
+            if (tabTemplate != null)
+            {
+                Root = tabTemplate.CloneTree().ElementAt(0);
+                BtnAddGroup = Root.Q<Button>("btn-add-group");
+                BtnSave = Root.Q<Button>("btn-save");
+                BtnLoad = Root.Q<Button>("btn-load");
+                GroupsList = Root.Q<ScrollView>("groups-list");
+            }
+            else
+            {
+                Root = new VisualElement();
+                Root.Add(new Label("Could not load EditorTab.uxml"));
+                BtnAddGroup = new Button();
+                BtnSave = new Button();
+                BtnLoad = new Button();
+                GroupsList = new ScrollView();
+            }
 
-            BtnAddGroup = new Button { text = "Add Property Group" };
-            BtnAddGroup.AddToClassList("rex-flex-grow");
-
-            BtnSave = new Button { text = "Save", tooltip = "Save groups to .asset" };
-            BtnLoad = new Button { text = "Load", tooltip = "Load groups from .asset" };
-
-            editorToolbar.Add(BtnAddGroup);
-            editorToolbar.Add(BtnSave);
-            editorToolbar.Add(BtnLoad);
-
-            Root.Add(editorToolbar);
-
-            GroupsList = new ScrollView { style = { flexGrow = 1 } };
-            Root.Add(GroupsList);
+            // Load Group Template UXML
+            string groupPath = "Editor/Batch Material Editor/Tabs/Editor/MaterialPropertyGroup.uxml";
+            string fullGroupPath = "Assets/" + groupPath;
+            groupTemplate = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(fullGroupPath);
+            if (groupTemplate == null) groupTemplate = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Packages/com.matrixrex.rextools/" + groupPath);
 
             container.Add(Root);
         }
 
         // Factory function for dynamic elements
-        public VisualElement CreateGroupElement(PropertyGroup group, System.Action onDuplicate, System.Action onDelete, System.Action<PropertyGroup> onApplyValue, System.Action onAddMaterial, System.Action refreshRoot)
+        public VisualElement CreateGroupElement(PropertyGroup group, System.Action onDuplicate, System.Action onDelete, System.Action<PropertyGroup> onApplyValue, System.Action onAddMaterial, System.Action<System.Collections.Generic.List<Material>> onDropMaterials, System.Action refreshRoot)
         {
-            var box = new VisualElement();
-            box.AddToClassList("rex-box");
+            if (groupTemplate == null) return new Label("Group template missing");
 
-            var header = new VisualElement();
-            header.AddToClassList("rex-row");
-            header.style.marginBottom = 10;
-
-            var nameField = new TextField { value = group.groupName };
-            nameField.AddToClassList("rex-flex-grow");
-            nameField.style.unityFontStyleAndWeight = FontStyle.Bold;
+            var box = groupTemplate.CloneTree().ElementAt(0);
+            
+            var nameField = box.Q<TextField>("group-name");
+            nameField.value = group.groupName;
             nameField.RegisterValueChangedCallback(evt => group.groupName = evt.newValue);
 
-            var dupBtn = new Button(onDuplicate) { text = "Copy", tooltip = "Duplicate Group" };
-            dupBtn.AddToClassList("rex-button-small");
+            box.Q<Button>("btn-duplicate").clicked += onDuplicate;
+            box.Q<Button>("btn-delete").clicked += onDelete;
 
-            var deleteBtn = new Button(onDelete) { text = "X", tooltip = "Delete Group" };
-            deleteBtn.AddToClassList("rex-button-small");
-            deleteBtn.style.backgroundColor = new Color(0.7f, 0.2f, 0.2f, 0.3f);
+            var propTypeField = box.Q<EnumField>("prop-type");
+            propTypeField.Init(group.propertyType);
+            
+            var colorField = box.Q<ColorField>("color-value");
+            var floatField = box.Q<FloatField>("float-value");
+            var vectorField = box.Q<Vector4Field>("vector-value");
+            var texField = box.Q<ObjectField>("texture-value");
+            texField.objectType = typeof(Texture);
 
-            header.Add(nameField);
-            header.Add(dupBtn);
-            header.Add(deleteBtn);
-            box.Add(header);
+            colorField.value = group.colorVal;
+            floatField.value = group.floatVal;
+            vectorField.value = group.vectorVal;
+            texField.value = group.textureVal;
 
-            var propTypeField = new EnumField("Property Type", group.propertyType);
-            box.Add(propTypeField);
+            var matSection = box.Q<VisualElement>("mat-section");
+            var matList = box.Q<VisualElement>("mat-list");
+            var collapseBtn = box.Q<Button>("btn-collapse");
+            var addMatBtn = box.Q<Button>("btn-add-material");
 
-            var valRow = new VisualElement { style = { marginTop = 5, marginBottom = 10 } };
-            var colorField = new ColorField("Value") { value = group.colorVal, style = { display = DisplayStyle.None } };
-            var floatField = new FloatField("Value") { value = group.floatVal, style = { display = DisplayStyle.None } };
-            var vectorField = new Vector4Field("Value") { value = group.vectorVal, style = { display = DisplayStyle.None } };
-            var texField = new ObjectField("Value") { objectType = typeof(Texture), value = group.textureVal, style = { display = DisplayStyle.None } };
-            valRow.Add(colorField);
-            valRow.Add(floatField);
-            valRow.Add(vectorField);
-            valRow.Add(texField);
-            box.Add(valRow);
-
-            var matSection = new VisualElement();
-            matSection.AddToClassList("rex-box");
-            matSection.style.backgroundColor = new Color(0, 0, 0, 0.2f);
-            matSection.style.marginBottom = 0;
-
-            var matHeader = new VisualElement();
-            matHeader.AddToClassList("rex-row");
-            matHeader.style.justifyContent = Justify.SpaceBetween;
-
-            var matList = new VisualElement { style = { display = group.isExpanded ? DisplayStyle.Flex : DisplayStyle.None } };
-            Button collapseBtn = null;
-            collapseBtn = new Button(() => {
+            matList.style.display = group.isExpanded ? DisplayStyle.Flex : DisplayStyle.None;
+            collapseBtn.text = group.isExpanded ? "▼ MATERIALS" : "▶ MATERIALS";
+            collapseBtn.clicked += () => {
                 group.isExpanded = !group.isExpanded;
                 matList.style.display = group.isExpanded ? DisplayStyle.Flex : DisplayStyle.None;
                 collapseBtn.text = group.isExpanded ? "▼ MATERIALS" : "▶ MATERIALS";
-            })
-            {
-                text = group.isExpanded ? "▼ MATERIALS" : "▶ MATERIALS",
-                style = { unityFontStyleAndWeight = FontStyle.Bold, backgroundColor = Color.clear, paddingLeft = 0, fontSize = 10, color = new Color(0.6f, 0.6f, 0.6f) }
             };
-            collapseBtn.style.borderTopWidth = 0; collapseBtn.style.borderBottomWidth = 0; collapseBtn.style.borderLeftWidth = 0; collapseBtn.style.borderRightWidth = 0;
 
-            var addMatBtn = new Button(onAddMaterial) { text = "+ ADD MATERIAL" };
-            addMatBtn.AddToClassList("rex-button-small");
-            matHeader.Add(collapseBtn);
-            matHeader.Add(addMatBtn);
-            matSection.Add(matHeader);
-            matSection.Add(matList);
-            box.Add(matSection);
+            addMatBtn.clicked += onAddMaterial;
 
+            System.Action refreshMatListUI = null;
             System.Action updateVisibility = () => {
-                colorField.style.display = group.propertyType == MatPropType.Color ? DisplayStyle.Flex : DisplayStyle.None;
-                floatField.style.display = group.propertyType == MatPropType.Float ? DisplayStyle.Flex : DisplayStyle.None;
-                vectorField.style.display = group.propertyType == MatPropType.Vector ? DisplayStyle.Flex : DisplayStyle.None;
-                texField.style.display = group.propertyType == MatPropType.Texture ? DisplayStyle.Flex : DisplayStyle.None;
+                colorField.ToggleInClassList("rex-hidden", group.propertyType != MatPropType.Color);
+                floatField.ToggleInClassList("rex-hidden", group.propertyType != MatPropType.Float);
+                vectorField.ToggleInClassList("rex-hidden", group.propertyType != MatPropType.Vector);
+                texField.ToggleInClassList("rex-hidden", group.propertyType != MatPropType.Texture);
             };
 
-            propTypeField.RegisterValueChangedCallback(evt => { group.propertyType = (MatPropType)evt.newValue; updateVisibility(); });
+            matSection.RegisterCallback<DragUpdatedEvent>(evt => {
+                if (DragAndDrop.objectReferences.Length > 0)
+                {
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+                    evt.StopPropagation();
+                }
+            });
+
+            matSection.RegisterCallback<DragPerformEvent>(evt => {
+                DragAndDrop.AcceptDrag();
+                var droppedMats = new System.Collections.Generic.List<Material>();
+                foreach (var obj in DragAndDrop.objectReferences)
+                {
+                    if (obj is Material m) droppedMats.Add(m);
+                    else if (obj is GameObject go)
+                    {
+                        var renderers = go.GetComponentsInChildren<Renderer>(true);
+                        foreach (var r in renderers)
+                        {
+                            foreach (var mat in r.sharedMaterials)
+                            {
+                                if (mat != null) droppedMats.Add(mat);
+                            }
+                        }
+                    }
+                }
+                
+                if (droppedMats.Count > 0)
+                {
+                    onDropMaterials?.Invoke(droppedMats);
+                    refreshMatListUI?.Invoke();
+                }
+                evt.StopPropagation();
+            });
+
+            propTypeField.RegisterValueChangedCallback(evt => { 
+                group.propertyType = (MatPropType)evt.newValue; 
+                updateVisibility(); 
+                refreshMatListUI?.Invoke(); 
+            });
+
             colorField.RegisterValueChangedCallback(evt => { group.colorVal = evt.newValue; onApplyValue?.Invoke(group); });
             floatField.RegisterValueChangedCallback(evt => { group.floatVal = evt.newValue; onApplyValue?.Invoke(group); });
             vectorField.RegisterValueChangedCallback(evt => { group.vectorVal = evt.newValue; onApplyValue?.Invoke(group); });
             texField.RegisterValueChangedCallback(evt => { group.textureVal = (Texture)evt.newValue; onApplyValue?.Invoke(group); });
 
-            System.Action refreshMatListUI = null;
             refreshMatListUI = () => {
                 matList.Clear();
                 for (int i = 0; i < group.materials.Count; i++)
@@ -131,28 +155,66 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
                     int index = i;
                     var row = new VisualElement { style = { flexDirection = FlexDirection.Row, marginTop = 2 } };
                     var matField = new ObjectField { objectType = typeof(Material), value = group.materials[index].material, style = { flexGrow = 1, flexShrink = 1, minWidth = 0 } };
-                    var propNameField = new TextField { value = group.materials[index].propertyName, tooltip = "Property Name", style = { width = 120, marginLeft = 5, flexShrink = 0 } };
+                    var propNameFieldContainer = new VisualElement { style = { width = 120, marginLeft = 5, flexShrink = 0 } };
+                    
                     var errIcon = new VisualElement { style = { width = 16, height = 16, marginLeft = 4, marginRight = 4, display = DisplayStyle.None, backgroundImage = (Texture2D)EditorGUIUtility.IconContent("console.erroricon.sml").image } };
                     
-                    var rmvBtn = new Button(() => { group.materials.RemoveAt(index); refreshMatListUI(); }) { text = "-" };
-                    rmvBtn.AddToClassList("rex-button-small");
+                    var rmvBtn = new Button(() => { group.materials.RemoveAt(index); refreshMatListUI(); }) { tooltip = "Remove Material" };
+                    rmvBtn.AddToClassList("rex-icon-button");
+                    var rmvIcon = new VisualElement();
+                    rmvIcon.AddToClassList("rex-icon-remove");
+                    rmvBtn.Add(rmvIcon);
+                    
+                    System.Collections.Generic.List<string> currentNames = new System.Collections.Generic.List<string> { "None" };
+                    PopupField<string> propNameField = new PopupField<string>(new System.Collections.Generic.List<string> { "None" }, 0);
+                    propNameField.style.flexGrow = 1;
+                    propNameFieldContainer.Add(propNameField);
+
+                    System.Action refreshDropdown = () => {
+                        var mat = group.materials[index].material;
+                        if (mat != null && mat.shader != null) {
+                            var props = BatchMaterialEditorHelpers.GetShaderProperties(mat.shader, group.propertyType);
+                            currentNames = props.Names;
+                            propNameField.choices = props.DisplayNames;
+                            
+                            int selIndex = currentNames.IndexOf(group.materials[index].propertyName);
+                            if (selIndex == -1) selIndex = 0;
+                            propNameField.index = selIndex;
+                        } else {
+                            currentNames = new System.Collections.Generic.List<string> { "None" };
+                            propNameField.choices = currentNames;
+                            propNameField.index = 0;
+                        }
+                    };
                     
                     System.Action checkError = () => {
                         var mat = group.materials[index].material;
                         var prop = group.materials[index].propertyName;
-                        bool hasProp = mat != null && !string.IsNullOrEmpty(prop) && mat.HasProperty(prop);
+                        bool hasProp = mat != null && !string.IsNullOrEmpty(prop) && prop != "None" && mat.HasProperty(prop);
                         errIcon.style.display = (mat != null && !hasProp) ? DisplayStyle.Flex : DisplayStyle.None;
                     };
                     
-                    matField.RegisterValueChangedCallback(evt => { group.materials[index].material = (Material)evt.newValue; checkError(); });
-                    propNameField.RegisterValueChangedCallback(evt => { group.materials[index].propertyName = evt.newValue; checkError(); });
+                    propNameField.RegisterValueChangedCallback(evt => {
+                        if (propNameField.index >= 0 && propNameField.index < currentNames.Count) {
+                            group.materials[index].propertyName = currentNames[propNameField.index];
+                        }
+                        checkError();
+                    });
+
+                    matField.RegisterValueChangedCallback(evt => { 
+                        group.materials[index].material = (Material)evt.newValue; 
+                        refreshDropdown();
+                        checkError(); 
+                    });
                     
-                    row.Add(matField); row.Add(propNameField); row.Add(errIcon); row.Add(rmvBtn);
-                    matList.Add(row); checkError();
+                    refreshDropdown();
+                    checkError();
+
+                    row.Add(matField); row.Add(propNameFieldContainer); row.Add(errIcon); row.Add(rmvBtn);
+                    matList.Add(row);
                 }
             };
 
-            // Bind the add material logic to re-trigger internal update
             addMatBtn.clicked += refreshMatListUI;
 
             updateVisibility(); 

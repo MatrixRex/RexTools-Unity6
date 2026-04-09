@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:uie="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <ui:VisualElement class="rex-result-item" style="height: 36px;">
+        <ui:Label name="type-label" style="width: 30px; font-size: 9px; color: #888;" />
+        
+        <ui:VisualElement name="preview-box" style="width: 24px; height: 24px; margin-right: 10px; border-width: 1px; border-color: #333; background-color: #262626;">
+            <ui:Label name="preview-text" style="font-size: 9px; -unity-text-align: middle-center; color: white; margin-top: 4px;" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="name-col" style="flex-grow: 1;">
+            <ui:Label name="prop-desc" style="-unity-font-style: bold; font-size: 12px;" />
+            <ui:Label name="prop-name" style="color: #999; font-size: 9px; margin-top: -2px;" />
+        </ui:VisualElement>
+
+        <ui:Label text="→" style="margin-left: 5px; margin-right: 5px;" />
+        
+        <ui:VisualElement name="dropdown-container" style="width: 200px;" />
+    </ui:VisualElement>
+</ui:UXML>

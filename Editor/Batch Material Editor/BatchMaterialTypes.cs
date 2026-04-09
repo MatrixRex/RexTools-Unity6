@@ -3,13 +3,13 @@ using UnityEngine;
 
 namespace RexTools.BatchMaterialEditor.Editor
 {
-    public enum MatPropType { Texture, Color, Float, Vector }
+    public enum MatPropType { Float, Color, Vector, Texture }
 
     [System.Serializable]
     public class MaterialEntry
     {
         public Material material;
-        public string propertyName = "_BaseColor";
+        public string propertyName = "None";
     }
 
     [System.Serializable]
@@ -47,13 +47,11 @@ namespace RexTools.BatchMaterialEditor.Editor
 
     public enum ReplaceMode { Scene, Prefab, NewPrefab }
 
-    public enum ConvPropertyType { Float, Color, Vector, Texture, Unknown }
-
     public class ConvPropertyMapping
     {
         public string sourcePropName;
         public string sourcePropDesc;
-        public ConvPropertyType type;
+        public MatPropType type;
         public string targetPropName = "None";
         public string[] targetOptions = new string[] { "None" };
         public string[] targetDisplayOptions = new string[] { "None" };

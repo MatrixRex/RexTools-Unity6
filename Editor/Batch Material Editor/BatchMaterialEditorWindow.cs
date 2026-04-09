@@ -19,6 +19,9 @@ namespace RexTools.BatchMaterialEditor.Editor
         private ConverterTab converterTab;
 
         private List<Button> tabButtons = new List<Button>();
+        
+        private VisualElement helpBox;
+        private bool showHelp = false;
 
         [MenuItem("Tools/Rex Tools/Batch Material Editor")]
         public static void ShowWindow()
@@ -31,57 +34,65 @@ namespace RexTools.BatchMaterialEditor.Editor
         public void CreateGUI()
         {
             VisualElement root = rootVisualElement;
-            root.AddToClassList("rex-root-padding");
+
+            // Load UXML
+            string uxmlPath = AssetDatabase.GUIDToAssetPath("75494d496a793c5448375494d496a793"); // I'll use a path instead if I don't know the GUID
+            // Better to use path for now
+            string windowPath = "Editor/Batch Material Editor/BatchMaterialEditorWindow.uxml";
+            string fullPath = "Assets/" + windowPath;
+            if (!AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(fullPath))
+            {
+                // Try package path
+                fullPath = "Packages/com.matrixrex.rextools/" + windowPath;
+            }
+
+            var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(fullPath);
+            if (visualTree != null)
+            {
+                visualTree.CloneTree(root);
+            }
+            else
+            {
+                root.Add(new Label("Could not load BatchMaterialEditorWindow.uxml"));
+                return;
+            }
 
             // Load Global Styles
-            string[] possiblePaths = {
+            string[] possibleStyles = {
                 "Packages/com.matrixrex.rextools/Editor/RexToolsStyles.uss",
                 "Assets/Editor/RexToolsStyles.uss"
             };
-            StyleSheet styleSheet = null;
-            foreach (var path in possiblePaths) {
-                styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(path);
-                if (styleSheet != null) break;
+            StyleSheet globalStyleSheet = null;
+            foreach (var path in possibleStyles) {
+                globalStyleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(path);
+                if (globalStyleSheet != null) break;
             }
-            if (styleSheet != null) root.styleSheets.Add(styleSheet);
+            if (globalStyleSheet != null) root.styleSheets.Add(globalStyleSheet);
 
-            // --- BRANDED HEADER ---
-            var header = new VisualElement();
-            header.AddToClassList("rex-header-row");
+            // Bind Elements
+            helpBox = root.Q<VisualElement>("help-box");
+            var helpBtn = root.Q<Button>("help-btn");
+            var contentContainer = root.Q<VisualElement>("content-container");
 
-            var brandStack = new VisualElement();
-            brandStack.AddToClassList("rex-header-stack");
+            helpBtn.clicked += () => {
+                showHelp = !showHelp;
+                helpBox.ToggleInClassList("rex-hidden");
+                helpBtn.ToggleInClassList("rex-help-btn--active");
+            };
 
-            var brandLabel = new Label("Rex Tools");
-            brandLabel.AddToClassList("rex-brand-label");
-            brandStack.Add(brandLabel);
-
-            var titleLabel = new Label("Batch Material Editor");
-            titleLabel.AddToClassList("rex-tool-title");
-            brandStack.Add(titleLabel);
-
-            header.Add(brandStack);
-            root.Add(header);
-
-            // --- TABS ---
-            var tabsContainer = new VisualElement();
-            tabsContainer.AddToClassList("rex-tabs-container");
-
-            string[] tabNames = { "Scanner", "Editor", "Replace", "Converter" };
+            // Bind Tabs
+            string[] tabNames = { "scanner", "editor", "replace", "converter" };
+            tabButtons.Clear();
             for (int i = 0; i < tabNames.Length; i++)
             {
                 int index = i;
-                var btn = new Button(() => SwitchToTab(index)) { text = tabNames[i] };
-                btn.AddToClassList("rex-tab-button");
-                tabButtons.Add(btn);
-                tabsContainer.Add(btn);
+                var btn = root.Q<Button>($"tab-{tabNames[i]}");
+                if (btn != null)
+                {
+                    btn.clicked += () => SwitchToTab(index);
+                    tabButtons.Add(btn);
+                }
             }
-            root.Add(tabsContainer);
-
-            // --- TAB CONTENT CONTAINER ---
-            var contentContainer = new VisualElement();
-            contentContainer.AddToClassList("rex-tab-content-container");
-            root.Add(contentContainer);
 
             // Initialize Tabs
             scannerTab = new ScannerTab(this, contentContainer);
@@ -110,6 +121,65 @@ namespace RexTools.BatchMaterialEditor.Editor
                 tabButtons[i].RemoveFromClassList("rex-tab-button--active");
                 tabButtons[i].RemoveFromClassList("rex-tab-button--inactive");
                 tabButtons[i].AddToClassList(i == index ? "rex-tab-button--active" : "rex-tab-button--inactive");
+            }
+            
+            UpdateHelpContext(index);
+        }
+
+        private void UpdateHelpContext(int index)
+        {
+            if (helpBox == null) return;
+            helpBox.Clear();
+
+            var helpTitle = new Label("HOW TO USE:");
+            helpTitle.AddToClassList("rex-help-text-title");
+            helpBox.Add(helpTitle);
+
+            string[] helpLines = new string[0];
+            
+            switch (index)
+            {
+                case 0: // Scanner
+                    helpLines = new string[] {
+                        "• Extracts all unique materials used in the opened scenes",
+                        "• Send selected materials directly to the Editor or Replace tabs."
+                    };
+                    break;
+                case 1: // Editor
+                    helpLines = new string[] {
+                        "• Batch edit shared material properties.",
+                        "• Create a new property group and assign materials.",
+                        "• Modify a property uniformly across all materials in the group.",
+                        "• Save and load group presets."
+                    };
+                    break;
+                case 2: // Replace
+                    helpLines = new string[] {
+                        "• Batch replace one material with another material.",
+                        "• Set 'Find Material' and 'Replace Material'.",
+                        "• Replacement Mode: Scene. Only replace scene material instances.",
+                        "• Replacement Mode: Prefab. Edit each prefabs material instances.",
+                        "• Replacement Mode: New Prefab. Create new prefabs with replaced materials. Keeping originals intact.",
+                        "• Press Scan Objects to see which objects are affected.",
+                        "• Start conversion to actually replace materials."
+                    };
+                    break;
+                case 3: // Converter
+                    helpLines = new string[] {
+                        "• Batch-convert materials to a new shader.",
+                        "• Map properties from the old shader to the new one.",
+                        "• Save your mapping configuration as a Preset.",
+                        "• Select a gameojbect to get all materials in the hierarchy to convert",
+                        "• Select a material to replace only that material."
+                    };
+                    break;
+            }
+
+            foreach (var line in helpLines)
+            {
+                Label helpLabel = new Label("• " + line.TrimStart('•', ' '));
+                helpLabel.AddToClassList("rex-help-text-item");
+                helpBox.Add(helpLabel);
             }
         }
 

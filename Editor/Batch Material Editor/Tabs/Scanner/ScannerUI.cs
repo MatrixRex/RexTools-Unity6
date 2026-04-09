@@ -12,26 +12,32 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
 
         public ScannerUI(VisualElement container)
         {
-            Root = new VisualElement { style = { flexGrow = 1 } };
+            // Load UXML
+            string uxmlPath = "Editor/Batch Material Editor/Tabs/Scanner/ScannerTab.uxml";
+            string fullPath = "Assets/" + uxmlPath;
+            var visualTree = UnityEditor.AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(fullPath);
             
-            BtnScan = new Button { text = "SCAN SCENE MATERIALS" };
-            BtnScan.AddToClassList("rex-action-button");
-            BtnScan.AddToClassList("rex-action-button--pack");
-            Root.Add(BtnScan);
-
-            BtnCreateGroupFromSelection = new Button
+            if (visualTree == null)
             {
-                text = "CREATE GROUP FROM SELECTION",
-                style = { display = DisplayStyle.None }
-            };
-            BtnCreateGroupFromSelection.AddToClassList("rex-action-button");
-            BtnCreateGroupFromSelection.AddToClassList("rex-action-button--unpack");
-            Root.Add(BtnCreateGroupFromSelection);
+                fullPath = "Packages/com.matrixrex.rextools/" + uxmlPath;
+                visualTree = UnityEditor.AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(fullPath);
+            }
 
-            ScannerList = new ScrollView { style = { flexGrow = 1 } };
-            ScannerList.AddToClassList("rex-box");
-            ScannerList.AddToClassList("rex-result-list");
-            Root.Add(ScannerList);
+            if (visualTree != null)
+            {
+                Root = visualTree.CloneTree().ElementAt(0); // Clone and get the root scanner element
+                BtnScan = Root.Q<Button>("btn-scan");
+                BtnCreateGroupFromSelection = Root.Q<Button>("btn-create-group");
+                ScannerList = Root.Q<ScrollView>("scanner-list");
+            }
+            else
+            {
+                Root = new VisualElement();
+                Root.Add(new Label("Could not load ScannerTab.uxml"));
+                BtnScan = new Button();
+                BtnCreateGroupFromSelection = new Button();
+                ScannerList = new ScrollView();
+            }
 
             container.Add(Root);
         }

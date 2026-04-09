@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:uie="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <ui:VisualElement name="group-box" class="rex-box">
+        <!-- Header -->
+        <ui:VisualElement class="rex-row" style="margin-bottom: 10px;">
+            <ui:TextField name="group-name" class="rex-flex-grow" style="flex-grow: 1; -unity-font-style: bold;" />
+            <ui:Button name="btn-duplicate" tooltip="Duplicate Group" class="rex-icon-button">
+                <ui:VisualElement class="rex-icon-copy" />
+            </ui:Button>
+            <ui:Button name="btn-delete" tooltip="Delete Group" class="rex-result-delete-btn">
+                <ui:VisualElement class="rex-result-delete-icon" />
+            </ui:Button>
+        </ui:VisualElement>
+
+        <!-- Configuration -->
+        <uie:EnumField name="prop-type" label="Property Type" />
+        
+        <ui:VisualElement name="value-container" style="margin-top: 5px; margin-bottom: 10px;">
+            <uie:ColorField name="color-value" label="Value" class="rex-hidden" />
+            <ui:FloatField name="float-value" label="Value" class="rex-hidden" />
+            <ui:Vector4Field name="vector-value" label="Value" class="rex-hidden" />
+            <uie:ObjectField name="texture-value" label="Value" class="rex-hidden" />
+        </ui:VisualElement>
+
+        <!-- Materials Section -->
+        <ui:VisualElement name="mat-section" class="rex-box" style="background-color: rgba(0, 0, 0, 0.2); margin-bottom: 0;">
+            <ui:VisualElement class="rex-row" style="justify-content: space-between;">
+                <ui:Button name="btn-collapse" text="▼ MATERIALS" style="flex-grow: 0; background-color: transparent; border-width: 0; font-size: 10px; color: #999; -unity-font-style: bold; padding-left: 0;" />
+                <ui:Button name="btn-add-material" text="+ ADD MATERIAL" class="rex-button-small" />
+            </ui:VisualElement>
+            <ui:VisualElement name="mat-list" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
