@@ -5,7 +5,7 @@
     xmlns:uie="UnityEditor.UIElements"
     xsi:noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd"
 >
-    <ui:VisualElement name="group-box" class="rex-box">
+    <ui:VisualElement name="group-box" class="rex-box" style="flex-shrink: 0;">
         <!-- Header -->
         <ui:VisualElement class="rex-row" style="margin-bottom: 10px;">
             <ui:TextField name="group-name" class="rex-flex-grow" style="flex-grow: 1; -unity-font-style: bold;" />

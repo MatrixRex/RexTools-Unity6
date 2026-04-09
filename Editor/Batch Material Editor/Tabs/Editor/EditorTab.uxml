@@ -5,12 +5,13 @@
     xmlns:uie="UnityEditor.UIElements"
     xsi:noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd"
 >
-    <ui:VisualElement name="editor-root" style="flex-grow: 1;">
-        <ui:VisualElement name="toolbar" class="rex-row" style="margin-bottom: 10px;">
-            <ui:Button name="btn-add-group" text="Add Property Group" class="rex-flex-grow" />
-            <ui:Button name="btn-save" text="Save" tooltip="Save groups to .asset" />
-            <ui:Button name="btn-load" text="Load" tooltip="Load groups from .asset" />
+    <ui:VisualElement name="editor-tab-root" style="flex-grow: 1;">
+        <ui:VisualElement name="toolbar" class="rex-row" style="margin: 5px; align-items: center; flex-shrink: 0;">
+            <ui:Button name="btn-add-group" text="New Property Group" class="rex-flex-grow" />
+            <ui:VisualElement name="preset-btn-container" style="width: 24px; height: 18px; margin-left: 5px;" />
         </ui:VisualElement>
-        <ui:ScrollView name="groups-list" style="flex-grow: 1;" />
+        <ui:ScrollView name="editor-scroll" style="flex-grow: 1;">
+            <ui:VisualElement name="groups-list" style="flex-grow: 1;" />
+        </ui:ScrollView>
     </ui:VisualElement>
 </ui:UXML>

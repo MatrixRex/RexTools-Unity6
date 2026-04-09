@@ -5,9 +5,14 @@
     xmlns:uie="UnityEditor.UIElements"
     xsi:noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd"
 >
-    <ui:VisualElement name="scanner-root" style="flex-grow: 1;">
-        <ui:Button name="btn-scan" text="SCAN SCENE MATERIALS" class="rex-action-button rex-action-button--pack" />
-        <ui:Button name="btn-create-group" text="CREATE GROUP FROM SELECTION" class="rex-action-button rex-action-button--unpack rex-hidden" />
-        <ui:ScrollView name="scanner-list" class="rex-box rex-result-list" style="flex-grow: 1;" />
+    <ui:VisualElement name="scanner-tab-root" style="flex-grow: 1;">
+        <ui:ScrollView name="scanner-scroll" style="flex-grow: 1;">
+            <ui:Button name="btn-create-group" text="Create PropertyGroup from Selection" class="rex-hidden" style="margin-top: 5px; margin-bottom: 5px;" />
+            <ui:Label name="scanner-info" text="Scan scene to find materials." class="rex-section-label" style="margin-top: 10px; margin-bottom: 5px; margin-left: 2px;" />
+            <ui:VisualElement name="scanner-list-container" class="rex-box" style="flex-grow: 1; min-height: 200px; margin-bottom: 10px;">
+                 <ui:ScrollView name="scanner-list" class="rex-result-list" style="flex-grow: 1;" />
+            </ui:VisualElement>
+        </ui:ScrollView>
+        <ui:Button name="btn-scan" text="SCAN SCENE MATERIALS" class="rex-action-button rex-action-button--pack" style="margin: 5px;" />
     </ui:VisualElement>
 </ui:UXML>

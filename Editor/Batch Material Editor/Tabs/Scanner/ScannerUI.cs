@@ -9,6 +9,7 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
         public Button BtnScan { get; private set; }
         public Button BtnCreateGroupFromSelection { get; private set; }
         public ScrollView ScannerList { get; private set; }
+        public Label InfoLabel { get; private set; }
 
         public ScannerUI(VisualElement container)
         {
@@ -25,10 +26,11 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
 
             if (visualTree != null)
             {
-                Root = visualTree.CloneTree().ElementAt(0); // Clone and get the root scanner element
+                Root = visualTree.CloneTree().Q<VisualElement>("scanner-tab-root");
                 BtnScan = Root.Q<Button>("btn-scan");
                 BtnCreateGroupFromSelection = Root.Q<Button>("btn-create-group");
                 ScannerList = Root.Q<ScrollView>("scanner-list");
+                InfoLabel = Root.Q<Label>("scanner-info");
             }
             else
             {
@@ -37,6 +39,7 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
                 BtnScan = new Button();
                 BtnCreateGroupFromSelection = new Button();
                 ScannerList = new ScrollView();
+                InfoLabel = new Label();
             }
 
             container.Add(Root);

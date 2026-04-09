@@ -41,9 +41,12 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
 
             if (foundMaterials.Count == 0)
             {
+                ui.InfoLabel.text = "No materials found in current scenes.";
                 ui.ScannerList.Add(new Label("No materials found in current scenes.") { style = { marginTop = 20, alignSelf = Align.Center } });
                 return;
             }
+
+            ui.InfoLabel.text = $"FOUND {foundMaterials.Count} UNIQUE MATERIALS IN SCENE";
 
             foreach (var mat in foundMaterials)
             {

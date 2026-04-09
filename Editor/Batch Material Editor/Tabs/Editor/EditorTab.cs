@@ -9,18 +9,19 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
     {
         private EditorUI ui;
         private BatchMaterialEditorWindow window;
+        private int cachedGroupCount = 0;
+        private string cachedFirstGroupName = "";
 
         public EditorTab(BatchMaterialEditorWindow window, VisualElement container)
         {
             this.window = window;
-            ui = new EditorUI(container);
+            ui = new EditorUI(container, window.EditorPreset);
 
             ui.BtnAddGroup.clicked += () => { 
                 window.PropertyGroups.Add(new PropertyGroup()); 
                 RefreshGroupsUI(); 
+                EditorUtility.SetDirty(window.EditorPreset);
             };
-            ui.BtnSave.clicked += SaveData;
-            ui.BtnLoad.clicked += LoadData;
         }
 
         public void SetDisplay(bool isVisible)
@@ -29,9 +30,30 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
             if (isVisible) RefreshGroupsUI();
         }
 
+        public void OnInspectorUpdate()
+        {
+            // Detect if the preset data was changed (e.g. by applying a Unity Preset)
+            if (window.EditorPreset != null)
+            {
+                if (window.PropertyGroups.Count != cachedGroupCount || 
+                    (window.PropertyGroups.Count > 0 && window.PropertyGroups[0].groupName != cachedFirstGroupName))
+                {
+                    cachedGroupCount = window.PropertyGroups.Count;
+                    if (cachedGroupCount > 0) cachedFirstGroupName = window.PropertyGroups[0].groupName;
+                    
+                    RefreshGroupsUI();
+                }
+            }
+        }
+
         public void RefreshGroupsUI()
         {
             ui.GroupsList.Clear();
+            if (window.PropertyGroups == null) return;
+
+            cachedGroupCount = window.PropertyGroups.Count;
+            if (cachedGroupCount > 0) cachedFirstGroupName = window.PropertyGroups[0].groupName;
+
             foreach (var group in window.PropertyGroups)
             {
                 var groupElement = ui.CreateGroupElement(
@@ -42,16 +64,22 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
                         if (index >= 0) window.PropertyGroups.Insert(index + 1, newGroup);
                         else window.PropertyGroups.Add(newGroup);
                         RefreshGroupsUI();
+                        EditorUtility.SetDirty(window.EditorPreset);
                     },
                     onDelete: () => {
                         window.PropertyGroups.Remove(group);
                         RefreshGroupsUI();
+                        EditorUtility.SetDirty(window.EditorPreset);
                     },
-                    onApplyValue: (g) => ApplyValueToMaterials(g),
+                    onApplyValue: (g) => {
+                        ApplyValueToMaterials(g);
+                        EditorUtility.SetDirty(window.EditorPreset);
+                    },
                     onAddMaterial: () => {
                         string lastPropName = "_BaseColor";
                         if (group.materials.Count > 0) lastPropName = group.materials[group.materials.Count - 1].propertyName;
                         group.materials.Add(new MaterialEntry() { propertyName = lastPropName });
+                        EditorUtility.SetDirty(window.EditorPreset);
                     },
                     onDropMaterials: (List<Material> droppedMats) => {
                         string lastPropName = "_BaseColor";
@@ -61,36 +89,11 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
                                 group.materials.Add(new MaterialEntry() { material = mat, propertyName = lastPropName });
                             }
                         }
+                        EditorUtility.SetDirty(window.EditorPreset);
                     },
                     refreshRoot: () => RefreshGroupsUI()
                 );
                 ui.GroupsList.Add(groupElement);
-            }
-        }
-
-        private void SaveData()
-        {
-            string path = EditorUtility.SaveFilePanelInProject("Save Material Groups", "BatchMatGroups", "asset", "Save property groups to an asset file.");
-            if (string.IsNullOrEmpty(path)) return;
-            BatchMaterialData data = ScriptableObject.CreateInstance<BatchMaterialData>();
-            data.propertyGroups = new List<PropertyGroup>();
-            foreach (var g in window.PropertyGroups) data.propertyGroups.Add(g.Clone());
-            AssetDatabase.CreateAsset(data, path);
-            AssetDatabase.SaveAssets();
-            EditorGUIUtility.PingObject(data);
-        }
-
-        private void LoadData()
-        {
-            string path = EditorUtility.OpenFilePanel("Load Material Groups", Application.dataPath, "asset");
-            if (string.IsNullOrEmpty(path)) return;
-            if (path.StartsWith(Application.dataPath)) path = "Assets" + path.Substring(Application.dataPath.Length);
-            BatchMaterialData data = AssetDatabase.LoadAssetAtPath<BatchMaterialData>(path);
-            if (data != null)
-            {
-                window.PropertyGroups.Clear();
-                foreach (var g in data.propertyGroups) window.PropertyGroups.Add(g.Clone());
-                RefreshGroupsUI();
             }
         }
 

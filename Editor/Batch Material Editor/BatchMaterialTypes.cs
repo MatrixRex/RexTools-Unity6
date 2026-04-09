@@ -45,7 +45,7 @@ namespace RexTools.BatchMaterialEditor.Editor
         }
     }
 
-    public enum ReplaceMode { Scene, Prefab, NewPrefab }
+    public enum ReplaceMode { Search, Manual }
 
     public class ConvPropertyMapping
     {

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:uie="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <ui:VisualElement name="replacer-tab-root" style="flex-grow: 1;">
+        <ui:ScrollView name="replacer-scroll" style="flex-grow: 1;">
+            <ui:VisualElement class="rex-row" style="margin-bottom: 5px;">
+                 <ui:Label text="Replacement Mode" style="flex-grow: 1; -unity-font-style: bold;" />
+                 <uie:EnumField name="mode" style="width: 120px;" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="search-mode-section" class="rex-box">
+                <ui:Label text="SEARCH CRITERIA" class="rex-section-label" />
+                <uie:ObjectField name="find-mat" label="Find Material" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="manual-mode-section" class="rex-box rex-hidden">
+                <ui:VisualElement class="rex-row" style="justify-content: space-between;">
+                    <ui:Button name="btn-collapse-manual" text="▼ MANUAL MATERIAL LIST (0)" class="rex-section-label" style="background-color: transparent; border-width: 0; padding: 0; margin: 0; -unity-font-style: bold; color: #BBB;" />
+                    <ui:Button name="btn-add-manual-mat" text="+" class="rex-icon-button" style="width: 18px; height: 18px;" />
+                </ui:VisualElement>
+                <ui:VisualElement name="manual-mat-list" style="min-height: 40px;" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="rex-box">
+                <ui:Label text="REPLACEMENT TARGET" class="rex-section-label" />
+                <uie:ObjectField name="replace-mat" label="Replace Material" />
+            </ui:VisualElement>
+
+            <ui:Button name="btn-scan" text="1. PREVIEW AFFECTED OBJECTS" style="margin-top: 5px; margin-bottom: 5px;" />
+
+            <ui:VisualElement class="rex-box">
+                <ui:Button name="btn-collapse-affected" text="▼ AFFECTED OBJECTS (0)" class="rex-section-label" style="background-color: transparent; border-width: 0; padding: 0; margin: 0; -unity-font-style: bold; color: #BBB;" />
+                <ui:ScrollView name="affected-list" class="rex-result-list" style="height: 300px; margin-top: 5px;" />
+            </ui:VisualElement>
+        </ui:ScrollView>
+        <ui:Button name="btn-convert" text="2. START CONVERSION" class="rex-action-button rex-action-button--unpack" />
+    </ui:VisualElement>
+</ui:UXML>

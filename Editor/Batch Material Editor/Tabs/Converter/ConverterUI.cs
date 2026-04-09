@@ -1,4 +1,6 @@
+using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 using RexTools.Editor.Core;
 
@@ -25,7 +27,7 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
 
             if (visualTree != null)
             {
-                Root = visualTree.CloneTree().ElementAt(0);
+                Root = visualTree.CloneTree().Q<VisualElement>("converter-tab-root");
                 
                 var presetContainer = Root.Q<VisualElement>("preset-btn-container");
                 if (presetContainer != null)

@@ -8,14 +8,16 @@ namespace RexTools.BatchMaterialEditor.Editor
 {
     public class BatchMaterialEditorWindow : EditorWindow
     {
-        // Global Data explicitly exposed
-        public List<PropertyGroup> PropertyGroups { get; private set; } = new List<PropertyGroup>();
+        // Global Data explicitly exposed via Preset target
+        private MaterialEditorPreset activeEditorPreset;
+        public List<PropertyGroup> PropertyGroups => activeEditorPreset != null ? activeEditorPreset.propertyGroups : null;
+        public MaterialEditorPreset EditorPreset => activeEditorPreset;
         public HashSet<Material> SelectedMaterials { get; private set; } = new HashSet<Material>();
 
         // Tab Managers
         private ScannerTab scannerTab;
         private EditorTab editorTab;
-        private ReplaceTab replaceTab;
+        private ReplacerTab replacerTab;
         private ConverterTab converterTab;
 
         private List<Button> tabButtons = new List<Button>();
@@ -33,6 +35,12 @@ namespace RexTools.BatchMaterialEditor.Editor
 
         public void CreateGUI()
         {
+            if (activeEditorPreset == null)
+            {
+                activeEditorPreset = ScriptableObject.CreateInstance<MaterialEditorPreset>();
+                activeEditorPreset.name = "MaterialEditorPreset_Runtime";
+            }
+
             VisualElement root = rootVisualElement;
 
             // Load UXML
@@ -81,7 +89,7 @@ namespace RexTools.BatchMaterialEditor.Editor
             };
 
             // Bind Tabs
-            string[] tabNames = { "scanner", "editor", "replace", "converter" };
+            string[] tabNames = { "scanner", "editor", "replacer", "converter" };
             tabButtons.Clear();
             for (int i = 0; i < tabNames.Length; i++)
             {
@@ -97,7 +105,7 @@ namespace RexTools.BatchMaterialEditor.Editor
             // Initialize Tabs
             scannerTab = new ScannerTab(this, contentContainer);
             editorTab = new EditorTab(this, contentContainer);
-            replaceTab = new ReplaceTab(this, contentContainer);
+            replacerTab = new ReplacerTab(this, contentContainer);
             converterTab = new ConverterTab(this, contentContainer);
 
             SwitchToTab(0);
@@ -105,7 +113,8 @@ namespace RexTools.BatchMaterialEditor.Editor
 
         private void OnInspectorUpdate()
         {
-            // Forward update pump to converter
+            // Forward update pump to tabs
+            editorTab?.OnInspectorUpdate();
             converterTab?.OnInspectorUpdate();
         }
 
@@ -113,7 +122,7 @@ namespace RexTools.BatchMaterialEditor.Editor
         {
             scannerTab.SetDisplay(index == 0);
             editorTab.SetDisplay(index == 1);
-            replaceTab.SetDisplay(index == 2);
+            replacerTab.SetDisplay(index == 2);
             converterTab.SetDisplay(index == 3);
 
             for (int i = 0; i < tabButtons.Count; i++)

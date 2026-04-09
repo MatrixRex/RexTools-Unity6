@@ -3,7 +3,8 @@ using UnityEngine;
 
 namespace RexTools.BatchMaterialEditor.Editor
 {
-    public class BatchMaterialData : ScriptableObject
+    [CreateAssetMenu(fileName = "MaterialEditorPreset", menuName = "RexTools/Internal/MaterialEditorPreset")]
+    public class MaterialEditorPreset : ScriptableObject
     {
         public List<PropertyGroup> propertyGroups = new List<PropertyGroup>();
     }

@@ -9,14 +9,12 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
     {
         public VisualElement Root { get; private set; }
         public Button BtnAddGroup { get; private set; }
-        public Button BtnSave { get; private set; }
-        public Button BtnLoad { get; private set; }
-        public ScrollView GroupsList { get; private set; }
+        public VisualElement GroupsList { get; private set; }
 
         private VisualTreeAsset tabTemplate;
         private VisualTreeAsset groupTemplate;
 
-        public EditorUI(VisualElement container)
+        public EditorUI(VisualElement container, MaterialEditorPreset preset)
         {
             // Load Tab UXML
             string tabPath = "Editor/Batch Material Editor/Tabs/Editor/EditorTab.uxml";
@@ -26,20 +24,23 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
 
             if (tabTemplate != null)
             {
-                Root = tabTemplate.CloneTree().ElementAt(0);
+                Root = tabTemplate.CloneTree().Q<VisualElement>("editor-tab-root");
                 BtnAddGroup = Root.Q<Button>("btn-add-group");
-                BtnSave = Root.Q<Button>("btn-save");
-                BtnLoad = Root.Q<Button>("btn-load");
-                GroupsList = Root.Q<ScrollView>("groups-list");
+                GroupsList = Root.Q<VisualElement>("groups-list");
+
+                var presetContainer = Root.Q<VisualElement>("preset-btn-container");
+                if (presetContainer != null)
+                {
+                    var presetBtn = RexTools.Editor.Core.RexPresetManager.CreatePresetIconButton(preset, "Editor Groups Preset");
+                    presetContainer.Add(presetBtn);
+                }
             }
             else
             {
                 Root = new VisualElement();
                 Root.Add(new Label("Could not load EditorTab.uxml"));
                 BtnAddGroup = new Button();
-                BtnSave = new Button();
-                BtnLoad = new Button();
-                GroupsList = new ScrollView();
+                GroupsList = new VisualElement();
             }
 
             // Load Group Template UXML
@@ -96,10 +97,10 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
 
             System.Action refreshMatListUI = null;
             System.Action updateVisibility = () => {
-                colorField.ToggleInClassList("rex-hidden", group.propertyType != MatPropType.Color);
-                floatField.ToggleInClassList("rex-hidden", group.propertyType != MatPropType.Float);
-                vectorField.ToggleInClassList("rex-hidden", group.propertyType != MatPropType.Vector);
-                texField.ToggleInClassList("rex-hidden", group.propertyType != MatPropType.Texture);
+                colorField.EnableInClassList("rex-hidden", group.propertyType != MatPropType.Color);
+                floatField.EnableInClassList("rex-hidden", group.propertyType != MatPropType.Float);
+                vectorField.EnableInClassList("rex-hidden", group.propertyType != MatPropType.Vector);
+                texField.EnableInClassList("rex-hidden", group.propertyType != MatPropType.Texture);
             };
 
             matSection.RegisterCallback<DragUpdatedEvent>(evt => {
