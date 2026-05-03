@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:uie="UnityEditor.UIElements"
+>
+    <ui:VisualElement class="rex-root-padding" style="flex-grow: 1;">
+        <!-- Header -->
+        <ui:VisualElement class="rex-header-row">
+            <ui:VisualElement class="rex-header-stack">
+                <ui:Label text="REXTOOLS" class="rex-brand-label" />
+                <ui:Label text="Animation Event Copier" class="rex-tool-title" />
+            </ui:VisualElement>
+            <ui:Button name="help-btn" class="rex-help-btn" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="help-box" class="rex-help-box rex-box rex-hidden">
+            <ui:Label text="ABOUT THIS TOOL" class="rex-help-text-title" />
+            <ui:Label text="Copy animation events from a source FBX to a target FBX. Map specific clips together if their names do not match perfectly." class="rex-help-text-item" />
+        </ui:VisualElement>
+
+        <ui:ScrollView style="flex-grow: 1;">
+            <ui:VisualElement class="rex-box">
+                <ui:Label text="MODELS" class="rex-section-label" />
+                <ui:VisualElement class="rex-row">
+                    <ui:Label text="Source FBX" class="rex-label-w50" style="width: 80px;" />
+                    <uie:ObjectField name="source-model" type="UnityEngine.GameObject, UnityEngine.CoreModule" class="rex-field-flex" />
+                </ui:VisualElement>
+                <ui:VisualElement class="rex-row">
+                    <ui:Label text="Target FBX" class="rex-label-w50" style="width: 80px;" />
+                    <uie:ObjectField name="target-model" type="UnityEngine.GameObject, UnityEngine.CoreModule" class="rex-field-flex" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="mapping-section" class="rex-box rex-hidden">
+                <ui:VisualElement class="rex-row" style="justify-content: space-between;">
+                    <ui:Label text="CLIP MAPPING" class="rex-section-label" />
+                    <ui:Button name="btn-auto-match" text="AUTO-MATCH BY NAME" class="rex-button-small" style="font-size: 10px; padding: 2px 5px;" />
+                </ui:VisualElement>
+                
+                <ui:VisualElement class="rex-row" style="margin-top: 5px; margin-bottom: 5px;">
+                    <ui:Label text="Target Animation" style="-unity-font-style: bold; flex-grow: 1; flex-basis: 50%;" />
+                    <ui:Label text="Source Events" style="-unity-font-style: bold; flex-grow: 1; flex-basis: 50%;" />
+                </ui:VisualElement>
+                
+                <ui:VisualElement name="mapping-list" />
+            </ui:VisualElement>
+        </ui:ScrollView>
+
+        <ui:Button name="btn-copy" text="COPY ANIMATION EVENTS" class="rex-action-button rex-action-button--pack" />
+    </ui:VisualElement>
+</ui:UXML>
