@@ -81,6 +81,19 @@ A lightweight, background-threaded Git client built directly into the Unity Edit
     5.  Enter a commit message and click **STAGE & COMMIT ALL** to commit local modifications.
     6.  The console log at the bottom displays live output from background Git processes.
 
+### 🎨 Batch Material Processor
+A utility for bulk-assigning texture maps to multiple materials at once. It automatically finds texture files inside a directory using custom suffix matching, runs a dry-run preview, and applies the target shader and matched textures in one click.
+
+*   **Usage**:
+    1.  Go to `Tools > Rex Tools > Batch Material Processor`.
+    2.  Use **GET FROM SELECTION** to populate the material list from selected GameObjects in the scene or selected Material assets, or drag-and-drop them directly into the list.
+    3.  Select the target **Shader** to apply (this dynamically populates the available texture properties).
+    4.  Set the texture search **Folder** path (drag-and-drop is supported) and choose whether to search recursively.
+    5.  Go to the **Suffixes** tab to review or edit suffix matching patterns (e.g. Albedo -> `_albedo, _basecolor`).
+    6.  Click **PROCESS MATCHES** to perform a dry run. The window will switch to the **Preview** tab, showing matched texture paths for each material property.
+    7.  Toggle off individual properties/materials to exclude them, or select a custom override texture from the asset picker.
+    8.  Click **APPLY** to set the target shader and textures on all materials.
+
 ---
 
 ## 🚀 Getting Started

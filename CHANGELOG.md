@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Git Integration: A background-threaded Git status and management window (stage, commit, push, pull, fetch).
 - Git Integration: Interactive branch and remote status label injected directly into the editor play control toolbar.
+- Batch Material Processor: A standalone tool for batch setting material shaders and auto-assigning texture maps from a selected directory using customizable suffix rules and dry-run preview.
 
 ## [0.4.0] - 2026-02-23
 
