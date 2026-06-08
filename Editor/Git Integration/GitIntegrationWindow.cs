@@ -99,11 +99,25 @@ namespace RexTools.GitIntegration.Editor
             helpTitle.AddToClassList("rex-help-text-title");
             helpBox.Add(helpTitle);
 
-            helpBox.Add(new Label("• Fetch: Fetch updates from remote tracking branch.") { className = "rex-help-text-item" });
-            helpBox.Add(new Label("• Pull: Integrates remote branch updates to local.") { className = "rex-help-text-item" });
-            helpBox.Add(new Label("• Commit: Stage modified files (git add -A) and commit changes.") { className = "rex-help-text-item" });
-            helpBox.Add(new Label("• Push: Upload committed changes to remote repository.") { className = "rex-help-text-item" });
-            helpBox.Add(new Label("• Branch Status: Updates automatically when focus returns to Unity.") { className = "rex-help-text-item" });
+            var item1 = new Label("• Fetch: Fetch updates from remote tracking branch.");
+            item1.AddToClassList("rex-help-text-item");
+            helpBox.Add(item1);
+
+            var item2 = new Label("• Pull: Integrates remote branch updates to local.");
+            item2.AddToClassList("rex-help-text-item");
+            helpBox.Add(item2);
+
+            var item3 = new Label("• Commit: Stage modified files (git add -A) and commit changes.");
+            item3.AddToClassList("rex-help-text-item");
+            helpBox.Add(item3);
+
+            var item4 = new Label("• Push: Upload committed changes to remote repository.");
+            item4.AddToClassList("rex-help-text-item");
+            helpBox.Add(item4);
+
+            var item5 = new Label("• Branch Status: Updates automatically when focus returns to Unity.");
+            item5.AddToClassList("rex-help-text-item");
+            helpBox.Add(item5);
             
             root.Add(helpBox);
 
@@ -131,7 +145,10 @@ namespace RexTools.GitIntegration.Editor
         {
             noRepoContainer.AddToClassList("rex-box");
             noRepoContainer.style.alignItems = Align.Center;
-            noRepoContainer.style.padding = 20;
+            noRepoContainer.style.paddingTop = 20;
+            noRepoContainer.style.paddingBottom = 20;
+            noRepoContainer.style.paddingLeft = 20;
+            noRepoContainer.style.paddingRight = 20;
 
             var warningLabel = new Label("No Git repository found in the project root or parent directories.");
             warningLabel.style.whiteSpace = WhiteSpace.Normal;
@@ -243,10 +260,19 @@ namespace RexTools.GitIntegration.Editor
             consoleScroll = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
             consoleScroll.style.flexGrow = 1;
             consoleScroll.style.backgroundColor = new Color(0.12f, 0.12f, 0.12f, 0.9f);
-            consoleScroll.style.padding = 6;
+            consoleScroll.style.paddingTop = 6;
+            consoleScroll.style.paddingBottom = 6;
+            consoleScroll.style.paddingLeft = 6;
+            consoleScroll.style.paddingRight = 6;
             consoleScroll.style.marginTop = 4;
-            consoleScroll.style.borderWidth = 1;
-            consoleScroll.style.borderColor = new Color(0.2f, 0.2f, 0.2f);
+            consoleScroll.style.borderTopWidth = 1;
+            consoleScroll.style.borderBottomWidth = 1;
+            consoleScroll.style.borderLeftWidth = 1;
+            consoleScroll.style.borderRightWidth = 1;
+            consoleScroll.style.borderTopColor = new Color(0.2f, 0.2f, 0.2f);
+            consoleScroll.style.borderBottomColor = new Color(0.2f, 0.2f, 0.2f);
+            consoleScroll.style.borderLeftColor = new Color(0.2f, 0.2f, 0.2f);
+            consoleScroll.style.borderRightColor = new Color(0.2f, 0.2f, 0.2f);
 
             consoleLog = new Label("Git console initialized.\n");
             consoleLog.style.whiteSpace = WhiteSpace.Normal;

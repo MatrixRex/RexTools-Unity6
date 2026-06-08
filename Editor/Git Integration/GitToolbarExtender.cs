@@ -92,7 +92,10 @@ namespace RexTools.GitIntegration.Editor
                     btn.style.unityFontStyleAndWeight = FontStyle.Bold;
                     btn.style.fontSize = 11;
                     btn.style.backgroundColor = Color.clear;
-                    btn.style.borderWidth = 0;
+                    btn.style.borderTopWidth = 0;
+                    btn.style.borderBottomWidth = 0;
+                    btn.style.borderLeftWidth = 0;
+                    btn.style.borderRightWidth = 0;
                     btn.style.color = new Color(0.4f, 0.8f, 1.0f);
                     btn.style.paddingLeft = 8;
                     btn.style.paddingRight = 8;
