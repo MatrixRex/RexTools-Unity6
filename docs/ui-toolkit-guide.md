@@ -94,3 +94,30 @@ When building horizontal rows programmatically (e.g. `flex-direction: row` to pl
 
   var texField = new ObjectField(); // Inherits flex-grow: 1, flex-shrink: 1, min-width: 0 from .rex-row rules
   ```
+
+## 5. Implementing the Preset System UI
+RexTools features a reusable Preset save/load system using Unity's native Preset APIs. To maintain a unified aesthetic across all editor extensions, follow these steps to implement the preset UI.
+
+### Visual Standard: Header-Aligned Icon Button
+Always align the Preset button on the right-hand side of a section header, level with the section label.
+
+#### 1. UXML Layout
+Create a horizontal row with `justify-content: space-between` and `align-items: center`. Place the section header label on the left and an empty container (`preset-container-anchor` or `preset-btn-container`) on the right:
+```xml
+<ui:VisualElement class="rex-row" style="justify-content: space-between; align-items: center; margin-bottom: 5px;">
+    <ui:Label text="SETTINGS" class="rex-section-label" style="margin-bottom: 0;" />
+    <ui:VisualElement name="preset-btn-container" />
+</ui:VisualElement>
+```
+
+#### 2. C# Binding
+In C#, query the container and inject a compact `16x16` icon button using the reusable `RexPresetManager` module:
+```csharp
+var presetContainer = root.Q<VisualElement>("preset-btn-container");
+if (presetContainer != null)
+{
+    var presetBtn = RexTools.Editor.Core.RexPresetManager.CreatePresetIconButton(settings);
+    presetContainer.Add(presetBtn);
+}
+```
+*Note: Using `CreatePresetIconButton` is preferred for sub-panels and headers. For large windows/sections, you can optionally use `CreatePresetButtons(settings)` to show full `SAVE PRESET` and `PRESETS` buttons.*

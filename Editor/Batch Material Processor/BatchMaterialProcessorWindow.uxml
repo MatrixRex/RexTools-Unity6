@@ -21,7 +21,10 @@
 
         <!-- Config Box -->
         <ui:VisualElement class="rex-box" style="flex-shrink: 0; margin-bottom: 8px;">
-            <ui:Label text="SETTINGS &amp; PRESETS" class="rex-section-label" />
+            <ui:VisualElement class="rex-row" style="justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <ui:Label text="SETTINGS" class="rex-section-label" style="margin-bottom: 0;" />
+                <ui:VisualElement name="preset-btn-container" />
+            </ui:VisualElement>
             <ui:VisualElement class="rex-row">
                 <ui:Label text="Shader:" style="width: 55px;" />
                 <uie:ObjectField name="shader-field" class="rex-field-flex" />
@@ -31,10 +34,7 @@
                 <ui:TextField name="folder-field" class="rex-field-flex" />
                 <ui:Button name="btn-browse-folder" text="..." style="width: 25px; margin-left: 2px;" />
             </ui:VisualElement>
-            <ui:VisualElement class="rex-row" style="margin-bottom: 0px; justify-content: space-between;">
-                <ui:Toggle name="recursive-toggle" label="Recursive Search" />
-                <ui:VisualElement name="preset-container-anchor" style="width: 150px; height: 20px; align-self: center;" />
-            </ui:VisualElement>
+            <ui:Toggle name="recursive-toggle" label="Recursive Search" style="margin-bottom: 0px;" />
         </ui:VisualElement>
 
         <!-- Materials Box -->

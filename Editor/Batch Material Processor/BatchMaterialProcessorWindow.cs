@@ -113,10 +113,11 @@ namespace RexTools.BatchMaterialProcessor.Editor
             }
 
             // Preset Setup
-            var presetAnchor = root.Q<VisualElement>("preset-container-anchor");
-            if (presetAnchor != null)
+            var presetContainer = root.Q<VisualElement>("preset-btn-container");
+            if (presetContainer != null)
             {
-                presetAnchor.Add(RexPresetManager.CreatePresetButtons(settings, "BatchMaterialProcessorSettings"));
+                var presetBtn = RexPresetManager.CreatePresetIconButton(settings);
+                presetContainer.Add(presetBtn);
             }
 
             // Material list
