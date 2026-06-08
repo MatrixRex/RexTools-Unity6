@@ -48,6 +48,9 @@ namespace RexTools.BatchMaterialProcessor.Editor
                 settings = ScriptableObject.CreateInstance<BatchMaterialProcessorSettings>();
                 settings.name = "BatchMaterialProcessorSettings_Runtime";
             }
+            if (settings.materials == null) settings.materials = new List<Material>();
+            if (settings.suffixMappings == null) settings.suffixMappings = new List<SuffixMapping>();
+            if (settings.matchResults == null) settings.matchResults = new List<MaterialMatchResult>();
 
             VisualElement root = rootVisualElement;
             
@@ -234,6 +237,10 @@ namespace RexTools.BatchMaterialProcessor.Editor
         {
             if (settings != null)
             {
+                if (settings.materials == null) settings.materials = new List<Material>();
+                if (settings.suffixMappings == null) settings.suffixMappings = new List<SuffixMapping>();
+                if (settings.matchResults == null) settings.matchResults = new List<MaterialMatchResult>();
+
                 // Sync values if settings changed via Preset selection
                 if (shaderField != null && shaderField.value != settings.targetShader)
                 {
@@ -294,6 +301,9 @@ namespace RexTools.BatchMaterialProcessor.Editor
 
         private void RefreshMaterialsUI()
         {
+            if (materialsScroll == null) return;
+            if (settings == null || settings.materials == null) return;
+
             materialsScroll.Clear();
             if (settings.materials.Count == 0)
             {
@@ -422,6 +432,9 @@ namespace RexTools.BatchMaterialProcessor.Editor
 
         private void RefreshSuffixMappingsUI()
         {
+            if (suffixesScroll == null) return;
+            if (settings == null || settings.suffixMappings == null) return;
+
             suffixesScroll.Clear();
             if (settings.suffixMappings.Count == 0)
             {
@@ -565,6 +578,9 @@ namespace RexTools.BatchMaterialProcessor.Editor
 
         private void RefreshPreviewTab()
         {
+            if (previewScroll == null) return;
+            if (settings == null || settings.matchResults == null) return;
+
             previewScroll.Clear();
             if (settings.matchResults.Count == 0)
             {
