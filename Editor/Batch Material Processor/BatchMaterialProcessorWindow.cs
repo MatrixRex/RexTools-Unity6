@@ -590,7 +590,7 @@ namespace RexTools.BatchMaterialProcessor.Editor
 
                 var foldout = new Foldout { text = result.material.name, value = result.isExpanded };
                 foldout.style.fontSize = 11f;
-                foldout.style.unityFontStyle = FontStyle.Bold;
+                foldout.style.unityFontStyleAndWeight = FontStyle.Bold;
                 
                 var content = new VisualElement();
                 content.style.paddingLeft = 15;
