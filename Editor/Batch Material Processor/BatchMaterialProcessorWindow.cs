@@ -38,7 +38,7 @@ namespace RexTools.BatchMaterialProcessor.Editor
         {
             var wnd = GetWindow<BatchMaterialProcessorWindow>();
             wnd.titleContent = new GUIContent("Batch Material Processor");
-            wnd.minSize = new Vector2(700, 450);
+            wnd.minSize = new Vector2(400, 600);
         }
 
         public void CreateGUI()

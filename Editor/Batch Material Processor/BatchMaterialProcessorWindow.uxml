@@ -1,78 +1,79 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
-    <ui:VisualElement class="rex-root-padding" style="flex-direction: row; flex-grow: 1; height: 100%;">
-        <!-- Left Panel: Settings (fixed width) -->
-        <ui:VisualElement style="width: 260px; flex-shrink: 0; margin-right: 12px; flex-direction: column;">
-            <!-- Branded Header -->
-            <ui:VisualElement class="rex-header-row" style="flex-shrink: 0;">
-                <ui:VisualElement class="rex-header-stack">
-                    <ui:Label text="REX TOOLS" class="rex-brand-label" />
-                    <ui:Label text="Batch Material Processor" class="rex-tool-title" />
-                </ui:VisualElement>
-                <ui:Button name="help-btn" class="rex-help-btn" />
+    <ui:VisualElement class="rex-root-padding" style="flex-direction: column; flex-grow: 1; height: 100%;">
+        <!-- Branded Header -->
+        <ui:VisualElement class="rex-header-row" style="flex-shrink: 0; margin-bottom: 8px;">
+            <ui:VisualElement class="rex-header-stack">
+                <ui:Label text="REX TOOLS" class="rex-brand-label" />
+                <ui:Label text="Batch Material Processor" class="rex-tool-title" />
             </ui:VisualElement>
-
-            <!-- Help Box -->
-            <ui:VisualElement name="help-box" class="rex-help-box rex-box rex-hidden">
-                <ui:Label text="HOW TO USE:" class="rex-help-text-title" />
-                <ui:Label text="• Add materials using selection or drag-and-drop." class="rex-help-text-item" />
-                <ui:Label text="• Set a target Shader and search folder path." class="rex-help-text-item" />
-                <ui:Label text="• Edit suffix rules under Suffixes tab." class="rex-help-text-item" />
-                <ui:Label text="• Click PROCESS MATCHES to dry-run, then check the Preview tab." class="rex-help-text-item" />
-                <ui:Label text="• Click APPLY to convert materials and assign textures." class="rex-help-text-item" />
-            </ui:VisualElement>
-
-            <!-- Preset Box Anchor -->
-            <ui:VisualElement name="preset-container-anchor" style="flex-shrink: 0;" />
-
-            <!-- Materials Box -->
-            <ui:VisualElement class="rex-box" style="flex-grow: 1; min-height: 150px;">
-                <ui:Label text="MATERIALS TO PROCESS" class="rex-section-label" />
-                <ui:VisualElement class="rex-row">
-                    <ui:Button name="btn-get-selection" text="GET FROM SELECTION" class="rex-flex-grow rex-button-small" style="margin-right: 5px;" />
-                    <ui:Button name="btn-clear-mats" text="CLEAR" class="rex-button-small" />
-                </ui:VisualElement>
-                <ui:ScrollView name="materials-scroll" style="flex-grow: 1; margin-top: 5px; border-width: 1px; border-color: #222; background-color: rgba(0,0,0,0.2);" />
-            </ui:VisualElement>
-
-            <!-- Config Box -->
-            <ui:VisualElement class="rex-box" style="flex-shrink: 0;">
-                <ui:Label text="SETTINGS" class="rex-section-label" />
-                <ui:VisualElement class="rex-row">
-                    <ui:Label text="Shader:" style="width: 50px;" />
-                    <uie:ObjectField name="shader-field" class="rex-field-flex" />
-                </ui:VisualElement>
-                <ui:VisualElement class="rex-row">
-                    <ui:Label text="Folder:" style="width: 50px;" />
-                    <ui:TextField name="folder-field" class="rex-field-flex" />
-                    <ui:Button name="btn-browse-folder" text="..." style="width: 25px; margin-left: 2px;" />
-                </ui:VisualElement>
-                <ui:Toggle name="recursive-toggle" label="Recursive Search" />
-            </ui:VisualElement>
-
-            <!-- Actions -->
-            <ui:Button name="btn-process" text="PROCESS MATCHES" class="rex-action-button rex-action-button--pack" style="margin-top: 5px; margin-bottom: 2px; height: 35px;" />
-            <ui:Button name="btn-apply" text="APPLY" class="rex-action-button rex-action-button--unpack" style="margin-top: 2px; margin-bottom: 0px; height: 35px;" />
+            <ui:Button name="help-btn" class="rex-help-btn" />
         </ui:VisualElement>
 
-        <!-- Right Panel: Tabs and Configuration Details -->
-        <ui:VisualElement style="flex-grow: 1; flex-shrink: 1; flex-direction: column;">
+        <!-- Help Box -->
+        <ui:VisualElement name="help-box" class="rex-help-box rex-box rex-hidden" style="flex-shrink: 0;">
+            <ui:Label text="HOW TO USE:" class="rex-help-text-title" />
+            <ui:Label text="• Add materials using selection or drag-and-drop." class="rex-help-text-item" />
+            <ui:Label text="• Set a target Shader and search folder path." class="rex-help-text-item" />
+            <ui:Label text="• Edit suffix rules under Suffixes tab." class="rex-help-text-item" />
+            <ui:Label text="• Click PROCESS MATCHES to dry-run, then check the Preview tab." class="rex-help-text-item" />
+            <ui:Label text="• Click APPLY to convert materials and assign textures." class="rex-help-text-item" />
+        </ui:VisualElement>
+
+        <!-- Config Box -->
+        <ui:VisualElement class="rex-box" style="flex-shrink: 0; margin-bottom: 8px;">
+            <ui:Label text="SETTINGS & PRESETS" class="rex-section-label" />
+            <ui:VisualElement class="rex-row">
+                <ui:Label text="Shader:" style="width: 55px;" />
+                <uie:ObjectField name="shader-field" class="rex-field-flex" />
+            </ui:VisualElement>
+            <ui:VisualElement class="rex-row">
+                <ui:Label text="Folder:" style="width: 55px;" />
+                <ui:TextField name="folder-field" class="rex-field-flex" />
+                <ui:Button name="btn-browse-folder" text="..." style="width: 25px; margin-left: 2px;" />
+            </ui:VisualElement>
+            <ui:VisualElement class="rex-row" style="margin-bottom: 0px; justify-content: space-between;">
+                <ui:Toggle name="recursive-toggle" label="Recursive Search" />
+                <ui:VisualElement name="preset-container-anchor" style="width: 150px; height: 20px; align-self: center;" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Materials Box -->
+        <ui:VisualElement class="rex-box" style="height: 140px; flex-shrink: 0; margin-bottom: 8px; flex-direction: column;">
+            <ui:VisualElement class="rex-row" style="justify-content: space-between;">
+                <ui:Label text="MATERIALS TO PROCESS" class="rex-section-label" style="margin-bottom: 0px;" />
+                <ui:VisualElement style="flex-direction: row;">
+                    <ui:Button name="btn-get-selection" text="GET SELECTION" class="rex-button-small" style="margin-right: 5px; font-size: 9px;" />
+                    <ui:Button name="btn-clear-mats" text="CLEAR" class="rex-button-small" style="font-size: 9px;" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:ScrollView name="materials-scroll" style="flex-grow: 1; margin-top: 4px; border-width: 1px; border-color: #222; background-color: rgba(0,0,0,0.2);" />
+        </ui:VisualElement>
+
+        <!-- Suffixes/Preview Tabs Panel -->
+        <ui:VisualElement style="flex-grow: 1; flex-shrink: 1; flex-direction: column; margin-bottom: 4px;">
             <!-- Tabs Menu -->
-            <ui:VisualElement class="rex-tabs-container">
-                <ui:Button name="tab-suffixes" text="Suffixes" class="rex-tab-button rex-tab-button--active" />
-                <ui:Button name="tab-preview" text="Preview" class="rex-tab-button rex-tab-button--inactive" />
+            <ui:VisualElement class="rex-tabs-container" style="margin-bottom: 4px; height: 24px;">
+                <ui:Button name="tab-suffixes" text="Suffixes" class="rex-tab-button rex-tab-button--active" style="font-size: 10px;" />
+                <ui:Button name="tab-preview" text="Preview" class="rex-tab-button rex-tab-button--inactive" style="font-size: 10px;" />
             </ui:VisualElement>
 
             <!-- Suffix Tab Content -->
-            <ui:VisualElement name="pane-suffixes" class="rex-box" style="flex-grow: 1; padding: 10px;">
-                <ui:Label text="SUFFIX RULES FOR SHADER PROPERTIES" class="rex-section-label" />
+            <ui:VisualElement name="pane-suffixes" class="rex-box" style="flex-grow: 1; padding: 6px; margin-bottom: 0px;">
+                <ui:Label text="SUFFIX RULES" class="rex-section-label" />
                 <ui:ScrollView name="suffixes-scroll" style="flex-grow: 1;" />
             </ui:VisualElement>
 
             <!-- Preview Tab Content -->
-            <ui:VisualElement name="pane-preview" class="rex-box rex-hidden" style="flex-grow: 1; padding: 10px;">
+            <ui:VisualElement name="pane-preview" class="rex-box rex-hidden" style="flex-grow: 1; padding: 6px; margin-bottom: 0px;">
                 <ui:Label text="MATCH PREVIEW" class="rex-section-label" />
                 <ui:ScrollView name="preview-scroll" style="flex-grow: 1;" />
             </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Actions -->
+        <ui:VisualElement style="flex-shrink: 0; flex-direction: row; height: 35px; margin-top: 4px;">
+            <ui:Button name="btn-process" text="PROCESS MATCHES" class="rex-action-button rex-action-button--pack" style="flex-grow: 1; height: 100%; margin-top: 0px; margin-right: 6px; font-size: 11px;" />
+            <ui:Button name="btn-apply" text="APPLY" class="rex-action-button rex-action-button--unpack" style="flex-grow: 1; height: 100%; margin-top: 0px; font-size: 11px;" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
