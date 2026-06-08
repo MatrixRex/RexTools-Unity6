@@ -23,6 +23,10 @@ namespace RexTools.GitIntegration.Editor
         private static double lastInjectionCheck = 0.0;
         private const double InjectionCheckInterval = 2.0; // Check layout every 2 seconds
 
+        private static readonly string[] SpinnerFrames = { "/", "-", "\\", "|" };
+        private static int spinnerIndex = 0;
+        private static double lastSpinnerTime = 0.0;
+
         static GitToolbarExtender()
         {
             EditorApplication.delayCall += Initialize;
@@ -48,11 +52,47 @@ namespace RexTools.GitIntegration.Editor
         private static void OnEditorUpdate()
         {
             double now = EditorApplication.timeSinceStartup;
+
+            if (GitRunner.IsRunningNetworkCommand)
+            {
+                if (now - lastSpinnerTime > 0.15)
+                {
+                    lastSpinnerTime = now;
+                    spinnerIndex = (spinnerIndex + 1) % SpinnerFrames.Length;
+                    UpdateSpinnerOnly();
+                }
+            }
+
             if (now - lastInjectionCheck > InjectionCheckInterval)
             {
                 lastInjectionCheck = now;
                 CheckAndInject(false);
             }
+        }
+
+        private static void UpdateSpinnerOnly()
+        {
+            try
+            {
+                Type toolbarType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.Toolbar");
+                if (toolbarType == null) return;
+                var toolbars = Resources.FindObjectsOfTypeAll(toolbarType);
+                if (toolbars == null || toolbars.Length == 0) return;
+                var toolbar = toolbars[0];
+                var rootField = toolbarType.GetField("m_Root", BindingFlags.NonPublic | BindingFlags.Instance);
+                var root = rootField?.GetValue(toolbar) as VisualElement;
+                if (root == null) return;
+
+                var playZone = root.Q("ToolbarZonePlayMode");
+                if (playZone == null) return;
+
+                var btn = playZone.Q<Label>("rex-git-toolbar-btn");
+                if (btn != null)
+                {
+                    btn.text = $"Git: {cachedBranchName} [{SpinnerFrames[spinnerIndex]}]";
+                }
+            }
+            catch {}
         }
 
         /// <summary>
@@ -143,7 +183,11 @@ namespace RexTools.GitIntegration.Editor
             }
 
             string text = $"Git: {cachedBranchName}";
-            if (cachedAhead > 0 || cachedBehind > 0 || cachedModified > 0)
+            if (GitRunner.IsRunningNetworkCommand)
+            {
+                text += $" [{SpinnerFrames[spinnerIndex]}]";
+            }
+            else if (cachedAhead > 0 || cachedBehind > 0 || cachedModified > 0)
             {
                 text += " *";
             }

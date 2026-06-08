@@ -15,6 +15,11 @@ namespace RexTools.GitIntegration.Editor
         private static string cachedRepoPath;
 
         /// <summary>
+        /// Gets or sets whether a Git network command (fetch, pull, push) is currently executing.
+        /// </summary>
+        public static bool IsRunningNetworkCommand { get; set; }
+
+        /// <summary>
         /// Finds the closest Git repository root by searching upward from the current project directory.
         /// </summary>
         public static string FindRepositoryRoot()

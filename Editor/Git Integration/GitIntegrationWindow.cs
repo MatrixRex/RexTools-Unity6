@@ -26,6 +26,10 @@ namespace RexTools.GitIntegration.Editor
         private double lastFetchTime = 0.0f;
         private const double FetchInterval = 60.0; // 60 seconds
 
+        private static readonly string[] SpinnerFrames = { "/", "-", "\\", "|" };
+        private int spinnerIndex = 0;
+        private double lastSpinnerTime = 0.0;
+
         [MenuItem("Tools/Rex Tools/Git Integration")]
         public static void ShowWindow()
         {
@@ -279,9 +283,21 @@ namespace RexTools.GitIntegration.Editor
 
         private void OnEditorUpdate()
         {
-            if (!GitRunner.HasGitRepository() || isExecuting) return;
+            if (!GitRunner.HasGitRepository()) return;
 
             double currentTime = EditorApplication.timeSinceStartup;
+
+            if (isExecuting)
+            {
+                if (currentTime - lastSpinnerTime > 0.15)
+                {
+                    lastSpinnerTime = currentTime;
+                    spinnerIndex = (spinnerIndex + 1) % SpinnerFrames.Length;
+                    syncStatusLabel.text = $"Executing Git command... [{SpinnerFrames[spinnerIndex]}]";
+                }
+                return;
+            }
+
             if (currentTime - lastFetchTime > FetchInterval)
             {
                 lastFetchTime = currentTime;
@@ -297,6 +313,9 @@ namespace RexTools.GitIntegration.Editor
             pushBtn.SetEnabled(!executing);
             commitBtn.SetEnabled(!executing);
             commitMsgField.SetEnabled(!executing);
+
+            // Set the global network flag on GitRunner
+            GitRunner.IsRunningNetworkCommand = executing;
         }
 
         private void Log(string text)
