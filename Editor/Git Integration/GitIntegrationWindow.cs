@@ -19,10 +19,6 @@ namespace RexTools.GitIntegration.Editor
         private Button commitBtn;
         private TextField commitMsgField;
         
-        private ScrollView consoleScroll;
-        private Label consoleLog;
-        private Button clearLogBtn;
-
         private VisualElement mainContentContainer;
         private VisualElement noRepoContainer;
         
@@ -34,7 +30,7 @@ namespace RexTools.GitIntegration.Editor
         public static void ShowWindow()
         {
             var window = GetWindow<GitIntegrationWindow>("Git Integration");
-            window.minSize = new Vector2(380, 500);
+            window.minSize = new Vector2(380, 270);
         }
 
         private void OnEnable()
@@ -236,53 +232,6 @@ namespace RexTools.GitIntegration.Editor
 
             mainContentContainer.Add(opsBox);
 
-            // --- CONSOLE OUTPUT ---
-            var consoleBox = new VisualElement();
-            consoleBox.AddToClassList("rex-box");
-            consoleBox.style.flexGrow = 1;
-
-            var consoleHeaderRow = new VisualElement();
-            consoleHeaderRow.AddToClassList("rex-row");
-            consoleHeaderRow.style.justifyContent = Justify.SpaceBetween;
-
-            var consoleLabel = new Label("CONSOLE LOG");
-            consoleLabel.AddToClassList("rex-section-label");
-            consoleHeaderRow.Add(consoleLabel);
-
-            clearLogBtn = new Button { text = "Clear" };
-            clearLogBtn.style.height = 16;
-            clearLogBtn.style.fontSize = 9;
-            clearLogBtn.clicked += () => consoleLog.text = "";
-            consoleHeaderRow.Add(clearLogBtn);
-
-            consoleBox.Add(consoleHeaderRow);
-
-            consoleScroll = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
-            consoleScroll.style.flexGrow = 1;
-            consoleScroll.style.backgroundColor = new Color(0.12f, 0.12f, 0.12f, 0.9f);
-            consoleScroll.style.paddingTop = 6;
-            consoleScroll.style.paddingBottom = 6;
-            consoleScroll.style.paddingLeft = 6;
-            consoleScroll.style.paddingRight = 6;
-            consoleScroll.style.marginTop = 4;
-            consoleScroll.style.borderTopWidth = 1;
-            consoleScroll.style.borderBottomWidth = 1;
-            consoleScroll.style.borderLeftWidth = 1;
-            consoleScroll.style.borderRightWidth = 1;
-            consoleScroll.style.borderTopColor = new Color(0.2f, 0.2f, 0.2f);
-            consoleScroll.style.borderBottomColor = new Color(0.2f, 0.2f, 0.2f);
-            consoleScroll.style.borderLeftColor = new Color(0.2f, 0.2f, 0.2f);
-            consoleScroll.style.borderRightColor = new Color(0.2f, 0.2f, 0.2f);
-
-            consoleLog = new Label("Git console initialized.\n");
-            consoleLog.style.whiteSpace = WhiteSpace.Normal;
-            consoleLog.style.fontSize = 11;
-            consoleLog.style.unityFontDefinition = FontDefinition.FromSDFFont(null); // use monospace fallback if possible
-            consoleScroll.Add(consoleLog);
-
-            consoleBox.Add(consoleScroll);
-
-            mainContentContainer.Add(consoleBox);
         }
 
         private async void RefreshLayout()
@@ -348,19 +297,18 @@ namespace RexTools.GitIntegration.Editor
             pushBtn.SetEnabled(!executing);
             commitBtn.SetEnabled(!executing);
             commitMsgField.SetEnabled(!executing);
-            clearLogBtn.SetEnabled(!executing);
         }
 
         private void Log(string text)
         {
             if (string.IsNullOrEmpty(text)) return;
-            consoleLog.text += $"{text}\n";
-            
-            // Auto scroll to bottom
-            EditorApplication.delayCall += () =>
-            {
-                consoleScroll.scrollOffset = new Vector2(0, float.MaxValue);
-            };
+            Debug.Log($"[Git] {text}");
+        }
+
+        private void LogError(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            Debug.LogError($"[Git] {text}");
         }
 
         private async Task RunFetchAsync(bool silent)
@@ -374,7 +322,7 @@ namespace RexTools.GitIntegration.Editor
 
             int exitCode = await GitRunner.RunCommandAsync("fetch", 
                 line => { if (!silent) Log(line); }, 
-                line => { if (!silent) Log($"[Err] {line}"); }
+                line => { if (!silent) LogError(line); }
             );
 
             if (!silent)
@@ -391,7 +339,7 @@ namespace RexTools.GitIntegration.Editor
             SetUIExecuting(true);
             Log("> git pull");
 
-            int exitCode = await GitRunner.RunCommandAsync("pull", Log, line => Log($"[Err] {line}"));
+            int exitCode = await GitRunner.RunCommandAsync("pull", Log, LogError);
             Log($"Pull finished with exit code {exitCode}");
             
             SetUIExecuting(false);
@@ -404,7 +352,7 @@ namespace RexTools.GitIntegration.Editor
             SetUIExecuting(true);
             Log("> git push");
 
-            int exitCode = await GitRunner.RunCommandAsync("push", Log, line => Log($"[Err] {line}"));
+            int exitCode = await GitRunner.RunCommandAsync("push", Log, LogError);
             Log($"Push finished with exit code {exitCode}");
             
             SetUIExecuting(false);
@@ -425,13 +373,13 @@ namespace RexTools.GitIntegration.Editor
             SetUIExecuting(true);
             
             Log("> git add -A");
-            int addExit = await GitRunner.RunCommandAsync("add -A", Log, line => Log($"[Err] {line}"));
+            int addExit = await GitRunner.RunCommandAsync("add -A", Log, LogError);
             
             if (addExit == 0)
             {
                 string escapedMessage = message.Replace("\"", "\\\"");
                 Log($"> git commit -m \"{escapedMessage}\"");
-                int commitExit = await GitRunner.RunCommandAsync($"commit -m \"{escapedMessage}\"", Log, line => Log($"[Err] {line}"));
+                int commitExit = await GitRunner.RunCommandAsync($"commit -m \"{escapedMessage}\"", Log, LogError);
                 
                 if (commitExit == 0)
                 {
@@ -440,12 +388,12 @@ namespace RexTools.GitIntegration.Editor
                 }
                 else
                 {
-                    Log($"Commit failed with exit code {commitExit}");
+                    LogError($"Commit failed with exit code {commitExit}");
                 }
             }
             else
             {
-                Log($"Stage failed with exit code {addExit}");
+                LogError($"Stage failed with exit code {addExit}");
             }
 
             SetUIExecuting(false);
