@@ -248,6 +248,27 @@
     margin-bottom: 5px;
 }
 
+.rex-row-cols-2 {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 5px;
+    width: 100%;
+}
+
+.rex-col-left {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    min-width: 120px;
+}
+
+.rex-col-right {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    min-width: 50px;
+}
+
 .rex-label-w50 {
     width: 50px;
 }

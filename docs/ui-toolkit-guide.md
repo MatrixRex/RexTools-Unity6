@@ -121,3 +121,60 @@ if (presetContainer != null)
 }
 ```
 *Note: Using `CreatePresetIconButton` is preferred for sub-panels and headers. For large windows/sections, you can optionally use `CreatePresetButtons(settings)` to show full `SAVE PRESET` and `PRESETS` buttons.*
+
+## 6. Implementing Standardized Two-Column Layouts
+For dynamic list rows that display a left-side label/descriptor and a right-side input/object field, use the standardized two-column classes in `RexToolsStyles.uss`. This splits horizontal space equally (50/50) on wider windows, while enforcing distinct minimum widths when scaled down to keep labels legible and fields interactable.
+
+### Visual Standard: Equal Split Flex Layout
+- **Row Container (`.rex-row-cols-2`)**: Replaces `.rex-row`. Sets up a flex direction of `row` with `align-items: center` and ensures the row takes up 100% of the parent width.
+- **Left Column (`.rex-col-left`)**: Holds the description or metadata labels (and optional checkbox toggles). It has a higher `min-width: 120px` to prevent text truncation.
+- **Right Column (`.rex-col-right`)**: Holds the interactive value fields (e.g., `TextField`, `ObjectField`). It has a small `min-width: 50px` allowing it to shrink further before clipping.
+- Both columns use `flex-grow: 1; flex-shrink: 1; flex-basis: 0;` so they divide extra available horizontal space equally.
+
+### Implementation Patterns
+
+#### Case A: Simple Label and Field
+```csharp
+var row = new VisualElement();
+row.AddToClassList("rex-row-cols-2");
+
+var label = new Label("Albedo Map (_BaseMap)");
+label.AddToClassList("rex-col-left");
+
+var field = new TextField();
+field.AddToClassList("rex-col-right");
+
+row.Add(label);
+row.Add(field);
+```
+
+#### Case B: Multi-Element Left Column (Toggle + Label)
+If you need to include a select/active checkbox alongside the label inside the left column, wrap them in a helper container inside `.rex-col-left` so the 50/50 split remains perfectly aligned across multiple rows.
+```csharp
+var row = new VisualElement();
+row.AddToClassList("rex-row-cols-2");
+
+// Column 1: Left Container
+var leftCol = new VisualElement();
+leftCol.AddToClassList("rex-col-left");
+leftCol.style.flexDirection = FlexDirection.Row;
+leftCol.style.alignItems = Align.Center;
+
+var toggle = new Toggle();
+toggle.style.marginRight = 4;
+leftCol.Add(toggle);
+
+var label = new Label("Normal Map (_BumpMap)");
+label.style.flexGrow = 1;
+label.style.flexShrink = 1;
+label.style.minWidth = 0; // Allows the label text to shrink responsively within the column
+leftCol.Add(label);
+
+row.Add(leftCol);
+
+// Column 2: Right Field
+var field = new ObjectField();
+field.AddToClassList("rex-col-right");
+row.Add(field);
+```
+

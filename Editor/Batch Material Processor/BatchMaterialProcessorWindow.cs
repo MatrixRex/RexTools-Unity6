@@ -478,16 +478,16 @@ namespace RexTools.BatchMaterialProcessor.Editor
             foreach (var mapping in settings.suffixMappings)
             {
                 var row = new VisualElement();
-                row.AddToClassList("rex-row");
+                row.AddToClassList("rex-row-cols-2");
                 row.style.marginBottom = 6;
 
                 var label = new Label($"{mapping.propertyDescription} ({mapping.propertyName})");
-                label.style.width = 200;
+                label.AddToClassList("rex-col-left");
                 label.style.fontSize = 10f;
-                label.style.flexShrink = 0;
                 row.Add(label);
 
                 var txt = new TextField();
+                txt.AddToClassList("rex-col-right");
                 txt.value = mapping.suffixes;
                 txt.RegisterValueChangedCallback(evt => {
                     mapping.suffixes = evt.newValue;
@@ -654,24 +654,34 @@ namespace RexTools.BatchMaterialProcessor.Editor
                 foreach (var match in result.propertyMatches)
                 {
                     var row = new VisualElement();
-                    row.AddToClassList("rex-row");
+                    row.AddToClassList("rex-row-cols-2");
                     row.style.marginBottom = 4;
+
+                    var leftCol = new VisualElement();
+                    leftCol.AddToClassList("rex-col-left");
+                    leftCol.style.flexDirection = FlexDirection.Row;
+                    leftCol.style.alignItems = Align.Center;
 
                     var toggle = new Toggle();
                     toggle.value = match.isSelected;
+                    toggle.style.marginRight = 4;
                     toggle.RegisterValueChangedCallback(evt => {
                         match.isSelected = evt.newValue;
                         EditorUtility.SetDirty(settings);
                     });
-                    row.Add(toggle);
+                    leftCol.Add(toggle);
 
                     var propLabel = new Label($"{match.propertyDescription} ({match.propertyName})");
-                    propLabel.style.width = 160;
                     propLabel.style.fontSize = 9f;
-                    propLabel.style.flexShrink = 0;
-                    row.Add(propLabel);
+                    propLabel.style.flexGrow = 1;
+                    propLabel.style.flexShrink = 1;
+                    propLabel.style.minWidth = 0;
+                    leftCol.Add(propLabel);
+                    
+                    row.Add(leftCol);
 
                     var texField = new ObjectField();
+                    texField.AddToClassList("rex-col-right");
                     texField.objectType = typeof(Texture);
                     texField.value = match.overrideTexture != null ? match.overrideTexture : match.matchedTexture;
                     texField.RegisterValueChangedCallback(evt => {
