@@ -18,6 +18,7 @@ namespace RexTools.GitIntegration.Editor
         private Button pushBtn;
         private Button commitBtn;
         private TextField commitMsgField;
+        private ScrollView changedFilesScroll;
         
         private VisualElement mainContentContainer;
         private VisualElement noRepoContainer;
@@ -34,7 +35,7 @@ namespace RexTools.GitIntegration.Editor
         public static void ShowWindow()
         {
             var window = GetWindow<GitIntegrationWindow>("Git Integration");
-            window.minSize = new Vector2(380, 270);
+            window.minSize = new Vector2(380, 390);
         }
 
         private void OnEnable()
@@ -191,6 +192,34 @@ namespace RexTools.GitIntegration.Editor
 
             mainContentContainer.Add(infoBox);
 
+            // --- CHANGED FILES LIST ---
+            var changedFilesBox = new VisualElement();
+            changedFilesBox.AddToClassList("rex-box");
+            changedFilesBox.style.marginTop = 6;
+            
+            var changedFilesLabel = new Label("CHANGED FILES");
+            changedFilesLabel.AddToClassList("rex-section-label");
+            changedFilesBox.Add(changedFilesLabel);
+
+            changedFilesScroll = new ScrollView(ScrollViewMode.Vertical);
+            changedFilesScroll.style.height = 100;
+            changedFilesScroll.style.backgroundColor = new Color(0.12f, 0.12f, 0.12f, 0.5f);
+            changedFilesScroll.style.paddingTop = 4;
+            changedFilesScroll.style.paddingBottom = 4;
+            changedFilesScroll.style.paddingLeft = 4;
+            changedFilesScroll.style.paddingRight = 4;
+            changedFilesScroll.style.borderTopWidth = 1;
+            changedFilesScroll.style.borderBottomWidth = 1;
+            changedFilesScroll.style.borderLeftWidth = 1;
+            changedFilesScroll.style.borderRightWidth = 1;
+            changedFilesScroll.style.borderTopColor = new Color(0.2f, 0.2f, 0.2f);
+            changedFilesScroll.style.borderBottomColor = new Color(0.2f, 0.2f, 0.2f);
+            changedFilesScroll.style.borderLeftColor = new Color(0.2f, 0.2f, 0.2f);
+            changedFilesScroll.style.borderRightColor = new Color(0.2f, 0.2f, 0.2f);
+            
+            changedFilesBox.Add(changedFilesScroll);
+            mainContentContainer.Add(changedFilesBox);
+
             // --- OPERATIONS PANEL ---
             var opsBox = new VisualElement();
             opsBox.AddToClassList("rex-box");
@@ -276,6 +305,85 @@ namespace RexTools.GitIntegration.Editor
                 syncText += " (Clean working directory)";
 
             syncStatusLabel.text = syncText;
+
+            // Rebuild the changed files list
+            if (changedFilesScroll != null)
+            {
+                changedFilesScroll.Clear();
+                var changedFiles = await GitRunner.GetChangedFilesAsync();
+                if (changedFiles.Count == 0)
+                {
+                    var cleanLabel = new Label("No changed files (Working directory clean)");
+                    cleanLabel.style.color = new Color(0.5f, 0.5f, 0.5f);
+                    cleanLabel.style.fontSize = 10;
+                    cleanLabel.style.paddingLeft = 4;
+                    changedFilesScroll.Add(cleanLabel);
+                }
+                else
+                {
+                    foreach (var fileLine in changedFiles)
+                    {
+                        if (fileLine.Length < 3) continue;
+
+                        string prefix = fileLine.Substring(0, 2);
+                        string path = fileLine.Substring(2).Trim();
+
+                        var row = new VisualElement();
+                        row.style.flexDirection = FlexDirection.Row;
+                        row.style.alignItems = Align.Center;
+                        row.style.marginBottom = 2;
+
+                        var prefixLabel = new Label($"[{prefix.Trim()}]");
+                        prefixLabel.style.width = 32;
+                        prefixLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+                        prefixLabel.style.fontSize = 10;
+                        prefixLabel.style.paddingLeft = 4;
+
+                        if (prefix.Contains("M"))
+                            prefixLabel.style.color = new Color(1.0f, 0.7f, 0.2f); // Orange/Yellow
+                        else if (prefix.Contains("D"))
+                            prefixLabel.style.color = new Color(1.0f, 0.35f, 0.35f); // Red
+                        else if (prefix.Contains("A") || prefix.Contains("?"))
+                            prefixLabel.style.color = new Color(0.3f, 0.8f, 0.4f); // Green
+                        else
+                            prefixLabel.style.color = new Color(0.8f, 0.8f, 0.8f);
+
+                        row.Add(prefixLabel);
+
+                        var pathLabel = new Label(path);
+                        pathLabel.style.flexGrow = 1;
+                        pathLabel.style.fontSize = 10;
+                        pathLabel.style.color = new Color(0.85f, 0.85f, 0.85f);
+                        pathLabel.style.paddingLeft = 4;
+
+                        // Hover effect
+                        pathLabel.RegisterCallback<MouseOverEvent>(e => pathLabel.style.color = new Color(0.4f, 0.8f, 1.0f));
+                        pathLabel.RegisterCallback<MouseOutEvent>(e => pathLabel.style.color = new Color(0.85f, 0.85f, 0.85f));
+
+                        string cleanPath = path;
+                        if (prefix.Contains("R")) // Renamed "old -> new"
+                        {
+                            int arrow = path.IndexOf("->");
+                            if (arrow != -1)
+                            {
+                                cleanPath = path.Substring(arrow + 2).Trim();
+                            }
+                        }
+
+                        pathLabel.RegisterCallback<ClickEvent>(e =>
+                        {
+                            var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(cleanPath);
+                            if (asset != null)
+                            {
+                                EditorGUIUtility.PingObject(asset);
+                            }
+                        });
+
+                        row.Add(pathLabel);
+                        changedFilesScroll.Add(row);
+                    }
+                }
+            }
             
             // Sync status to playmode toolbar button
             GitToolbarExtender.ForceRefresh();

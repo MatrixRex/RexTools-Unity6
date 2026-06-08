@@ -175,5 +175,23 @@ namespace RexTools.GitIntegration.Editor
             });
             return count;
         }
+
+        /// <summary>
+        /// Gets the list of raw porcelain git status lines representing modified/untracked files.
+        /// </summary>
+        public static async Task<System.Collections.Generic.List<string>> GetChangedFilesAsync()
+        {
+            var list = new System.Collections.Generic.List<string>();
+            if (!HasGitRepository()) return list;
+
+            await RunCommandAsync("status --porcelain", line =>
+            {
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    list.Add(line.Trim());
+                }
+            });
+            return list;
+        }
     }
 }
