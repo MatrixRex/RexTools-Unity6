@@ -434,18 +434,17 @@ namespace RexTools.BatchMaterialProcessor.Editor
             foreach (var mapping in settings.suffixMappings)
             {
                 var row = new VisualElement();
-                row.style.flexDirection = FlexDirection.Row;
-                row.style.alignItems = Align.Center;
+                row.AddToClassList("rex-row");
                 row.style.marginBottom = 6;
 
                 var label = new Label($"{mapping.propertyDescription} ({mapping.propertyName})");
                 label.style.width = 200;
                 label.style.fontSize = 10f;
+                label.style.flexShrink = 0;
                 row.Add(label);
 
                 var txt = new TextField();
                 txt.value = mapping.suffixes;
-                txt.style.flexGrow = 1;
                 txt.RegisterValueChangedCallback(evt => {
                     mapping.suffixes = evt.newValue;
                     EditorUtility.SetDirty(settings);
@@ -608,8 +607,7 @@ namespace RexTools.BatchMaterialProcessor.Editor
                 foreach (var match in result.propertyMatches)
                 {
                     var row = new VisualElement();
-                    row.style.flexDirection = FlexDirection.Row;
-                    row.style.alignItems = Align.Center;
+                    row.AddToClassList("rex-row");
                     row.style.marginBottom = 4;
 
                     var toggle = new Toggle();
@@ -623,12 +621,12 @@ namespace RexTools.BatchMaterialProcessor.Editor
                     var propLabel = new Label($"{match.propertyDescription} ({match.propertyName})");
                     propLabel.style.width = 160;
                     propLabel.style.fontSize = 9f;
+                    propLabel.style.flexShrink = 0;
                     row.Add(propLabel);
 
                     var texField = new ObjectField();
                     texField.objectType = typeof(Texture);
                     texField.value = match.overrideTexture != null ? match.overrideTexture : match.matchedTexture;
-                    texField.style.flexGrow = 1;
                     texField.RegisterValueChangedCallback(evt => {
                         match.overrideTexture = evt.newValue as Texture;
                         EditorUtility.SetDirty(settings);
