@@ -21,7 +21,7 @@
 
         <!-- Config Box -->
         <ui:VisualElement class="rex-box" style="flex-shrink: 0; margin-bottom: 8px;">
-            <ui:Label text="SETTINGS & PRESETS" class="rex-section-label" />
+            <ui:Label text="SETTINGS &amp; PRESETS" class="rex-section-label" />
             <ui:VisualElement class="rex-row">
                 <ui:Label text="Shader:" style="width: 55px;" />
                 <uie:ObjectField name="shader-field" class="rex-field-flex" />
