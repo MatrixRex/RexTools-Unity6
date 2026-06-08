@@ -67,3 +67,30 @@ In C#, UI Toolkit style properties are wrapped in `Style*` structs:
   `element.style.flexDirection = FlexDirection.Row;`
   `element.style.alignItems = Align.Center;`
   `element.style.justifyContent = Justify.SpaceBetween;`
+
+## 4. Layout & Flex Overflow Prevention (Horizontal Rows)
+When building horizontal rows programmatically (e.g. `flex-direction: row` to place a label and a field next to each other), Unity's built-in fields (such as `ObjectField`, `TextField`, `EnumField`, etc.) can easily overflow the row or parent containers if not constrained.
+
+### Preventing Overflow
+- **❌ DO NOT USE:** Programmatically-created rows without explicit flex constraints:
+  ```csharp
+  var row = new VisualElement();
+  row.style.flexDirection = FlexDirection.Row;
+  
+  var label = new Label("Label");
+  label.style.width = 160;
+  
+  var texField = new ObjectField();
+  texField.style.flexGrow = 1; // ⚠️ Will overflow the container when resized smaller!
+  ```
+- **✅ ALWAYS USE:** Apply the standard `.rex-row` class to the container row, and set `flexShrink = 0` on fixed-width labels:
+  ```csharp
+  var row = new VisualElement();
+  row.AddToClassList("rex-row"); // Auto-applies flex-direction and handles child resizing rules
+
+  var label = new Label("Label");
+  label.style.width = 160;
+  label.style.flexShrink = 0; // 💡 Prevents the label text from being squished
+
+  var texField = new ObjectField(); // Inherits flex-grow: 1, flex-shrink: 1, min-width: 0 from .rex-row rules
+  ```
