@@ -9,7 +9,7 @@ All tools open via `Tools/Rex Tools/<Tool Name>` (see `readme.md` for full list)
 ## Architecture
 
 - **Two assemblies:** `Editor/RexTools.Editor.asmdef` (Editor-only, references URP + ShaderGraph) and `Runtime/RexTools.Runtime.asmdef` (standalone)
-- **UI must use UI Toolkit** (UXML + USS). Reuse `.rex-*` classes from `Editor/RexToolsStyles.uss`. Follow layout patterns in `design.md` — do not use IMGUI for new work
+- **UI must use UI Toolkit** (UXML + USS). Reuse `.rex-*` classes from `Editor/RexToolsStyles.uss`. Follow layout patterns in `design.md` and C# styling rules in [ui-toolkit-guide.md](file:///p:/Personal/00%20Unity/03%20RexTools/RexTools/RexTools-Unity6/docs/ui-toolkit-guide.md) — do not use IMGUI for new work
 - **Conditional:** `REX_URP` is defined when URP is present; guard URP-only post-processing with `#if REX_URP`
 - **ShaderGraph tools** (`ShaderGraphSearch`, `ShaderGraphOrganizer`) use `[InitializeOnLoad]` + reflection on internal `Unity.ShaderGraph.Editor` types
 - **Preset save/load:** Use `RexPresetManager.CreatePresetButtons()` / `SavePreset()` / `ShowPresetSelector()` from `Editor/Core/RexPresetManager.cs`
