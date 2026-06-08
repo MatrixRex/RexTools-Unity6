@@ -23,6 +23,6 @@ No test, lint, typecheck, or build tooling exists. No CI/CD. No pre-commit hooks
 
 ## Workflow conventions
 
-- **Commits:** `feat(tool-name): description` (conventional commits)
+- **Commits:** `feat(tool-name): description` (conventional commits). Always stage and commit corresponding Unity `.meta` files alongside any new/modified assets or scripts.
 - **Changelog:** Add entries under `[Unreleased]` in `CHANGELOG.md`. On release, rename to version, update `package.json` version, add blank `[Unreleased]` header. See `.agent/workflows/changelog.md`
 - **Documentation:** After shipping a tool, update `readme.md` and `CHANGELOG.md`. See `.agent/workflows/document-tool.md`
