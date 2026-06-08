@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Git Integration: A background-threaded Git status and management window (stage, commit, push, pull, fetch).
+- Git Integration: Interactive branch and remote status label injected directly into the editor play control toolbar.
+
 ## [0.4.0] - 2026-02-23
 
 ### Added

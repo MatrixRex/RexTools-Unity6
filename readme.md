@@ -70,6 +70,17 @@ A utility for packing multiple textures into individual RGBA channels or extract
 
 
 
+### 🐙 Git Integration
+A lightweight, background-threaded Git client built directly into the Unity Editor. It displays your current branch directly on the Unity play control strip and lets you stage, commit, fetch, pull, and push without leaving Unity.
+
+*   **Usage**:
+    1.  Look at the Unity play controls bar to see the current active branch (e.g., `Git: main`).
+    2.  Click the branch button or go to `Tools > Rex Tools > Git Integration` to open the full window.
+    3.  See your repository path, current branch, and synchronization counts (Ahead/Behind).
+    4.  Use **Fetch**, **Pull**, and **Push** buttons to sync with remote branches.
+    5.  Enter a commit message and click **STAGE & COMMIT ALL** to commit local modifications.
+    6.  The console log at the bottom displays live output from background Git processes.
+
 ---
 
 ## 🚀 Getting Started
