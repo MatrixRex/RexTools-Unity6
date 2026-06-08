@@ -422,4 +422,69 @@
     flex-grow: 1;
     overflow: hidden;
 }
+
+/* --- Standardized Foldout System --- */
+.rex-foldout {
+    margin-bottom: 8px;
+    border-width: 1px;
+    border-color: #222;
+    border-radius: 4px;
+    background-color: rgba(60, 60, 60, 0.25);
+    overflow: hidden;
+}
+
+.rex-foldout-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    background-color: rgba(60, 60, 60, 0.20);
+    border-bottom-width: 1px;
+    border-bottom-color: #222;
+}
+
+/* When collapsed, hide the separation line */
+.rex-foldout--collapsed > .rex-foldout-header {
+    border-bottom-width: 0;
+}
+
+.rex-foldout-header:hover {
+    background-color: rgba(77, 153, 255, 0.15);
+}
+
+.rex-foldout-title-container {
+    flex-direction: row;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.rex-foldout-title {
+    -unity-font-style: bold;
+    font-size: 11px;
+    color: #CCC;
+}
+
+.rex-foldout-count {
+    margin-left: 6px;
+    font-size: 10px;
+    color: #888;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 1px 5px;
+    border-radius: 8px;
+}
+
+.rex-foldout-arrow {
+    font-size: 8px;
+    color: #AAA;
+    margin-right: 4px;
+    transform-origin: center;
+}
+
+.rex-foldout-arrow--collapsed {
+    rotate: -90deg;
+}
+
+.rex-foldout-content {
+    padding: 8px 10px;
+}
 

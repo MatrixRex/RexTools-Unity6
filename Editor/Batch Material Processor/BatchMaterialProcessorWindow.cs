@@ -614,31 +614,11 @@ namespace RexTools.BatchMaterialProcessor.Editor
             {
                 if (result.material == null) continue;
 
-                var box = new VisualElement();
-                box.AddToClassList("rex-box");
-                box.style.marginBottom = 8;
-
-                var header = new VisualElement();
-                header.style.flexDirection = FlexDirection.Row;
-                header.style.alignItems = Align.Center;
-                header.style.justifyContent = Justify.SpaceBetween;
-
-                var foldout = new Foldout { text = result.material.name, value = result.isExpanded };
-                foldout.style.fontSize = 11f;
-                foldout.style.unityFontStyleAndWeight = FontStyle.Bold;
-                
-                var content = new VisualElement();
-                content.style.paddingLeft = 15;
-                content.style.marginTop = 4;
-                content.style.display = result.isExpanded ? DisplayStyle.Flex : DisplayStyle.None;
-
-                foldout.RegisterValueChangedCallback(evt => {
-                    result.isExpanded = evt.newValue;
-                    content.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
+                var foldout = new RexFoldout(result.material.name, result.propertyMatches.Count, result.isExpanded);
+                foldout.OnValueChanged += (expanded) => {
+                    result.isExpanded = expanded;
                     EditorUtility.SetDirty(settings);
-                });
-
-                box.Add(foldout);
+                };
 
                 foreach (var match in result.propertyMatches)
                 {
@@ -679,11 +659,10 @@ namespace RexTools.BatchMaterialProcessor.Editor
                     });
                     row.Add(texField);
 
-                    content.Add(row);
+                    foldout.Add(row);
                 }
 
-                box.Add(content);
-                previewScroll.Add(box);
+                previewScroll.Add(foldout);
             }
         }
 

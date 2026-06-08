@@ -229,4 +229,37 @@ To maintain design continuity across all tools in this package, all agents must 
 2. **Extend, Don't Rewrite**: If the default layout doesn't fully support your tool's custom list requirements, you must extend the existing classes in `RexToolsStyles.uss` or add helper classes, rather than writing a completely separate or custom inline-styled list system.
 3. **Ask for Review**: If extending the system is not technically feasible and you must deviate from the standard pattern, you **must** pause and ask the user for a design review before writing any custom list layout code.
 
+## 8. Standardized Foldout System (RexFoldout)
+For collapsible sections and groups with header labels, optional item counts, and expand/collapse icons, use the standardized `RexFoldout` component. 
+
+### Visual Standard: Header Bar with Left Title and Right Arrow
+- **Parent Wrapper (`.rex-foldout`)**: Wraps the entire component (both header and expanded content) inside a unified border box (`border-width: 1px`, `border-color: #222`, `border-radius: 4px`, `background-color`).
+- **Header Bar (`.rex-foldout-header`)**: A dark hoverable horizontal bar with subtle hover highlights. A bottom border separation line separates the header from the content container only when expanded (automatically toggled via the C# code using the `.rex-foldout--collapsed` state class on the parent).
+- **Title (Left)**: Bold uppercase header text (`.rex-foldout-title`).
+- **Count Badge (Left)**: An optional badge formatted as `(count)` positioned directly to the right of the title (`.rex-foldout-count`).
+- **Toggle Arrow (Right)**: A text-based chevron (`▼`) aligned to the far right. When collapsed, it rotates -90 degrees (`▶`) (`.rex-foldout-arrow--collapsed`).
+
+### Implementation Pattern (C#)
+`RexFoldout` extends `VisualElement` and overrides the `contentContainer` property so that any elements added to it via `.Add()` are automatically redirected to the nested collapsible panel. Additionally, it toggles the `.rex-foldout--collapsed` class list on itself to control state-based USS styles (e.g., hiding the separation border when closed).
+
+```csharp
+using RexTools.Editor.Core;
+
+// 1. Instantiate (Params: title, count [optional], defaultExpanded [optional])
+var foldout = new RexFoldout("Materials", 3, true);
+
+// 2. Add collapse event listener (optional)
+foldout.OnValueChanged += (isExpanded) => {
+    Debug.Log($"Foldout state changed: {isExpanded}");
+};
+
+// 3. Add child controls (Automatically routed to internal collapsible content area)
+var myLabel = new Label("Child Item");
+foldout.Add(myLabel);
+
+// 4. Add foldout to parent layout
+myScrollView.Add(foldout);
+```
+
+
 
