@@ -178,3 +178,55 @@ field.AddToClassList("rex-col-right");
 row.Add(field);
 ```
 
+## 7. Standardized List Rendering System
+For scrollable list containers displaying dynamically generated item rows, always use the standardized classes from `RexToolsStyles.uss`.
+
+### Visual Standard: Row Separators and Delete States
+- **List Container (`.rex-result-list`)**: Applied to a `ScrollView` element. Resets padding and aligns scroll bars.
+- **Row Container (`.rex-result-item`)**: Applied to each item row. Establishes a flex direction of `row`, vertical alignment `center`, standard spacing, a height of `32px`, and a bottom border line.
+- **Delete Button (`.rex-result-delete-btn`)**: A 24x24px square button that has a gray background by default and shifts to red on hover.
+- **Delete Icon (`.rex-result-delete-icon`)**: A child `VisualElement` of the delete button that renders the trash/garbage bin sprite.
+
+### Implementation Pattern (C#)
+```csharp
+// ScrollView container in UXML or created via C#
+var scrollView = root.Q<ScrollView>("my-list");
+scrollView.AddToClassList("rex-result-list");
+
+// Add list item row
+var row = new VisualElement();
+row.AddToClassList("rex-result-item");
+
+// Add optional toggle checkbox on far-left
+var toggle = new Toggle { value = false };
+toggle.style.marginRight = 5;
+row.Add(toggle);
+
+// Add main description label or field (using flex to take max available space)
+var label = new Label("Item Name");
+label.AddToClassList("rex-result-name-btn"); // or style with flex-grow: 1, flex-shrink: 1, min-width: 0
+row.Add(label);
+
+// Add standard delete button on far-right
+var deleteBtn = new Button();
+deleteBtn.AddToClassList("rex-result-delete-btn");
+
+var deleteIcon = new VisualElement();
+deleteIcon.AddToClassList("rex-result-delete-icon");
+deleteBtn.Add(deleteIcon);
+
+deleteBtn.clicked += () => {
+    // Delete action logic
+};
+row.Add(deleteBtn);
+
+scrollView.Add(row);
+```
+
+### ⚠️ Strict Developer Constraints & Protocol
+To maintain design continuity across all tools in this package, all agents must adhere to the following rules:
+1. **Always Use First**: You must always attempt to use the standardized list system (`.rex-result-list`, `.rex-result-item`, `.rex-result-delete-btn`, etc.) as the default for any list container.
+2. **Extend, Don't Rewrite**: If the default layout doesn't fully support your tool's custom list requirements, you must extend the existing classes in `RexToolsStyles.uss` or add helper classes, rather than writing a completely separate or custom inline-styled list system.
+3. **Ask for Review**: If extending the system is not technically feasible and you must deviate from the standard pattern, you **must** pause and ask the user for a design review before writing any custom list layout code.
+
+

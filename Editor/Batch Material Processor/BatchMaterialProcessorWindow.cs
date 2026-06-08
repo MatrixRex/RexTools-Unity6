@@ -353,18 +353,13 @@ namespace RexTools.BatchMaterialProcessor.Editor
                 if (mat == null) continue;
 
                 var row = new VisualElement();
-                row.style.flexDirection = FlexDirection.Row;
-                row.style.alignItems = Align.Center;
-                row.style.justifyContent = Justify.SpaceBetween;
-                row.style.borderBottomWidth = 1;
-                row.style.borderBottomColor = new Color(0.2f, 0.2f, 0.2f);
-                row.style.paddingLeft = 4;
-                row.style.paddingRight = 4;
-                row.style.height = 24;
+                row.AddToClassList("rex-result-item");
 
                 var matLabel = new Label(mat.name);
                 matLabel.style.fontSize = 10f;
                 matLabel.style.flexGrow = 1;
+                matLabel.style.flexShrink = 1;
+                matLabel.style.minWidth = 0;
                 row.Add(matLabel);
 
                 var deleteBtn = new Button(() => {
@@ -374,17 +369,11 @@ namespace RexTools.BatchMaterialProcessor.Editor
                     RefreshMaterialsUI();
                     RefreshPreviewTab();
                 });
-                deleteBtn.AddToClassList("rex-icon-button");
-                deleteBtn.style.width = 16;
-                deleteBtn.style.height = 16;
-                deleteBtn.style.paddingLeft = 2;
-                deleteBtn.style.paddingRight = 2;
-                deleteBtn.style.paddingTop = 2;
-                deleteBtn.style.paddingBottom = 2;
+                deleteBtn.AddToClassList("rex-result-delete-btn");
                 deleteBtn.tooltip = "Remove from list";
 
                 var trashIcon = new VisualElement();
-                trashIcon.AddToClassList("rex-icon-remove");
+                trashIcon.AddToClassList("rex-result-delete-icon");
                 deleteBtn.Add(trashIcon);
                 row.Add(deleteBtn);
 

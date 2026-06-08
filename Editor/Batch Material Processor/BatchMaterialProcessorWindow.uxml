@@ -46,7 +46,7 @@
                     <ui:Button name="btn-clear-mats" text="CLEAR" class="rex-button-small" style="font-size: 9px;" />
                 </ui:VisualElement>
             </ui:VisualElement>
-            <ui:ScrollView name="materials-scroll" style="flex-grow: 1; margin-top: 4px; border-width: 1px; border-color: #222; background-color: rgba(0,0,0,0.2);" />
+            <ui:ScrollView name="materials-scroll" class="rex-result-list" style="flex-grow: 1; margin-top: 4px; border-width: 1px; border-color: #222; background-color: rgba(0,0,0,0.2);" />
         </ui:VisualElement>
 
         <!-- Suffixes/Preview Tabs Panel -->
