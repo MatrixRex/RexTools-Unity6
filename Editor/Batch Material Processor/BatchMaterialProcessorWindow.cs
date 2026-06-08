@@ -62,6 +62,9 @@ namespace RexTools.BatchMaterialProcessor.Editor
                 fullPath = "Packages/com.matrixrex.rextools/" + windowPath;
             }
 
+            // Force Unity to import the asset so that it isn't empty or stale in the AssetDatabase
+            AssetDatabase.ImportAsset(fullPath);
+
             var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(fullPath);
             if (visualTree != null)
             {
@@ -89,19 +92,25 @@ namespace RexTools.BatchMaterialProcessor.Editor
             // Bind UI Elements
             helpBox = root.Q<VisualElement>("help-box");
             var helpBtn = root.Q<Button>("help-btn");
-            helpBtn.clicked += () => {
-                showHelp = !showHelp;
-                if (showHelp)
-                {
-                    helpBox.RemoveFromClassList("rex-hidden");
-                    helpBtn.AddToClassList("rex-help-btn--active");
-                }
-                else
-                {
-                    helpBox.AddToClassList("rex-hidden");
-                    helpBtn.RemoveFromClassList("rex-help-btn--active");
-                }
-            };
+            if (helpBtn != null)
+            {
+                helpBtn.clicked += () => {
+                    showHelp = !showHelp;
+                    if (helpBox != null)
+                    {
+                        if (showHelp)
+                        {
+                            helpBox.RemoveFromClassList("rex-hidden");
+                            helpBtn.AddToClassList("rex-help-btn--active");
+                        }
+                        else
+                        {
+                            helpBox.AddToClassList("rex-hidden");
+                            helpBtn.RemoveFromClassList("rex-help-btn--active");
+                        }
+                    }
+                };
+            }
 
             // Preset Setup
             var presetAnchor = root.Q<VisualElement>("preset-container-anchor");
@@ -113,93 +122,111 @@ namespace RexTools.BatchMaterialProcessor.Editor
             // Material list
             materialsScroll = root.Q<ScrollView>("materials-scroll");
             var btnGetSelection = root.Q<Button>("btn-get-selection");
-            btnGetSelection.clicked += GetSelection;
+            if (btnGetSelection != null) btnGetSelection.clicked += GetSelection;
             var btnClearMats = root.Q<Button>("btn-clear-mats");
-            btnClearMats.clicked += () => {
-                settings.materials.Clear();
-                settings.matchResults.Clear();
-                EditorUtility.SetDirty(settings);
-                RefreshMaterialsUI();
-                RefreshPreviewTab();
-            };
+            if (btnClearMats != null)
+            {
+                btnClearMats.clicked += () => {
+                    settings.materials.Clear();
+                    settings.matchResults.Clear();
+                    EditorUtility.SetDirty(settings);
+                    RefreshMaterialsUI();
+                    RefreshPreviewTab();
+                };
+            }
 
             // Drag and drop to materials list
-            materialsScroll.RegisterCallback<DragUpdatedEvent>(e => DragAndDrop.visualMode = DragAndDropVisualMode.Copy);
-            materialsScroll.RegisterCallback<DragPerformEvent>(e => {
-                DragAndDrop.AcceptDrag();
-                foreach (var obj in DragAndDrop.objectReferences)
-                {
-                    if (obj is Material mat && !settings.materials.Contains(mat))
+            if (materialsScroll != null)
+            {
+                materialsScroll.RegisterCallback<DragUpdatedEvent>(e => DragAndDrop.visualMode = DragAndDropVisualMode.Copy);
+                materialsScroll.RegisterCallback<DragPerformEvent>(e => {
+                    DragAndDrop.AcceptDrag();
+                    foreach (var obj in DragAndDrop.objectReferences)
                     {
-                        settings.materials.Add(mat);
-                    }
-                    else if (obj is GameObject go)
-                    {
-                        var renderers = go.GetComponentsInChildren<Renderer>(true);
-                        foreach (var r in renderers)
+                        if (obj is Material mat && !settings.materials.Contains(mat))
                         {
-                            foreach (var sm in r.sharedMaterials)
+                            settings.materials.Add(mat);
+                        }
+                        else if (obj is GameObject go)
+                        {
+                            var renderers = go.GetComponentsInChildren<Renderer>(true);
+                            foreach (var r in renderers)
                             {
-                                if (sm != null && !settings.materials.Contains(sm))
-                                    settings.materials.Add(sm);
+                                foreach (var sm in r.sharedMaterials)
+                                {
+                                    if (sm != null && !settings.materials.Contains(sm))
+                                        settings.materials.Add(sm);
+                                }
                             }
                         }
                     }
-                }
-                EditorUtility.SetDirty(settings);
-                RefreshMaterialsUI();
-            });
+                    EditorUtility.SetDirty(settings);
+                    RefreshMaterialsUI();
+                });
+            }
 
             // Settings properties
             shaderField = root.Q<ObjectField>("shader-field");
-            shaderField.objectType = typeof(Shader);
-            shaderField.value = settings.targetShader;
-            shaderField.RegisterValueChangedCallback(evt => {
-                settings.targetShader = evt.newValue as Shader;
-                EditorUtility.SetDirty(settings);
-                LoadSuffixMappings();
-            });
+            if (shaderField != null)
+            {
+                shaderField.objectType = typeof(Shader);
+                shaderField.value = settings.targetShader;
+                shaderField.RegisterValueChangedCallback(evt => {
+                    settings.targetShader = evt.newValue as Shader;
+                    EditorUtility.SetDirty(settings);
+                    LoadSuffixMappings();
+                });
+            }
 
             folderField = root.Q<TextField>("folder-field");
-            folderField.value = settings.searchFolderPath;
-            folderField.RegisterValueChangedCallback(evt => {
-                settings.searchFolderPath = evt.newValue;
-                EditorUtility.SetDirty(settings);
-            });
-            folderField.RegisterCallback<DragUpdatedEvent>(e => DragAndDrop.visualMode = DragAndDropVisualMode.Copy);
-            folderField.RegisterCallback<DragPerformEvent>(e => {
-                DragAndDrop.AcceptDrag();
-                string path = DragAndDrop.paths.FirstOrDefault();
-                if (!string.IsNullOrEmpty(path) && AssetDatabase.IsValidFolder(path))
-                {
-                    settings.searchFolderPath = path;
-                    folderField.value = path;
+            if (folderField != null)
+            {
+                folderField.value = settings.searchFolderPath;
+                folderField.RegisterValueChangedCallback(evt => {
+                    settings.searchFolderPath = evt.newValue;
                     EditorUtility.SetDirty(settings);
-                }
-            });
+                });
+                folderField.RegisterCallback<DragUpdatedEvent>(e => DragAndDrop.visualMode = DragAndDropVisualMode.Copy);
+                folderField.RegisterCallback<DragPerformEvent>(e => {
+                    DragAndDrop.AcceptDrag();
+                    string path = DragAndDrop.paths.FirstOrDefault();
+                    if (!string.IsNullOrEmpty(path) && AssetDatabase.IsValidFolder(path))
+                    {
+                        settings.searchFolderPath = path;
+                        folderField.value = path;
+                        EditorUtility.SetDirty(settings);
+                    }
+                });
+            }
 
             var btnBrowse = root.Q<Button>("btn-browse-folder");
-            btnBrowse.clicked += () => {
-                string path = EditorUtility.OpenFolderPanel("Select Texture Search Folder", settings.searchFolderPath, "");
-                if (!string.IsNullOrEmpty(path))
-                {
-                    // Convert absolute path to project-relative if inside Assets
-                    if (path.StartsWith(Application.dataPath))
+            if (btnBrowse != null)
+            {
+                btnBrowse.clicked += () => {
+                    string path = EditorUtility.OpenFolderPanel("Select Texture Search Folder", settings.searchFolderPath, "");
+                    if (!string.IsNullOrEmpty(path))
                     {
-                        path = "Assets" + path.Substring(Application.dataPath.Length);
+                        // Convert absolute path to project-relative if inside Assets
+                        if (path.StartsWith(Application.dataPath))
+                        {
+                            path = "Assets" + path.Substring(Application.dataPath.Length);
+                        }
+                        settings.searchFolderPath = path;
+                        if (folderField != null) folderField.value = path;
+                        EditorUtility.SetDirty(settings);
                     }
-                    settings.searchFolderPath = path;
-                    folderField.value = path;
-                    EditorUtility.SetDirty(settings);
-                }
-            };
+                };
+            }
 
             recursiveToggle = root.Q<Toggle>("recursive-toggle");
-            recursiveToggle.value = settings.recursiveSearch;
-            recursiveToggle.RegisterValueChangedCallback(evt => {
-                settings.recursiveSearch = evt.newValue;
-                EditorUtility.SetDirty(settings);
-            });
+            if (recursiveToggle != null)
+            {
+                recursiveToggle.value = settings.recursiveSearch;
+                recursiveToggle.RegisterValueChangedCallback(evt => {
+                    settings.recursiveSearch = evt.newValue;
+                    EditorUtility.SetDirty(settings);
+                });
+            }
 
             // Tabs
             tabSuffixes = root.Q<Button>("tab-suffixes");
@@ -207,18 +234,21 @@ namespace RexTools.BatchMaterialProcessor.Editor
             paneSuffixes = root.Q<VisualElement>("pane-suffixes");
             panePreview = root.Q<VisualElement>("pane-preview");
 
-            tabSuffixes.clicked += () => SwitchTab(true);
-            tabPreview.clicked += () => SwitchTab(false);
+            if (tabSuffixes != null) tabSuffixes.clicked += () => SwitchTab(true);
+            if (tabPreview != null) tabPreview.clicked += () => SwitchTab(false);
 
             suffixesScroll = root.Q<ScrollView>("suffixes-scroll");
             previewScroll = root.Q<ScrollView>("preview-scroll");
 
             btnProcess = root.Q<Button>("btn-process");
-            btnProcess.clicked += RunProcess;
+            if (btnProcess != null) btnProcess.clicked += RunProcess;
 
             btnApply = root.Q<Button>("btn-apply");
-            btnApply.clicked += ApplyChanges;
-            btnApply.SetEnabled(false);
+            if (btnApply != null)
+            {
+                btnApply.clicked += ApplyChanges;
+                btnApply.SetEnabled(settings.matchResults.Count > 0);
+            }
 
             // Initial Draws
             RefreshMaterialsUI();
