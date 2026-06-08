@@ -84,30 +84,25 @@ namespace RexTools.GitIntegration.Editor
                 var playZone = root.Q("ToolbarZonePlayMode");
                 if (playZone == null) return;
 
-                var btn = playZone.Q<Button>("rex-git-toolbar-btn");
+                var btn = playZone.Q<Label>("rex-git-toolbar-btn");
                 if (btn == null)
                 {
-                    btn = new Button();
+                    btn = new Label();
                     btn.name = "rex-git-toolbar-btn";
                     btn.style.unityFontStyleAndWeight = FontStyle.Bold;
                     btn.style.fontSize = 11;
-                    btn.style.backgroundColor = Color.clear;
-                    btn.style.borderTopWidth = 0;
-                    btn.style.borderBottomWidth = 0;
-                    btn.style.borderLeftWidth = 0;
-                    btn.style.borderRightWidth = 0;
-                    btn.style.color = new Color(0.4f, 0.8f, 1.0f);
                     btn.style.paddingLeft = 8;
                     btn.style.paddingRight = 8;
                     btn.style.marginLeft = 6;
                     btn.style.marginRight = 6;
                     btn.style.height = 20;
                     btn.style.alignSelf = Align.Center;
+                    btn.style.unityTextAlign = TextAnchor.MiddleCenter;
 
                     btn.RegisterCallback<MouseOverEvent>(evt => btn.style.backgroundColor = new Color(1, 1, 1, 0.1f));
                     btn.RegisterCallback<MouseOutEvent>(evt => btn.style.backgroundColor = Color.clear);
                     
-                    btn.clicked += () => GitIntegrationWindow.ShowWindow();
+                    btn.RegisterCallback<ClickEvent>(evt => GitIntegrationWindow.ShowWindow());
 
                     playZone.Add(btn);
                     
@@ -124,7 +119,7 @@ namespace RexTools.GitIntegration.Editor
             }
         }
 
-        private static async Task UpdateBranchLabelAsync(Button btn, bool force)
+        private static async Task UpdateBranchLabelAsync(Label btn, bool force)
         {
             if (btn == null) return;
 
@@ -158,12 +153,21 @@ namespace RexTools.GitIntegration.Editor
             if (GitRunner.HasGitRepository())
             {
                 tooltip += $"Ahead: {cachedAhead} commits\nBehind: {cachedBehind} commits\nModified files: {cachedModified}\nClick to open Git Integration Window";
-                btn.style.color = new Color(0.4f, 0.8f, 1.0f); // Sleek cyan/blue color
+                
+                // Color based on theme skin
+                if (EditorGUIUtility.isProSkin)
+                    btn.style.color = new Color(0.4f, 0.8f, 1.0f); // Sleek cyan/blue for dark skin
+                else
+                    btn.style.color = new Color(0.0f, 0.35f, 0.7f); // Rich dark blue for light skin
             }
             else
             {
                 tooltip += "No Git repository found.";
-                btn.style.color = new Color(0.7f, 0.7f, 0.7f); // Grey
+                
+                if (EditorGUIUtility.isProSkin)
+                    btn.style.color = new Color(0.7f, 0.7f, 0.7f); // Grey
+                else
+                    btn.style.color = new Color(0.2f, 0.2f, 0.2f); // Dark grey
             }
             btn.tooltip = tooltip;
         }
