@@ -261,5 +261,31 @@ foldout.Add(myLabel);
 myScrollView.Add(foldout);
 ```
 
+## 9. Standardized Folder Selector (RexFolderSelector)
+
+Use `RexFolderSelector` from `Editor/Core/RexFolderSelector.cs` (namespace `RexTools.Editor.Core`) instead of writing inline `TextField` + folder button + drag-and-drop. Provides text input, browse button, reveal-in-explorer, drag-drop, and empty-state hint.
+
+```csharp
+using RexTools.Editor.Core;
+
+var selector = new RexFolderSelector();
+
+// Set initial path without triggering OnValueChanged
+selector.SetPathWithoutNotify("Assets/SomeFolder");
+
+// React to path changes
+selector.OnValueChanged += path => {
+    Debug.Log($"Selected: {path}");
+};
+
+// Get/set the path
+string current = selector.PathValue;
+selector.PathValue = "Assets/NewFolder";
+
+parent.Add(selector);
+```
+
+See `QuickShotWindow.cs` for a full usage example.
+
 
 
