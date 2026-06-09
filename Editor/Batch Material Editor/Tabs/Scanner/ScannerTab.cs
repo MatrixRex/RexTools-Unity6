@@ -62,23 +62,11 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
                 row.Add(toggle);
 
                 var matField = new ObjectField { objectType = typeof(Material), value = mat, style = { flexGrow = 1, flexShrink = 1, minWidth = 0 } };
-                matField.SetEnabled(false);
-
-                var focusBtn = new Button(() => { EditorGUIUtility.PingObject(mat); }) { tooltip = "Focus in Project" };
-                focusBtn.AddToClassList("rex-button-small");
-                var searchIcon = EditorGUIUtility.IconContent("d_ViewToolZoom").image;
-                if (searchIcon != null)
-                {
-                    var icon = new VisualElement();
-                    icon.style.backgroundImage = (Texture2D)searchIcon;
-                    icon.style.width = 16;
-                    icon.style.height = 16;
-                    focusBtn.Add(icon);
-                }
-                else focusBtn.text = "F";
+                matField.RegisterValueChangedCallback(evt => {
+                    matField.SetValueWithoutNotify(mat);
+                });
 
                 row.Add(matField);
-                row.Add(focusBtn);
                 ui.ScannerList.Add(row);
             }
         }

@@ -19,9 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- RexToolsStyles: Added `.rex-button` and `.rex-toggle-btn` classes as standard button styling and toggle button styling.
+- Quick Shot: Auto Copy setting to automatically copy captured screenshots to the system clipboard (supported on Windows and macOS).
 - Git Integration: A background-threaded Git status and management window (stage, commit, push, pull, fetch).
 - Git Integration: Interactive branch and remote status label injected directly into the editor play control toolbar.
 - Batch Material Processor: A standalone tool for batch setting material shaders and auto-assigning texture maps from a selected directory using customizable suffix rules and dry-run preview.
+
+### Changed
+- Quick Shot: Refactored the export path section to use the custom `RexFoldout` component and standard button/toggle styles for the control row.
+- Batch Material Editor: Removed the focus button from the scanner list; the ObjectFields are now interactive and can be clicked to ping/focus the material in the Project window, while remaining read-only.
 
 ## [0.4.0] - 2026-02-23
 

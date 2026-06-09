@@ -8,6 +8,7 @@ using System;
 #if REX_URP
 using UnityEngine.Rendering.Universal;
 #endif
+using RexTools.Editor.Core;
 
 namespace RexTools.QuickShot.Editor
 {
@@ -18,6 +19,7 @@ namespace RexTools.QuickShot.Editor
         private float renderScale = 1.0f;
         private bool transparentBG = false;
         private bool autoReveal = true;
+        private bool autoCopy = false;
 
         private TextField pathField;
         private VisualElement renderScaleContainer;
@@ -78,14 +80,7 @@ namespace RexTools.QuickShot.Editor
             var pathBox = new VisualElement();
             pathBox.AddToClassList("rex-box");
 
-            var pathFoldout = new Foldout();
-            pathFoldout.text = "EXPORT PATH";
-            pathFoldout.value = true;
-            
-            // Style foldout label to match sections
-            var foldoutLabel = pathFoldout.Q<Label>();
-            if (foldoutLabel != null) foldoutLabel.AddToClassList("rex-section-label");
-            
+            var pathFoldout = new RexFoldout("EXPORT PATH", null, true);
             pathBox.Add(pathFoldout);
 
             var pathRow = new VisualElement();
@@ -138,9 +133,7 @@ namespace RexTools.QuickShot.Editor
 
             var openBtn = new Button();
             openBtn.text = "Open Folder";
-            openBtn.style.height = 20;
-            openBtn.style.paddingLeft = 8;
-            openBtn.style.paddingRight = 8;
+            openBtn.AddToClassList("rex-button");
             openBtn.tooltip = "Open Folder in Explorer";
             openBtn.clicked += () => {
                 if (Directory.Exists(exportPath)) EditorUtility.RevealInFinder(exportPath);
@@ -150,19 +143,33 @@ namespace RexTools.QuickShot.Editor
 
             var autoOpenBtn = new Button();
             autoOpenBtn.text = $"Auto Open: {(autoReveal ? "ON" : "OFF")}";
-            autoOpenBtn.style.height = 20;
+            autoOpenBtn.AddToClassList("rex-toggle-btn");
             autoOpenBtn.style.marginLeft = 4;
-            autoOpenBtn.style.paddingLeft = 8;
-            autoOpenBtn.style.paddingRight = 8;
-            if (autoReveal) autoOpenBtn.AddToClassList("rex-toggle-on");
+            autoOpenBtn.tooltip = "Reveal screenshot in Explorer/Finder after capture";
+            if (autoReveal) autoOpenBtn.AddToClassList("rex-toggle-btn--active");
             
             autoOpenBtn.clicked += () => {
                 autoReveal = !autoReveal;
                 autoOpenBtn.text = $"Auto Open: {(autoReveal ? "ON" : "OFF")}";
-                if (autoReveal) autoOpenBtn.AddToClassList("rex-toggle-on");
-                else autoOpenBtn.RemoveFromClassList("rex-toggle-on");
+                if (autoReveal) autoOpenBtn.AddToClassList("rex-toggle-btn--active");
+                else autoOpenBtn.RemoveFromClassList("rex-toggle-btn--active");
             };
             folderOpsRow.Add(autoOpenBtn);
+
+            var autoCopyBtn = new Button();
+            autoCopyBtn.text = $"Auto Copy: {(autoCopy ? "ON" : "OFF")}";
+            autoCopyBtn.AddToClassList("rex-toggle-btn");
+            autoCopyBtn.style.marginLeft = 4;
+            autoCopyBtn.tooltip = "Copy screenshot to system clipboard after capture";
+            if (autoCopy) autoCopyBtn.AddToClassList("rex-toggle-btn--active");
+
+            autoCopyBtn.clicked += () => {
+                autoCopy = !autoCopy;
+                autoCopyBtn.text = $"Auto Copy: {(autoCopy ? "ON" : "OFF")}";
+                if (autoCopy) autoCopyBtn.AddToClassList("rex-toggle-btn--active");
+                else autoCopyBtn.RemoveFromClassList("rex-toggle-btn--active");
+            };
+            folderOpsRow.Add(autoCopyBtn);
 
             pathFoldout.Add(folderOpsRow);
             
@@ -316,6 +323,52 @@ namespace RexTools.QuickShot.Editor
 
             Debug.Log($"[RexTools] Screenshot saved to: {fullPath}");
             if (autoReveal) EditorUtility.RevealInFinder(fullPath);
+
+            if (autoCopy)
+            {
+                CopyToClipboard(fullPath);
+            }
+        }
+
+        private void CopyToClipboard(string path)
+        {
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+            {
+                try
+                {
+                    var formattedPath = path.Replace("/", "\\").Replace("'", "''");
+                    var process = new System.Diagnostics.Process();
+                    process.StartInfo.FileName = "powershell.exe";
+                    process.StartInfo.Arguments = $"-NoProfile -Command \"Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; [System.Windows.Forms.Clipboard]::SetImage([System.Drawing.Image]::FromFile('{formattedPath}'))\"";
+                    process.StartInfo.CreateNoWindow = true;
+                    process.StartInfo.UseShellExecute = false;
+                    process.Start();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[RexTools] Failed to copy image to Windows clipboard: {e.Message}");
+                }
+            }
+            else if (Application.platform == RuntimePlatform.OSXEditor)
+            {
+                try
+                {
+                    var process = new System.Diagnostics.Process();
+                    process.StartInfo.FileName = "osascript";
+                    process.StartInfo.Arguments = $"-e \"set the clipboard to (read (POSIX file \\\"{path}\\\") as «class PNGf»)\"";
+                    process.StartInfo.CreateNoWindow = true;
+                    process.StartInfo.UseShellExecute = false;
+                    process.Start();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[RexTools] Failed to copy image to macOS clipboard: {e.Message}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[RexTools] Clipboard copy is only supported on Windows and macOS editors.");
+            }
         }
 
         private enum ShotMode { Scene, Game }

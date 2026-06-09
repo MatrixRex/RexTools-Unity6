@@ -109,6 +109,51 @@
     color: white;
 }
 
+/* Standard Buttons */
+.rex-button {
+    height: 20px;
+    padding-left: 8px;
+    padding-right: 8px;
+    background-color: #282828;
+    border-width: 1px;
+    border-color: #383838;
+    border-radius: 4px;
+    color: #CCC;
+}
+
+.rex-button:hover {
+    background-color: #383838;
+    color: white;
+}
+
+/* Toggle Buttons */
+.rex-toggle-btn {
+    height: 20px;
+    padding-left: 8px;
+    padding-right: 8px;
+    background-color: #282828;
+    border-width: 1px;
+    border-color: #383838;
+    border-radius: 4px;
+    color: #CCC;
+}
+
+.rex-toggle-btn:hover {
+    background-color: #383838;
+    color: white;
+}
+
+.rex-toggle-btn--active {
+    background-color: #4D99FF;
+    border-color: #3380FF;
+    color: white;
+}
+
+.rex-toggle-btn--active:hover {
+    background-color: #3380FF;
+    color: white;
+}
+
 .rex-icon-button {
     width: 24px;
     height: 24px;
