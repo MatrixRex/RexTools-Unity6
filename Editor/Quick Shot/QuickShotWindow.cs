@@ -3,7 +3,6 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using System.IO;
-using System.Linq;
 using System;
 #if REX_URP
 using UnityEngine.Rendering.Universal;
@@ -21,7 +20,7 @@ namespace RexTools.QuickShot.Editor
         private bool autoReveal = true;
         private bool autoCopy = false;
 
-        private TextField pathField;
+        private RexFolderSelector folderSelector;
         private VisualElement renderScaleContainer;
         private VisualElement transparentToggleContainer;
         private Button captureButton;
@@ -77,103 +76,19 @@ namespace RexTools.QuickShot.Editor
             root.Add(header);
 
             // --- EXPORT PATH ---
-            var pathBox = new VisualElement();
-            pathBox.AddToClassList("rex-box");
+            var exportBox = new VisualElement();
+            exportBox.AddToClassList("rex-box");
 
-            var pathFoldout = new RexFoldout("EXPORT PATH", null, true);
-            pathBox.Add(pathFoldout);
+            var exportLabel = new Label("EXPORT PATH");
+            exportLabel.AddToClassList("rex-section-label");
+            exportBox.Add(exportLabel);
 
-            var pathRow = new VisualElement();
-            pathRow.AddToClassList("rex-row");
-            
-            pathField = new TextField { value = exportPath };
-            pathField.style.flexGrow = 1;
-            pathField.style.flexShrink = 1; // Allow shrinking
-            pathField.style.minWidth = 50;   // But not too much
-            pathField.RegisterValueChangedCallback(e => exportPath = e.newValue);
-            
-            // Drag and Drop
-            pathField.RegisterCallback<DragUpdatedEvent>(e => DragAndDrop.visualMode = DragAndDropVisualMode.Copy);
-            pathField.RegisterCallback<DragPerformEvent>(e => {
-                DragAndDrop.AcceptDrag();
-                string path = DragAndDrop.paths.FirstOrDefault();
-                if (!string.IsNullOrEmpty(path)) {
-                    if (Directory.Exists(path)) {
-                        exportPath = path.Replace("\\", "/");
-                        pathField.value = exportPath;
-                    } else if (File.Exists(path)) {
-                        exportPath = Path.GetDirectoryName(path).Replace("\\", "/");
-                        pathField.value = exportPath;
-                    }
-                }
-            });
+            folderSelector = new RexFolderSelector();
+            folderSelector.SetPathWithoutNotify(exportPath);
+            folderSelector.OnValueChanged += path => exportPath = path;
+            exportBox.Add(folderSelector);
 
-            pathRow.Add(pathField);
-
-            var folderBtn = new Button();
-            folderBtn.text = "";
-            folderBtn.style.width = 24;
-            folderBtn.style.height = 20;
-            folderBtn.style.backgroundImage = (Texture2D)EditorGUIUtility.IconContent("Folder Icon").image;
-            folderBtn.tooltip = "Select Export Folder";
-            folderBtn.clicked += () => {
-                string selectedPath = EditorUtility.OpenFolderPanel("Select Export Folder", exportPath, "");
-                if (!string.IsNullOrEmpty(selectedPath)) {
-                    exportPath = selectedPath;
-                    pathField.value = exportPath;
-                }
-            };
-            pathRow.Add(folderBtn);
-
-            pathFoldout.Add(pathRow);
-
-            var folderOpsRow = new VisualElement();
-            folderOpsRow.AddToClassList("rex-row");
-            folderOpsRow.style.marginTop = 2;
-
-            var openBtn = new Button();
-            openBtn.text = "Open Folder";
-            openBtn.AddToClassList("rex-button");
-            openBtn.tooltip = "Open Folder in Explorer";
-            openBtn.clicked += () => {
-                if (Directory.Exists(exportPath)) EditorUtility.RevealInFinder(exportPath);
-                else Debug.LogWarning($"[RexTools] Export path does not exist: {exportPath}");
-            };
-            folderOpsRow.Add(openBtn);
-
-            var autoOpenBtn = new Button();
-            autoOpenBtn.text = $"Auto Open: {(autoReveal ? "ON" : "OFF")}";
-            autoOpenBtn.AddToClassList("rex-toggle-btn");
-            autoOpenBtn.style.marginLeft = 4;
-            autoOpenBtn.tooltip = "Reveal screenshot in Explorer/Finder after capture";
-            if (autoReveal) autoOpenBtn.AddToClassList("rex-toggle-btn--active");
-            
-            autoOpenBtn.clicked += () => {
-                autoReveal = !autoReveal;
-                autoOpenBtn.text = $"Auto Open: {(autoReveal ? "ON" : "OFF")}";
-                if (autoReveal) autoOpenBtn.AddToClassList("rex-toggle-btn--active");
-                else autoOpenBtn.RemoveFromClassList("rex-toggle-btn--active");
-            };
-            folderOpsRow.Add(autoOpenBtn);
-
-            var autoCopyBtn = new Button();
-            autoCopyBtn.text = $"Auto Copy: {(autoCopy ? "ON" : "OFF")}";
-            autoCopyBtn.AddToClassList("rex-toggle-btn");
-            autoCopyBtn.style.marginLeft = 4;
-            autoCopyBtn.tooltip = "Copy screenshot to system clipboard after capture";
-            if (autoCopy) autoCopyBtn.AddToClassList("rex-toggle-btn--active");
-
-            autoCopyBtn.clicked += () => {
-                autoCopy = !autoCopy;
-                autoCopyBtn.text = $"Auto Copy: {(autoCopy ? "ON" : "OFF")}";
-                if (autoCopy) autoCopyBtn.AddToClassList("rex-toggle-btn--active");
-                else autoCopyBtn.RemoveFromClassList("rex-toggle-btn--active");
-            };
-            folderOpsRow.Add(autoCopyBtn);
-
-            pathFoldout.Add(folderOpsRow);
-            
-            root.Add(pathBox);
+            root.Add(exportBox);
 
             // --- SETTINGS ---
             var settingsBox = new VisualElement();
@@ -217,6 +132,51 @@ namespace RexTools.QuickShot.Editor
             settingsBox.Add(transparentToggleContainer);
 
             root.Add(settingsBox);
+
+            // --- POST OPERATIONS ---
+            var postOpsBox = new VisualElement();
+            postOpsBox.AddToClassList("rex-box");
+
+            var postOpsLabel = new Label("POST OPERATIONS");
+            postOpsLabel.AddToClassList("rex-section-label");
+            postOpsBox.Add(postOpsLabel);
+
+            var postOpsRow = new VisualElement();
+            postOpsRow.AddToClassList("rex-row");
+
+            var autoOpenBtn = new Button();
+            autoOpenBtn.text = $"Auto Open: {(autoReveal ? "ON" : "OFF")}";
+            autoOpenBtn.AddToClassList("rex-toggle-btn");
+            autoOpenBtn.tooltip = "Reveal screenshot in Explorer/Finder after capture";
+            if (autoReveal) autoOpenBtn.AddToClassList("rex-toggle-btn--active");
+            
+            autoOpenBtn.clicked += () => {
+                autoReveal = !autoReveal;
+                autoOpenBtn.text = $"Auto Open: {(autoReveal ? "ON" : "OFF")}";
+                if (autoReveal) autoOpenBtn.AddToClassList("rex-toggle-btn--active");
+                else autoOpenBtn.RemoveFromClassList("rex-toggle-btn--active");
+            };
+            postOpsRow.Add(autoOpenBtn);
+
+            var autoCopyBtn = new Button();
+            autoCopyBtn.text = $"Auto Copy: {(autoCopy ? "ON" : "OFF")}";
+            autoCopyBtn.AddToClassList("rex-toggle-btn");
+            autoCopyBtn.style.marginLeft = 4;
+            autoCopyBtn.tooltip = "Copy screenshot to system clipboard after capture";
+            if (autoCopy) autoCopyBtn.AddToClassList("rex-toggle-btn--active");
+
+            autoCopyBtn.clicked += () => {
+                autoCopy = !autoCopy;
+                autoCopyBtn.text = $"Auto Copy: {(autoCopy ? "ON" : "OFF")}";
+                if (autoCopy) autoCopyBtn.AddToClassList("rex-toggle-btn--active");
+                else autoCopyBtn.RemoveFromClassList("rex-toggle-btn--active");
+            };
+            postOpsRow.Add(autoCopyBtn);
+
+            postOpsBox.Add(postOpsRow);
+
+            root.Add(postOpsBox);
+
             // --- CAPTURE BUTTON ---
             captureButton = new Button { text = "CAPTURE SCREENSHOT" };
             captureButton.AddToClassList("rex-action-button");

@@ -532,4 +532,62 @@
 .rex-foldout-content {
     padding: 8px 10px;
 }
+
+/* --- Folder Selector --- */
+.rex-folder-selector {
+    flex-direction: row;
+    align-items: center;
+    min-height: 24px;
+    border-width: 1px;
+    border-color: #333;
+    border-radius: 4px;
+    background-color: rgba(30, 30, 30, 0.6);
+    overflow: visible;
+}
+
+.rex-folder-selector--dragging {
+    border-color: #4D99FF;
+    background-color: rgba(77, 153, 255, 0.1);
+}
+
+.rex-folder-selector__field-wrapper {
+    flex-grow: 1;
+    flex-shrink: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.rex-folder-selector__field {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 50px;
+    border-width: 0;
+    background-color: transparent;
+}
+
+.rex-folder-selector__field .unity-text-field__input {
+    background-color: transparent;
+    border-width: 0;
+}
+
+.rex-folder-selector__actions {
+    flex-direction: row;
+    flex-shrink: 0;
+    margin-left: 2px;
+}
+
+.rex-folder-selector__hint {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    color: #666;
+    font-size: 10px;
+    white-space: nowrap;
+    pointer-events: none;
+    -unity-text-align: middle-left;
+}
 
