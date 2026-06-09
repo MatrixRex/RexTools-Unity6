@@ -5,6 +5,7 @@ using UnityEditor.UIElements;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using RexTools.Editor.Core;
 
 namespace RexTools.TextureRepacker.Editor
 {
@@ -102,47 +103,6 @@ namespace RexTools.TextureRepacker.Editor
         }
     }
 
-    /// <summary>
-    /// A drop zone for folders to set path output.
-    /// </summary>
-    public class FolderDropZone : VisualElement
-    {
-        public System.Action<string> OnPathChanged;
-        private Label pathLabel;
-
-        public FolderDropZone(string initialPath = "Drop Folder Here")
-        {
-            AddToClassList("rex-box");
-            style.height = 30;
-            style.justifyContent = Justify.Center;
-            style.paddingLeft = 10;
-            style.marginBottom = 0;
-
-            pathLabel = new Label(initialPath);
-            pathLabel.style.color = new Color(0.6f, 0.6f, 0.6f);
-            pathLabel.style.fontSize = 11;
-            Add(pathLabel);
-
-            RegisterCallback<DragUpdatedEvent>(e => DragAndDrop.visualMode = DragAndDropVisualMode.Copy);
-            RegisterCallback<DragPerformEvent>(e => {
-                DragAndDrop.AcceptDrag();
-                string path = DragAndDrop.paths.FirstOrDefault();
-                if (string.IsNullOrEmpty(path)) {
-                    var folder = DragAndDrop.objectReferences.FirstOrDefault();
-                    if (folder != null) path = AssetDatabase.GetAssetPath(folder);
-                }
-                if (!string.IsNullOrEmpty(path) && AssetDatabase.IsValidFolder(path)) SetPath(path);
-            });
-        }
-
-        public void SetPath(string path)
-        {
-            pathLabel.text = path;
-            pathLabel.style.color = Color.white;
-            OnPathChanged?.Invoke(path);
-        }
-    }
-
     public class TexturePackSeparator : EditorWindow
     {
         private class ChannelSlotData {
@@ -197,11 +157,11 @@ namespace RexTools.TextureRepacker.Editor
         private Button unpackTabBtn;
         private Button mixTabBtn;
         private TextField nameField;
-        private FolderDropZone folderZone;
+        private RexFolderSelector folderZone;
         private TextField unpackNameField;
-        private FolderDropZone unpackFolderZone;
+        private RexFolderSelector unpackFolderZone;
         private TextField mixNameField;
-        private FolderDropZone mixFolderZone;
+        private RexFolderSelector mixFolderZone;
         private Image mixPreviewImage;
         private Texture2D mixPreviewBuffer;
         private bool _mixPreviewDirty = false;
@@ -405,22 +365,21 @@ namespace RexTools.TextureRepacker.Editor
             saveBox.Add(new Label("OUTPUT SETTINGS") { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 5, color = Color.gray } });
             
             var nameRow = new VisualElement();
-            nameRow.AddToClassList("rex-row");
-            nameRow.style.marginBottom = 5;
-            nameRow.Add(new Label("Name:") { style = { width = 45, flexShrink = 0 } });
+            nameRow.AddToClassList("rex-row-cols-2");
+            nameRow.Add(new Label("Name:") { style = { width = 80, flexShrink = 0 } });
             nameField = new TextField { value = outputName };
-            nameField.AddToClassList("rex-field-flex");
+            nameField.AddToClassList("rex-col-right");
             nameField.RegisterValueChangedCallback(e => outputName = e.newValue);
             nameRow.Add(nameField);
             saveBox.Add(nameRow);
 
-            folderZone = new FolderDropZone();
-            folderZone.OnPathChanged = p => outputPath = p;
-            
-            var pathRow = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
-            pathRow.Add(new Label("Path:") { style = { width = 40 } });
-            pathRow.Add(folderZone);
+            var pathRow = new VisualElement();
+            pathRow.AddToClassList("rex-row-cols-2");
+            pathRow.Add(new Label("Path:") { style = { width = 80, flexShrink = 0 } });
+            folderZone = new RexFolderSelector();
+            folderZone.OnValueChanged += p => outputPath = p;
             folderZone.style.flexGrow = 1;
+            pathRow.Add(folderZone);
             saveBox.Add(pathRow);
             
             packContainer.Add(saveBox);
@@ -523,7 +482,7 @@ namespace RexTools.TextureRepacker.Editor
             // Auto folder from first dropped texture
             if (string.IsNullOrEmpty(outputPath)) {
                 outputPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(tex));
-                folderZone.SetPath(outputPath);
+                folderZone.SetPathWithoutNotify(outputPath);
             }
         }
 
@@ -540,7 +499,7 @@ namespace RexTools.TextureRepacker.Editor
                 if (tex != null) {
                     if (string.IsNullOrEmpty(unpackOutputPath)) {
                         unpackOutputPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(tex));
-                        unpackFolderZone.SetPath(unpackOutputPath);
+                        unpackFolderZone.SetPathWithoutNotify(unpackOutputPath);
                     }
                     if (unpackOutputName == "UnpackedTexture") {
                         unpackOutputName = GenerateBaseName(tex.name);
@@ -557,23 +516,22 @@ namespace RexTools.TextureRepacker.Editor
             outputBox.Add(new Label("OUTPUT SETTINGS") { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 5, color = Color.gray } });
 
             var nameRow = new VisualElement();
-            nameRow.AddToClassList("rex-row");
-            nameRow.style.marginBottom = 5;
-            nameRow.Add(new Label("Name:") { style = { width = 45, flexShrink = 0 } });
+            nameRow.AddToClassList("rex-row-cols-2");
+            nameRow.Add(new Label("Name:") { style = { width = 80, flexShrink = 0 } });
             unpackNameField = new TextField { value = unpackOutputName };
-            unpackNameField.AddToClassList("rex-field-flex");
+            unpackNameField.AddToClassList("rex-col-right");
             unpackNameField.RegisterValueChangedCallback(e => unpackOutputName = e.newValue);
             nameRow.Add(unpackNameField);
             outputBox.Add(nameRow);
 
-            unpackFolderZone = new FolderDropZone();
-            unpackFolderZone.OnPathChanged = p => unpackOutputPath = p;
-            
-            var pathRow = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
-            pathRow.Add(new Label("Path:") { style = { width = 40 } });
-            pathRow.Add(unpackFolderZone);
+            var unpackPathRow = new VisualElement();
+            unpackPathRow.AddToClassList("rex-row-cols-2");
+            unpackPathRow.Add(new Label("Path:") { style = { width = 80, flexShrink = 0 } });
+            unpackFolderZone = new RexFolderSelector();
+            unpackFolderZone.OnValueChanged += p => unpackOutputPath = p;
             unpackFolderZone.style.flexGrow = 1;
-            outputBox.Add(pathRow);
+            unpackPathRow.Add(unpackFolderZone);
+            outputBox.Add(unpackPathRow);
             unpackContainer.Add(outputBox);
 
             // --- CHANNELS SECTION ---
@@ -964,7 +922,7 @@ namespace RexTools.TextureRepacker.Editor
                         }
                         if (tex != null && string.IsNullOrEmpty(mixOutputPath)) {
                             mixOutputPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(tex));
-                            if (mixFolderZone != null) mixFolderZone.SetPath(mixOutputPath);
+                            if (mixFolderZone != null) mixFolderZone.SetPathWithoutNotify(mixOutputPath);
                         }
                     } else {
                         mixLayer = tex;
@@ -1009,21 +967,22 @@ namespace RexTools.TextureRepacker.Editor
             outBox.Add(new Label("OUTPUT SETTINGS") { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 5, color = Color.gray } });
 
             var nameRow2 = new VisualElement();
-            nameRow2.AddToClassList("rex-row");
-            nameRow2.Add(new Label("Name:") { style = { width = 45, flexShrink = 0 } });
+            nameRow2.AddToClassList("rex-row-cols-2");
+            nameRow2.Add(new Label("Name:") { style = { width = 80, flexShrink = 0 } });
             mixNameField = new TextField { value = mixOutputName };
-            mixNameField.AddToClassList("rex-field-flex");
+            mixNameField.AddToClassList("rex-col-right");
             mixNameField.RegisterValueChangedCallback(e => mixOutputName = e.newValue);
             nameRow2.Add(mixNameField);
             outBox.Add(nameRow2);
 
-            mixFolderZone = new FolderDropZone();
-            mixFolderZone.OnPathChanged = p => mixOutputPath = p;
-            var pathRow2 = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
-            pathRow2.Add(new Label("Path:") { style = { width = 40 } });
-            pathRow2.Add(mixFolderZone);
+            var mixPathRow = new VisualElement();
+            mixPathRow.AddToClassList("rex-row-cols-2");
+            mixPathRow.Add(new Label("Path:") { style = { width = 80, flexShrink = 0 } });
+            mixFolderZone = new RexFolderSelector();
+            mixFolderZone.OnValueChanged += p => mixOutputPath = p;
             mixFolderZone.style.flexGrow = 1;
-            outBox.Add(pathRow2);
+            mixPathRow.Add(mixFolderZone);
+            outBox.Add(mixPathRow);
             mixContainer.Add(outBox);
         }
 
