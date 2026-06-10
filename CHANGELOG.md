@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core: `RexSlider` — reusable custom slider with configurable snap increment, tick marks, draggable thumb, editable value field, and reset button.
 - Core: `RexButton` — reusable button component with label/icon modes, toggle support, hover/press states, and click flash.
 - Quick Shot: Refactored render scale slider to use `RexSlider` with 0.25 snap increment.
+- Quick Shot: Refactored post-operation toggle buttons (Auto Open, Auto Copy) to use `RexButton`.
 - RexSlider reset button now uses `RexButton` with `d_Refresh` icon.
 - Git Integration: A background-threaded Git status and management window (stage, commit, push, pull, fetch).
 - Git Integration: Interactive branch and remote status label injected directly into the editor play control toolbar.

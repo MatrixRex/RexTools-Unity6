@@ -142,32 +142,22 @@ namespace RexTools.QuickShot.Editor
             var postOpsRow = new VisualElement();
             postOpsRow.AddToClassList("rex-row");
 
-            var autoOpenBtn = new Button();
-            autoOpenBtn.text = $"Auto Open: {(autoReveal ? "ON" : "OFF")}";
-            autoOpenBtn.AddToClassList("rex-toggle-btn");
+            var autoOpenBtn = new RexButton($"Auto Open: {(autoReveal ? "ON" : "OFF")}", isToggle: true, defaultActive: autoReveal);
             autoOpenBtn.tooltip = "Reveal screenshot in Explorer/Finder after capture";
-            if (autoReveal) autoOpenBtn.AddToClassList("rex-toggle-btn--active");
-            
-            autoOpenBtn.clicked += () => {
-                autoReveal = !autoReveal;
-                autoOpenBtn.text = $"Auto Open: {(autoReveal ? "ON" : "OFF")}";
-                if (autoReveal) autoOpenBtn.AddToClassList("rex-toggle-btn--active");
-                else autoOpenBtn.RemoveFromClassList("rex-toggle-btn--active");
+            autoOpenBtn.OnToggleChanged += active =>
+            {
+                autoReveal = active;
+                autoOpenBtn.Label = $"Auto Open: {(active ? "ON" : "OFF")}";
             };
             postOpsRow.Add(autoOpenBtn);
 
-            var autoCopyBtn = new Button();
-            autoCopyBtn.text = $"Auto Copy: {(autoCopy ? "ON" : "OFF")}";
-            autoCopyBtn.AddToClassList("rex-toggle-btn");
+            var autoCopyBtn = new RexButton($"Auto Copy: {(autoCopy ? "ON" : "OFF")}", isToggle: true, defaultActive: autoCopy);
             autoCopyBtn.style.marginLeft = 4;
             autoCopyBtn.tooltip = "Copy screenshot to system clipboard after capture";
-            if (autoCopy) autoCopyBtn.AddToClassList("rex-toggle-btn--active");
-
-            autoCopyBtn.clicked += () => {
-                autoCopy = !autoCopy;
-                autoCopyBtn.text = $"Auto Copy: {(autoCopy ? "ON" : "OFF")}";
-                if (autoCopy) autoCopyBtn.AddToClassList("rex-toggle-btn--active");
-                else autoCopyBtn.RemoveFromClassList("rex-toggle-btn--active");
+            autoCopyBtn.OnToggleChanged += active =>
+            {
+                autoCopy = active;
+                autoCopyBtn.Label = $"Auto Copy: {(active ? "ON" : "OFF")}";
             };
             postOpsRow.Add(autoCopyBtn);
 
