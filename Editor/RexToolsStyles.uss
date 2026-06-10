@@ -130,13 +130,19 @@
 
 .rex-button:hover {
     background-color: #383838;
-    color: white;
     border-color: #555;
+}
+
+.rex-button:hover .rex-button__label {
+    color: white;
 }
 
 .rex-button:active {
     background-color: #3380FF;
     border-color: #4D99FF;
+}
+
+.rex-button:active .rex-button__label {
     color: white;
 }
 
@@ -144,6 +150,9 @@
 .rex-button--active {
     background-color: #4D99FF;
     border-color: #3380FF;
+}
+
+.rex-button--active .rex-button__label {
     color: white;
 }
 
@@ -175,7 +184,7 @@
 .rex-button__label {
     font-size: 11px;
     white-space: nowrap;
-    color: inherit;
+    color: #CCC;
 }
 
 /* Toggle Buttons */
