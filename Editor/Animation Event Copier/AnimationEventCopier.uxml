@@ -24,6 +24,11 @@
                 </ui:VisualElement>
             </ui:VisualElement>
 
+            <!-- Warning Box -->
+            <ui:VisualElement name="warning-container" class="rex-warning-box rex-hidden">
+                <ui:Label name="warning-label" class="rex-warning-text" />
+            </ui:VisualElement>
+
             <ui:VisualElement name="mapping-section" class="rex-box rex-hidden">
                 <ui:VisualElement class="rex-row" style="justify-content: space-between;">
                     <ui:Label text="CLIP MAPPING" class="rex-section-label" />

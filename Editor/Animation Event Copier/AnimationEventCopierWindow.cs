@@ -23,6 +23,9 @@ namespace RexTools.Animation
         private VisualElement mappingList;
         private Button btnCopy;
         
+        private VisualElement warningContainer;
+        private Label warningLabel;
+        
         private RexHelpBox helpBox;
         private bool showHelp = false;
 
@@ -78,6 +81,8 @@ namespace RexTools.Animation
 
             mappingSection = root.Q<VisualElement>("mapping-section");
             mappingList = root.Q<VisualElement>("mapping-list");
+            warningContainer = root.Q<VisualElement>("warning-container");
+            warningLabel = root.Q<Label>("warning-label");
 
             var btnAutoMatch = root.Q<Button>("btn-auto-match");
             btnCopy = root.Q<Button>("btn-copy");
@@ -129,6 +134,7 @@ namespace RexTools.Animation
             if (sourceModel == null || targetModel == null)
             {
                 mappingSection.AddToClassList("rex-hidden");
+                warningContainer?.AddToClassList("rex-hidden");
                 UpdateButtonState();
                 return;
             }
@@ -139,31 +145,63 @@ namespace RexTools.Animation
             ModelImporter sourceImporter = AssetImporter.GetAtPath(sourcePath) as ModelImporter;
             ModelImporter targetImporter = AssetImporter.GetAtPath(targetPath) as ModelImporter;
 
-            if (sourceImporter == null || targetImporter == null)
+            bool invalid = false;
+
+            if (sourceImporter == null)
             {
-                mappingSection.AddToClassList("rex-hidden");
-                UpdateButtonState();
-                return;
-            }
-
-            sourceClips = sourceImporter.clipAnimations.Length > 0 ? sourceImporter.clipAnimations : sourceImporter.defaultClipAnimations;
-            targetClips = targetImporter.clipAnimations.Length > 0 ? targetImporter.clipAnimations : targetImporter.defaultClipAnimations;
-
-            if (sourceClips != null && targetClips != null && sourceClips.Length > 0 && targetClips.Length > 0)
-            {
-                sourceClipNames = new List<string> { "None" };
-                sourceClipNames.AddRange(sourceClips.Select(c => c.name));
-
-                clipMapping = new int[targetClips.Length];
-                
-                mappingSection.RemoveFromClassList("rex-hidden");
-                
-                RebuildMappingUI();
-                AutoMatch();
+                invalid = true;
             }
             else
             {
+                sourceClips = sourceImporter.clipAnimations.Length > 0 ? sourceImporter.clipAnimations : sourceImporter.defaultClipAnimations;
+                if (sourceClips == null || sourceClips.Length == 0)
+                {
+                    invalid = true;
+                }
+            }
+
+            if (targetImporter == null)
+            {
+                invalid = true;
+            }
+            else
+            {
+                targetClips = targetImporter.clipAnimations.Length > 0 ? targetImporter.clipAnimations : targetImporter.defaultClipAnimations;
+                if (targetClips == null || targetClips.Length == 0)
+                {
+                    invalid = true;
+                }
+            }
+
+            if (invalid)
+            {
+                if (warningLabel != null)
+                {
+                    warningLabel.text = "⚠️  Source or target doesn't have animation";
+                }
+                warningContainer?.RemoveFromClassList("rex-hidden");
                 mappingSection.AddToClassList("rex-hidden");
+            }
+            else
+            {
+                warningContainer?.AddToClassList("rex-hidden");
+
+                if (sourceClips != null && targetClips != null && sourceClips.Length > 0 && targetClips.Length > 0)
+                {
+                    sourceClipNames = new List<string> { "None" };
+                    sourceClipNames.AddRange(sourceClips.Select(c => c.name));
+
+                    clipMapping = new int[targetClips.Length];
+                    
+                    mappingSection.RemoveFromClassList("rex-hidden");
+                    
+                    RebuildMappingUI();
+                    AutoMatch();
+                }
+                else
+                {
+                    mappingSection.AddToClassList("rex-hidden");
+                }
             }
 
             UpdateButtonState();
