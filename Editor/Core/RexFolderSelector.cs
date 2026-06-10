@@ -57,26 +57,18 @@ namespace RexTools.Editor.Core
             actions.AddToClassList("rex-folder-selector__actions");
             Add(actions);
 
-            var browseBtn = new Button();
-            browseBtn.AddToClassList("rex-icon-button");
-            browseBtn.tooltip = "Browse folder";
-            var browseIcon = new VisualElement();
-            browseIcon.style.backgroundImage = (Texture2D)EditorGUIUtility.IconContent("Folder Icon").image;
-            browseIcon.style.width = 14;
-            browseIcon.style.height = 14;
-            browseBtn.Add(browseIcon);
-            browseBtn.clicked += BrowseFolder;
+            var browseBtn = new RexButton(icon: EditorGUIUtility.IconContent("Folder Icon").image as Texture2D)
+            {
+                tooltip = "Browse folder"
+            };
+            browseBtn.OnClick += BrowseFolder;
             actions.Add(browseBtn);
 
-            var revealBtn = new Button();
-            revealBtn.AddToClassList("rex-icon-button");
-            revealBtn.tooltip = "Show in Explorer";
-            var revealIcon = new VisualElement();
-            revealIcon.style.backgroundImage = (Texture2D)EditorGUIUtility.IconContent("d_Profiler.Open").image;
-            revealIcon.style.width = 14;
-            revealIcon.style.height = 14;
-            revealBtn.Add(revealIcon);
-            revealBtn.clicked += RevealInExplorer;
+            var revealBtn = new RexButton(icon: EditorGUIUtility.IconContent("d_Profiler.Open").image as Texture2D)
+            {
+                tooltip = "Show in Explorer"
+            };
+            revealBtn.OnClick += RevealInExplorer;
             actions.Add(revealBtn);
 
             RegisterCallback<DragUpdatedEvent>(OnDragUpdated);

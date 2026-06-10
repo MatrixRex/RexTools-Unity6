@@ -632,6 +632,7 @@
     flex-shrink: 1;
     position: relative;
     overflow: hidden;
+    align-self: stretch;
 }
 
 .rex-folder-selector__field {
@@ -640,17 +641,26 @@
     min-width: 50px;
     border-width: 0;
     background-color: transparent;
+    margin: 0;
+    padding: 0;
+    height: 100%;
 }
 
 .rex-folder-selector__field .unity-text-field__input {
     background-color: transparent;
     border-width: 0;
+    padding: 0 8px;
+    margin: 0;
+    height: 100%;
+    -unity-text-align: middle-left;
 }
 
 .rex-folder-selector__actions {
     flex-direction: row;
     flex-shrink: 0;
     margin-left: 2px;
+    margin-right: 2px;
+    gap: 2px;
 }
 
 .rex-folder-selector__hint {
