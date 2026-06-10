@@ -100,9 +100,12 @@ namespace RexTools.QuickShot.Editor
 
             // Mode Toggle
             var modeRow = new VisualElement();
-            modeRow.AddToClassList("rex-row");
-            var modeToggle = new EnumField("Mode", isSceneMode ? ShotMode.Scene : ShotMode.Game);
-            modeToggle.AddToClassList("rex-flex-grow");
+            modeRow.AddToClassList("rex-row-cols-2");
+            var modeLabel = new Label("Shot Mode");
+            modeLabel.AddToClassList("rex-col-left");
+            modeRow.Add(modeLabel);
+            var modeToggle = new EnumField(isSceneMode ? ShotMode.Scene : ShotMode.Game);
+            modeToggle.AddToClassList("rex-col-right");
             modeToggle.RegisterValueChangedCallback(e => {
                 isSceneMode = (ShotMode)e.newValue == ShotMode.Scene;
                 renderScaleContainer.style.display = isSceneMode ? DisplayStyle.None : DisplayStyle.Flex;
@@ -115,9 +118,16 @@ namespace RexTools.QuickShot.Editor
             renderScaleContainer = new VisualElement();
             renderScaleContainer.style.display = isSceneMode ? DisplayStyle.None : DisplayStyle.Flex;
 
+            var scaleRow = new VisualElement();
+            scaleRow.AddToClassList("rex-row-cols-2");
+            var scaleLabel = new Label("Render Scale");
+            scaleLabel.AddToClassList("rex-col-left");
+            scaleRow.Add(scaleLabel);
             var scaleSlider = new RexSlider(1f, 8f, defaultValue: 1f, value: renderScale, snapIncrement: 0.25f);
             scaleSlider.OnValueChanged += val => renderScale = val;
-            renderScaleContainer.Add(scaleSlider);
+            scaleSlider.AddToClassList("rex-col-right");
+            scaleRow.Add(scaleSlider);
+            renderScaleContainer.Add(scaleRow);
             
             settingsBox.Add(renderScaleContainer);
 
