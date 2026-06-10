@@ -135,7 +135,7 @@ namespace RexTools.QuickShot.Editor
             transparentToggleContainer = new VisualElement();
             transparentToggleContainer.AddToClassList("rex-row-cols-2");
             transparentToggleContainer.style.display = isSceneMode ? DisplayStyle.None : DisplayStyle.Flex;
-            var bgLabel = new Label("Alpha") { style = { width = 85 } };
+            var bgLabel = new Label("Transparent BG") { style = { width = 85 } };
             bgLabel.AddToClassList("rex-col-label");
             transparentToggleContainer.Add(bgLabel);
             var transparentToggle = new Toggle { value = transparentBG };
