@@ -14,10 +14,10 @@ namespace RexTools.QuickShot.Editor
     public class QuickShotWindow : EditorWindow
     {
         private string exportPath;
-        private bool isSceneMode = true;
+        private bool isSceneMode = false;
         private float renderScale = 1.0f;
         private bool transparentBG = false;
-        private bool autoReveal = true;
+        private bool autoReveal = false;
         private bool autoCopy = false;
 
         private RexFolderSelector folderSelector;
@@ -101,7 +101,7 @@ namespace RexTools.QuickShot.Editor
             // Mode Toggle
             var modeRow = new VisualElement();
             modeRow.AddToClassList("rex-row-cols-2");
-            var modeLabel = new Label("Shot Mode") { style = { width = 85 } };
+            var modeLabel = new Label("Capture") { style = { width = 85 } };
             modeLabel.AddToClassList("rex-col-label");
             modeRow.Add(modeLabel);
             var modeToggle = new EnumField(isSceneMode ? ShotMode.Scene : ShotMode.Game);
@@ -133,10 +133,15 @@ namespace RexTools.QuickShot.Editor
 
             // Transparent BG
             transparentToggleContainer = new VisualElement();
-            var transparentToggle = new Toggle("Transparent BG") { value = transparentBG };
-            transparentToggle.RegisterValueChangedCallback(e => transparentBG = e.newValue);
-            transparentToggleContainer.Add(transparentToggle);
+            transparentToggleContainer.AddToClassList("rex-row-cols-2");
             transparentToggleContainer.style.display = isSceneMode ? DisplayStyle.None : DisplayStyle.Flex;
+            var bgLabel = new Label("Alpha") { style = { width = 85 } };
+            bgLabel.AddToClassList("rex-col-label");
+            transparentToggleContainer.Add(bgLabel);
+            var transparentToggle = new Toggle { value = transparentBG };
+            transparentToggle.RegisterValueChangedCallback(e => transparentBG = e.newValue);
+            transparentToggle.AddToClassList("rex-col-right");
+            transparentToggleContainer.Add(transparentToggle);
             settingsBox.Add(transparentToggleContainer);
 
             root.Add(settingsBox);
@@ -152,12 +157,12 @@ namespace RexTools.QuickShot.Editor
             var postOpsRow = new VisualElement();
             postOpsRow.AddToClassList("rex-row");
 
-            var autoOpenBtn = new RexButton($"Auto Open: {(autoReveal ? "ON" : "OFF")}", isToggle: true, defaultActive: autoReveal);
+            var autoOpenBtn = new RexButton($"Auto Open Folder: {(autoReveal ? "ON" : "OFF")}", isToggle: true, defaultActive: autoReveal);
             autoOpenBtn.tooltip = "Reveal screenshot in Explorer/Finder after capture";
             autoOpenBtn.OnToggleChanged += active =>
             {
                 autoReveal = active;
-                autoOpenBtn.Label = $"Auto Open: {(active ? "ON" : "OFF")}";
+                autoOpenBtn.Label = $"Auto Open Folder: {(active ? "ON" : "OFF")}";
             };
             postOpsRow.Add(autoOpenBtn);
 
