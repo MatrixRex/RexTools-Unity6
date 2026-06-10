@@ -612,6 +612,12 @@
 
 /* --- Folder Selector --- */
 .rex-folder-selector {
+    flex-direction: column;
+    align-items: stretch;
+    overflow: visible;
+}
+
+.rex-folder-selector__row {
     flex-direction: row;
     align-items: center;
     min-height: 24px;
@@ -622,9 +628,20 @@
     overflow: visible;
 }
 
-.rex-folder-selector--dragging {
+.rex-folder-selector--dragging .rex-folder-selector__row {
     border-color: #4D99FF;
     background-color: rgba(77, 153, 255, 0.1);
+}
+
+.rex-folder-selector--invalid .rex-folder-selector__row {
+    border-color: #FF5555;
+}
+
+.rex-folder-selector__tip {
+    font-size: 10px;
+    color: #FF5555;
+    margin-top: 3px;
+    margin-left: 4px;
 }
 
 .rex-folder-selector__field-wrapper {

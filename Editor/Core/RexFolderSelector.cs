@@ -11,8 +11,11 @@ namespace RexTools.Editor.Core
     {
         private readonly TextField _pathField;
         private readonly Label _dropHint;
+        private readonly VisualElement _row;
+        private readonly Label _tipLabel;
 
         private string _path;
+        private bool _required;
 
         public string PathValue
         {
@@ -24,20 +27,40 @@ namespace RexTools.Editor.Core
                     _path = value;
                     _pathField.value = value;
                     UpdateHint();
+                    UpdateRequiredState();
                     OnValueChanged?.Invoke(_path);
+                }
+            }
+        }
+
+        public bool Required
+        {
+            get => _required;
+            set
+            {
+                if (_required != value)
+                {
+                    _required = value;
+                    UpdateRequiredState();
                 }
             }
         }
 
         public event Action<string> OnValueChanged;
 
-        public RexFolderSelector()
+        public RexFolderSelector(bool required = false)
         {
+            _required = required;
+
             AddToClassList("rex-folder-selector");
+
+            _row = new VisualElement();
+            _row.AddToClassList("rex-folder-selector__row");
+            hierarchy.Add(_row);
 
             var fieldWrapper = new VisualElement();
             fieldWrapper.AddToClassList("rex-folder-selector__field-wrapper");
-            hierarchy.Add(fieldWrapper);
+            _row.Add(fieldWrapper);
 
             _pathField = new TextField();
             _pathField.AddToClassList("rex-folder-selector__field");
@@ -45,6 +68,7 @@ namespace RexTools.Editor.Core
             {
                 _path = e.newValue;
                 UpdateHint();
+                UpdateRequiredState();
                 OnValueChanged?.Invoke(_path);
             });
             fieldWrapper.Add(_pathField);
@@ -55,7 +79,7 @@ namespace RexTools.Editor.Core
 
             var actions = new VisualElement();
             actions.AddToClassList("rex-folder-selector__actions");
-            Add(actions);
+            _row.Add(actions);
 
             var browseBtn = new RexButton(icon: EditorGUIUtility.IconContent("Folder Icon").image as Texture2D)
             {
@@ -71,11 +95,17 @@ namespace RexTools.Editor.Core
             revealBtn.OnClick += RevealInExplorer;
             actions.Add(revealBtn);
 
+            _tipLabel = new Label("Required");
+            _tipLabel.AddToClassList("rex-folder-selector__tip");
+            _tipLabel.style.display = DisplayStyle.None;
+            hierarchy.Add(_tipLabel);
+
             RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
             RegisterCallback<DragPerformEvent>(OnDragPerform);
             RegisterCallback<DragLeaveEvent>(OnDragLeave);
 
             UpdateHint();
+            UpdateRequiredState();
         }
 
         public void SetPathWithoutNotify(string path)
@@ -83,6 +113,7 @@ namespace RexTools.Editor.Core
             _path = path;
             _pathField.SetValueWithoutNotify(path);
             UpdateHint();
+            UpdateRequiredState();
         }
 
         private void BrowseFolder()
@@ -101,6 +132,21 @@ namespace RexTools.Editor.Core
         private void UpdateHint()
         {
             _dropHint.style.display = string.IsNullOrEmpty(_path) ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private void UpdateRequiredState()
+        {
+            bool showWarning = _required && string.IsNullOrEmpty(_path);
+            if (showWarning)
+            {
+                AddToClassList("rex-folder-selector--invalid");
+                _tipLabel.style.display = DisplayStyle.Flex;
+            }
+            else
+            {
+                RemoveFromClassList("rex-folder-selector--invalid");
+                _tipLabel.style.display = DisplayStyle.None;
+            }
         }
 
         private void OnDragUpdated(DragUpdatedEvent e)

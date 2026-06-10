@@ -93,9 +93,16 @@ namespace RexTools.QuickShot.Editor
             exportLabel.AddToClassList("rex-section-label");
             exportBox.Add(exportLabel);
 
-            folderSelector = new RexFolderSelector();
+            folderSelector = new RexFolderSelector(required: true);
             folderSelector.SetPathWithoutNotify(exportPath);
-            folderSelector.OnValueChanged += path => exportPath = path;
+            folderSelector.OnValueChanged += path =>
+            {
+                exportPath = path;
+                if (captureButton != null)
+                {
+                    captureButton.IsEnabled = !string.IsNullOrEmpty(path);
+                }
+            };
             exportBox.Add(folderSelector);
 
             scrollView.Add(exportBox);
@@ -193,11 +200,18 @@ namespace RexTools.QuickShot.Editor
             // --- CAPTURE BUTTON ---
             captureButton = new RexActionButton("CAPTURE SCREENSHOT");
             captureButton.OnClick += CaptureScreenshot;
+            captureButton.IsEnabled = !string.IsNullOrEmpty(exportPath);
             root.Add(captureButton);
         }
 
         private void CaptureScreenshot()
         {
+            if (string.IsNullOrEmpty(exportPath))
+            {
+                Debug.LogError("[RexTools] Cannot capture screenshot: Export path is empty.");
+                return;
+            }
+
             if (!Directory.Exists(exportPath))
             {
                 Directory.CreateDirectory(exportPath);
