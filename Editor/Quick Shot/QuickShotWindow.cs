@@ -101,7 +101,7 @@ namespace RexTools.QuickShot.Editor
             // Mode Toggle
             var modeRow = new VisualElement();
             modeRow.AddToClassList("rex-row-cols-2");
-            var modeLabel = new Label("Capture") { style = { width = 85 } };
+            var modeLabel = new Label("Capture") { style = { width = 100 } };
             modeLabel.AddToClassList("rex-col-label");
             modeRow.Add(modeLabel);
             var modeToggle = new EnumField(isSceneMode ? ShotMode.Scene : ShotMode.Game);
@@ -120,7 +120,7 @@ namespace RexTools.QuickShot.Editor
 
             var scaleRow = new VisualElement();
             scaleRow.AddToClassList("rex-row-cols-2");
-            var scaleLabel = new Label("Render Scale") { style = { width = 85 } };
+            var scaleLabel = new Label("Render Scale") { style = { width = 100 } };
             scaleLabel.AddToClassList("rex-col-label");
             scaleRow.Add(scaleLabel);
             var scaleSlider = new RexSlider(1f, 8f, defaultValue: 1f, value: renderScale, snapIncrement: 0.25f);
@@ -135,7 +135,7 @@ namespace RexTools.QuickShot.Editor
             transparentToggleContainer = new VisualElement();
             transparentToggleContainer.AddToClassList("rex-row-cols-2");
             transparentToggleContainer.style.display = isSceneMode ? DisplayStyle.None : DisplayStyle.Flex;
-            var bgLabel = new Label("Transparent BG") { style = { width = 85 } };
+            var bgLabel = new Label("Transparent BG") { style = { width = 100 } };
             bgLabel.AddToClassList("rex-col-label");
             transparentToggleContainer.Add(bgLabel);
             var transparentToggle = new Toggle { value = transparentBG };
