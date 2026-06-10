@@ -87,10 +87,8 @@
     align-items: center;
     justify-content: center;
     height: 50px;
-    min-height: 50px;
     margin-top: 15px;
     border-radius: 4px;
-    flex-grow: 1;
     flex-shrink: 0;
     gap: 8px;
     user-select: none;
