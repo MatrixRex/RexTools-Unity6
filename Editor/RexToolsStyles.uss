@@ -390,8 +390,9 @@
 }
 
 .rex-col-label {
-    width: 90px;
     flex-shrink: 0;
+    padding-right: 6px;
+    white-space: nowrap;
 }
 
 .rex-field-flex {
