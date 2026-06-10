@@ -389,6 +389,11 @@
     width: 50px;
 }
 
+.rex-col-label {
+    width: 90px;
+    flex-shrink: 0;
+}
+
 .rex-field-flex {
     flex-grow: 1;
     flex-shrink: 1;
