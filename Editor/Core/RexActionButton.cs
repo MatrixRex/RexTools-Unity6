@@ -80,6 +80,9 @@ namespace RexTools.Editor.Core
                 hierarchy.Add(labelElement);
             }
 
+            if (hasIcon && hasLabel)
+                AddToClassList("rex-action-button--with-icon");
+
             RegisterCallback<ClickEvent>(OnClickEvent);
             RegisterCallback<PointerEnterEvent>(OnPointerEnter);
             RegisterCallback<PointerLeaveEvent>(OnPointerLeave);

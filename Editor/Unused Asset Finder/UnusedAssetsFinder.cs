@@ -250,7 +250,7 @@ public class UnusedAssetsFinder : EditorWindow
                 Progress.Report(progressId, 0, "Gathering scene references...");
 
                 var sceneReferences = new HashSet<string>();
-                var allObjects = FindObjectsOfType<UnityEngine.Object>();
+                var allObjects = FindObjectsByType<UnityEngine.Object>(FindObjectsSortMode.None);
                 foreach (var obj in allObjects)
                 {
                     var dependencies = EditorUtility.CollectDependencies(new[] { obj });

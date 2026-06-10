@@ -9,9 +9,7 @@ using RexTools.Editor.Core;
 namespace RexTools.Animation
 {
     public class AnimationEventCopierWindow : EditorWindow
-    {
-        [SerializeField]
-        private VisualTreeAsset m_VisualTreeAsset = default;
+    { 
 
         private GameObject sourceModel;
         private GameObject targetModel;

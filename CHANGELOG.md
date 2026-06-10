@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- USS: Resolved unknown USS property warnings (`text-transform`, `gap`, `user-select`, `pointer-events`) and cursor warnings by using margin-based spacing and Unity-supported cursors.
+- Core: Fixed unused field/variable warnings in `AnimationEventCopierWindow` and `ShaderGraphSearchExtension`.
+- Unused Assets Finder: Replaced obsolete `FindObjectsOfType` calls with `FindObjectsByType`.
+
 ### Added
 - Core: Path validation support to `RexFolderSelector` with a `required` parameter/property, empty path border highlight, and a required tip label below the input.
 - Quick Shot: Refactored window layout to use a ScrollView for settings, keeping the header, help box, and capture button fixed.

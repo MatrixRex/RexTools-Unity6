@@ -73,7 +73,7 @@ namespace RexTools.Editor.Core
             });
             fieldWrapper.Add(_pathField);
 
-            _dropHint = new Label("Drop a folder here");
+            _dropHint = new Label("Drop a folder here") { pickingMode = PickingMode.Ignore };
             _dropHint.AddToClassList("rex-folder-selector__hint");
             fieldWrapper.Add(_dropHint);
 

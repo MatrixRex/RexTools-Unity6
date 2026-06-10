@@ -800,7 +800,7 @@ namespace Rextools.ShaderGraphSearch.Editor
                         });
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     // Debug.LogWarning($"ShaderGraph Search: Error processing node - {e.Message}");
                 }
@@ -848,7 +848,7 @@ namespace Rextools.ShaderGraphSearch.Editor
                         });
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
 
                 }
@@ -999,7 +999,7 @@ namespace Rextools.ShaderGraphSearch.Editor
                             }
                         }
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
 
                     }
@@ -1007,7 +1007,7 @@ namespace Rextools.ShaderGraphSearch.Editor
 
 
             }
-            catch (Exception e)
+            catch (Exception)
             {
 
             }

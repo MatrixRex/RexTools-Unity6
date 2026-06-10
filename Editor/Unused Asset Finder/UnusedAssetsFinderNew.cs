@@ -231,7 +231,7 @@ namespace RexTools.UnusedAssetFinder.Editor
                                      .ToList();
 
                 var sceneReferences = new HashSet<string>();
-                var allObjects = FindObjectsOfType<UnityEngine.Object>();
+                var allObjects = FindObjectsByType<UnityEngine.Object>(FindObjectsSortMode.None);
                 
                 float totalObj = allObjects.Length;
                 for (int i = 0; i < allObjects.Length; i++) {
