@@ -702,6 +702,8 @@
     align-items: center;
     height: 28px;
     flex-shrink: 0;
+    padding-left: 3px;
+    padding-right: 3px;
 }
 
 .rex-slider__track-container {
