@@ -23,7 +23,7 @@ namespace RexTools.QuickShot.Editor
         private RexFolderSelector folderSelector;
         private VisualElement renderScaleContainer;
         private VisualElement transparentToggleContainer;
-        private Button captureButton;
+        private RexActionButton captureButton;
 
         [MenuItem("Tools/Rex Tools/Quick Shot")]
         public static void ShowWindow()
@@ -166,10 +166,8 @@ namespace RexTools.QuickShot.Editor
             root.Add(postOpsBox);
 
             // --- CAPTURE BUTTON ---
-            captureButton = new Button { text = "CAPTURE SCREENSHOT" };
-            captureButton.AddToClassList("rex-action-button");
-            captureButton.AddToClassList("rex-action-button--pack");
-            captureButton.clicked += CaptureScreenshot;
+            captureButton = new RexActionButton("CAPTURE SCREENSHOT");
+            captureButton.OnClick += CaptureScreenshot;
             root.Add(captureButton);
         }
 

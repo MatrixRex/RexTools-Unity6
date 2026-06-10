@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Quick Shot: Refactored render scale slider to use `RexSlider` with 0.25 snap increment.
 - Quick Shot: Refactored post-operation toggle buttons (Auto Open, Auto Copy) to use `RexButton`.
 - RexSlider reset button now uses `RexButton` with `d_Refresh` icon.
+- Core: `RexActionButton` — large action button with custom tint color, hover/press states, click flash, disabled dimming, icon support.
+- Quick Shot: Refactored capture button to use `RexActionButton`.
 - Git Integration: A background-threaded Git status and management window (stage, commit, push, pull, fetch).
 - Git Integration: Interactive branch and remote status label injected directly into the editor play control toolbar.
 - Batch Material Processor: A standalone tool for batch setting material shaders and auto-assigning texture maps from a selected directory using customizable suffix rules and dry-run preview.

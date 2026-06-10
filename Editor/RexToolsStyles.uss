@@ -81,21 +81,33 @@
     font-size: 10px;
 }
 
-/* Action Button */
+/* RexActionButton */
 .rex-action-button {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
     height: 50px;
+    min-height: 50px;
     margin-top: 15px;
-    -unity-font-style: bold;
-    font-size: 14px;
     border-radius: 4px;
+    flex-grow: 1;
+    flex-shrink: 0;
+    gap: 8px;
+    user-select: none;
+    border-width: 0;
 }
 
-.rex-action-button--pack {
-    background-color: #3380FF;
+.rex-action-button__icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
 }
 
-.rex-action-button--unpack {
-    background-color: #33B373;
+.rex-action-button__label {
+    font-size: 14px;
+    -unity-font-style: bold;
+    white-space: nowrap;
+    color: white;
 }
 
 /* Small Selector Buttons */
