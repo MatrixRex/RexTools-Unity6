@@ -5,19 +5,11 @@
     xmlns:uie="UnityEditor.UIElements"
 >
     <ui:VisualElement class="rex-root-padding" style="flex-grow: 1;">
-        <!-- Header -->
-        <ui:VisualElement class="rex-header-row">
-            <ui:VisualElement class="rex-header-stack">
-                <ui:Label text="REXTOOLS" class="rex-brand-label" />
-                <ui:Label text="Animation Event Copier" class="rex-tool-title" />
-            </ui:VisualElement>
-            <ui:Button name="help-btn" class="rex-help-btn" />
-        </ui:VisualElement>
+        <!-- Header Placeholder -->
+        <ui:VisualElement name="header-container" />
 
-        <ui:VisualElement name="help-box" class="rex-help-box rex-box rex-hidden">
-            <ui:Label text="ABOUT THIS TOOL" class="rex-help-text-title" />
-            <ui:Label text="Copy animation events from a source FBX to a target FBX. Map specific clips together if their names do not match perfectly." class="rex-help-text-item" />
-        </ui:VisualElement>
+        <!-- Help Box Placeholder -->
+        <ui:VisualElement name="help-box-container" />
 
         <ui:ScrollView style="flex-grow: 1;">
             <ui:VisualElement class="rex-box">

@@ -57,23 +57,33 @@ namespace RexTools.QuickShot.Editor
             }
             if (styleSheet != null) root.styleSheets.Add(styleSheet);
 
-            // --- BRANDED HEADER ---
-            var header = new VisualElement();
-            header.AddToClassList("rex-header-row");
+            // --- BRANDED HEADER & HELP BOX ---
+            var helpBox = new RexHelpBox(
+                "Export Path: The folder where screenshots are saved.",
+                "Capture Mode: 'Scene' captures the editor scene view, while 'Game' captures the Main Camera.",
+                "Render Scale: Resolution multiplier (only active in Game capture mode).",
+                "Transparent BG: Clears the background to transparent (only active in Game capture mode).",
+                "Auto Open Folder: Reveals the screenshot in Explorer/Finder after capture.",
+                "Auto Copy: Copies the screenshot to the system clipboard after capture."
+            );
 
-            var brandStack = new VisualElement();
-            brandStack.AddToClassList("rex-header-stack");
+            var header = new RexHeader("Quick Shot", showHelpButton: true);
+            bool showHelp = false;
+            header.OnHelpClicked += () => {
+                showHelp = !showHelp;
+                helpBox.ToggleVisibility();
+                header.SetHelpButtonActive(showHelp);
+            };
 
-            var brandLabel = new Label("Rex Tools");
-            brandLabel.AddToClassList("rex-brand-label");
-            brandStack.Add(brandLabel);
-
-            var titleLabel = new Label("Quick Shot");
-            titleLabel.AddToClassList("rex-tool-title");
-            brandStack.Add(titleLabel);
-
-            header.Add(brandStack);
             root.Add(header);
+            root.Add(helpBox);
+
+            // --- SCROLLABLE SETTINGS AREA ---
+            var scrollView = new ScrollView(ScrollViewMode.Vertical);
+            scrollView.style.flexGrow = 1;
+            scrollView.style.marginTop = 4;
+            scrollView.style.marginBottom = 4;
+            root.Add(scrollView);
 
             // --- EXPORT PATH ---
             var exportBox = new VisualElement();
@@ -88,7 +98,7 @@ namespace RexTools.QuickShot.Editor
             folderSelector.OnValueChanged += path => exportPath = path;
             exportBox.Add(folderSelector);
 
-            root.Add(exportBox);
+            scrollView.Add(exportBox);
 
             // --- SETTINGS ---
             var settingsBox = new VisualElement();
@@ -144,7 +154,7 @@ namespace RexTools.QuickShot.Editor
             transparentToggleContainer.Add(transparentToggle);
             settingsBox.Add(transparentToggleContainer);
 
-            root.Add(settingsBox);
+            scrollView.Add(settingsBox);
 
             // --- POST OPERATIONS ---
             var postOpsBox = new VisualElement();
@@ -178,7 +188,7 @@ namespace RexTools.QuickShot.Editor
 
             postOpsBox.Add(postOpsRow);
 
-            root.Add(postOpsBox);
+            scrollView.Add(postOpsBox);
 
             // --- CAPTURE BUTTON ---
             captureButton = new RexActionButton("CAPTURE SCREENSHOT");

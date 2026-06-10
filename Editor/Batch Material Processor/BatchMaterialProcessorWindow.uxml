@@ -1,23 +1,10 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
     <ui:VisualElement class="rex-root-padding" style="flex-direction: column; flex-grow: 1; height: 100%;">
-        <!-- Branded Header -->
-        <ui:VisualElement class="rex-header-row" style="flex-shrink: 0; margin-bottom: 8px;">
-            <ui:VisualElement class="rex-header-stack">
-                <ui:Label text="REX TOOLS" class="rex-brand-label" />
-                <ui:Label text="Batch Material Processor" class="rex-tool-title" />
-            </ui:VisualElement>
-            <ui:Button name="help-btn" class="rex-help-btn" />
-        </ui:VisualElement>
+        <!-- Header Placeholder -->
+        <ui:VisualElement name="header-container" />
 
-        <!-- Help Box -->
-        <ui:VisualElement name="help-box" class="rex-help-box rex-box rex-hidden" style="flex-shrink: 0;">
-            <ui:Label text="HOW TO USE:" class="rex-help-text-title" />
-            <ui:Label text="• Add materials using selection or drag-and-drop." class="rex-help-text-item" />
-            <ui:Label text="• Set a target Shader and search folder path." class="rex-help-text-item" />
-            <ui:Label text="• Edit suffix rules under Suffixes tab." class="rex-help-text-item" />
-            <ui:Label text="• Click PROCESS MATCHES to dry-run, then check the Preview tab." class="rex-help-text-item" />
-            <ui:Label text="• Click APPLY to convert materials and assign textures." class="rex-help-text-item" />
-        </ui:VisualElement>
+        <!-- Help Box Placeholder -->
+        <ui:VisualElement name="help-box-container" />
 
         <!-- Config Box -->
         <ui:VisualElement class="rex-box" style="flex-shrink: 0; margin-bottom: 8px;">
@@ -31,8 +18,7 @@
             </ui:VisualElement>
             <ui:VisualElement class="rex-row">
                 <ui:Label text="Folder:" style="width: 55px;" />
-                <ui:TextField name="folder-field" class="rex-field-flex" />
-                <ui:Button name="btn-browse-folder" text="..." style="width: 25px; margin-left: 2px;" />
+                <ui:VisualElement name="folder-selector-container" class="rex-field-flex" />
             </ui:VisualElement>
             <ui:Toggle name="recursive-toggle" label="Recursive Search" style="margin-bottom: 0px;" />
         </ui:VisualElement>

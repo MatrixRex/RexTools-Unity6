@@ -14,12 +14,12 @@ namespace RexTools.BatchMaterialProcessor.Editor
     {
         private BatchMaterialProcessorSettings settings;
         
-        private VisualElement helpBox;
+        private RexHelpBox helpBox;
         private bool showHelp = false;
         
         private ScrollView materialsScroll;
         private ObjectField shaderField;
-        private TextField folderField;
+        private RexFolderSelector folderSelector;
         private Toggle recursiveToggle;
         
         private Button tabSuffixes;
@@ -90,26 +90,30 @@ namespace RexTools.BatchMaterialProcessor.Editor
             if (styleSheet != null) root.styleSheets.Add(styleSheet);
 
             // Bind UI Elements
-            helpBox = root.Q<VisualElement>("help-box");
-            var helpBtn = root.Q<Button>("help-btn");
-            if (helpBtn != null)
+            // --- BRANDED HEADER & HELP BOX ---
+            var helpBoxContainer = root.Q<VisualElement>("help-box-container");
+            if (helpBoxContainer != null)
             {
-                helpBtn.clicked += () => {
+                helpBox = new RexHelpBox(
+                    "Add materials using selection or drag-and-drop.",
+                    "Set a target Shader and search folder path.",
+                    "Edit suffix rules under Suffixes tab.",
+                    "Click PROCESS MATCHES to dry-run, then check the Preview tab.",
+                    "Click APPLY to convert materials and assign textures."
+                );
+                helpBoxContainer.Add(helpBox);
+            }
+
+            var headerContainer = root.Q<VisualElement>("header-container");
+            if (headerContainer != null)
+            {
+                var header = new RexHeader("Batch Material Processor", showHelpButton: true);
+                header.OnHelpClicked += () => {
                     showHelp = !showHelp;
-                    if (helpBox != null)
-                    {
-                        if (showHelp)
-                        {
-                            helpBox.RemoveFromClassList("rex-hidden");
-                            helpBtn.AddToClassList("rex-help-btn--active");
-                        }
-                        else
-                        {
-                            helpBox.AddToClassList("rex-hidden");
-                            helpBtn.RemoveFromClassList("rex-help-btn--active");
-                        }
-                    }
+                    helpBox?.ToggleVisibility();
+                    header.SetHelpButtonActive(showHelp);
                 };
+                headerContainer.Add(header);
             }
 
             // Preset Setup
@@ -179,44 +183,16 @@ namespace RexTools.BatchMaterialProcessor.Editor
                 });
             }
 
-            folderField = root.Q<TextField>("folder-field");
-            if (folderField != null)
+            var selectorContainer = root.Q<VisualElement>("folder-selector-container");
+            if (selectorContainer != null)
             {
-                folderField.value = settings.searchFolderPath;
-                folderField.RegisterValueChangedCallback(evt => {
-                    settings.searchFolderPath = evt.newValue;
+                folderSelector = new RexFolderSelector();
+                folderSelector.SetPathWithoutNotify(settings.searchFolderPath);
+                folderSelector.OnValueChanged += path => {
+                    settings.searchFolderPath = path;
                     EditorUtility.SetDirty(settings);
-                });
-                folderField.RegisterCallback<DragUpdatedEvent>(e => DragAndDrop.visualMode = DragAndDropVisualMode.Copy);
-                folderField.RegisterCallback<DragPerformEvent>(e => {
-                    DragAndDrop.AcceptDrag();
-                    string path = DragAndDrop.paths.FirstOrDefault();
-                    if (!string.IsNullOrEmpty(path) && AssetDatabase.IsValidFolder(path))
-                    {
-                        settings.searchFolderPath = path;
-                        folderField.value = path;
-                        EditorUtility.SetDirty(settings);
-                    }
-                });
-            }
-
-            var btnBrowse = root.Q<Button>("btn-browse-folder");
-            if (btnBrowse != null)
-            {
-                btnBrowse.clicked += () => {
-                    string path = EditorUtility.OpenFolderPanel("Select Texture Search Folder", settings.searchFolderPath, "");
-                    if (!string.IsNullOrEmpty(path))
-                    {
-                        // Convert absolute path to project-relative if inside Assets
-                        if (path.StartsWith(Application.dataPath))
-                        {
-                            path = "Assets" + path.Substring(Application.dataPath.Length);
-                        }
-                        settings.searchFolderPath = path;
-                        if (folderField != null) folderField.value = path;
-                        EditorUtility.SetDirty(settings);
-                    }
                 };
+                selectorContainer.Add(folderSelector);
             }
 
             recursiveToggle = root.Q<Toggle>("recursive-toggle");
@@ -278,9 +254,9 @@ namespace RexTools.BatchMaterialProcessor.Editor
                     shaderField.value = settings.targetShader;
                     LoadSuffixMappings();
                 }
-                if (folderField != null && folderField.value != settings.searchFolderPath)
+                if (folderSelector != null && folderSelector.PathValue != settings.searchFolderPath)
                 {
-                    folderField.value = settings.searchFolderPath;
+                    folderSelector.SetPathWithoutNotify(settings.searchFolderPath);
                 }
                 if (recursiveToggle != null && recursiveToggle.value != settings.recursiveSearch)
                 {

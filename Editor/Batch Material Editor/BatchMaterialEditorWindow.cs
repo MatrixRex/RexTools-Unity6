@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using RexTools.BatchMaterialEditor.Editor.Tabs;
+using RexTools.Editor.Core;
 
 namespace RexTools.BatchMaterialEditor.Editor
 {
@@ -22,7 +23,7 @@ namespace RexTools.BatchMaterialEditor.Editor
 
         private List<Button> tabButtons = new List<Button>();
         
-        private VisualElement helpBox;
+        private RexHelpBox helpBox;
         private bool showHelp = false;
 
         [MenuItem("Tools/Rex Tools/Batch Material Editor")]
@@ -78,15 +79,27 @@ namespace RexTools.BatchMaterialEditor.Editor
             if (globalStyleSheet != null) root.styleSheets.Add(globalStyleSheet);
 
             // Bind Elements
-            helpBox = root.Q<VisualElement>("help-box");
-            var helpBtn = root.Q<Button>("help-btn");
             var contentContainer = root.Q<VisualElement>("content-container");
+            
+            // --- BRANDED HEADER & HELP BOX ---
+            var helpBoxContainer = root.Q<VisualElement>("help-box-container");
+            if (helpBoxContainer != null)
+            {
+                helpBox = new RexHelpBox();
+                helpBoxContainer.Add(helpBox);
+            }
 
-            helpBtn.clicked += () => {
-                showHelp = !showHelp;
-                helpBox.ToggleInClassList("rex-hidden");
-                helpBtn.ToggleInClassList("rex-help-btn--active");
-            };
+            var headerContainer = root.Q<VisualElement>("header-container");
+            if (headerContainer != null)
+            {
+                var header = new RexHeader("Batch Material Editor", showHelpButton: true);
+                header.OnHelpClicked += () => {
+                    showHelp = !showHelp;
+                    helpBox?.ToggleVisibility();
+                    header.SetHelpButtonActive(showHelp);
+                };
+                headerContainer.Add(header);
+            }
 
             // Bind Tabs
             string[] tabNames = { "scanner", "editor", "replacer", "converter" };
@@ -150,45 +163,43 @@ namespace RexTools.BatchMaterialEditor.Editor
             {
                 case 0: // Scanner
                     helpLines = new string[] {
-                        "• Extracts all unique materials used in the opened scenes",
-                        "• Send selected materials directly to the Editor or Replace tabs."
+                        "Extracts all unique materials used in the opened scenes",
+                        "Send selected materials directly to the Editor or Replace tabs."
                     };
                     break;
                 case 1: // Editor
                     helpLines = new string[] {
-                        "• Batch edit shared material properties.",
-                        "• Create a new property group and assign materials.",
-                        "• Modify a property uniformly across all materials in the group.",
-                        "• Save and load group presets."
+                        "Batch edit shared material properties.",
+                        "Create a new property group and assign materials.",
+                        "Modify a property uniformly across all materials in the group.",
+                        "Save and load group presets."
                     };
                     break;
                 case 2: // Replace
                     helpLines = new string[] {
-                        "• Batch replace one material with another material.",
-                        "• Set 'Find Material' and 'Replace Material'.",
-                        "• Replacement Mode: Scene. Only replace scene material instances.",
-                        "• Replacement Mode: Prefab. Edit each prefabs material instances.",
-                        "• Replacement Mode: New Prefab. Create new prefabs with replaced materials. Keeping originals intact.",
-                        "• Press Scan Objects to see which objects are affected.",
-                        "• Start conversion to actually replace materials."
+                        "Batch replace one material with another material.",
+                        "Set 'Find Material' and 'Replace Material'.",
+                        "Replacement Mode: Scene. Only replace scene material instances.",
+                        "Replacement Mode: Prefab. Edit each prefabs material instances.",
+                        "Replacement Mode: New Prefab. Create new prefabs with replaced materials. Keeping originals intact.",
+                        "Press Scan Objects to see which objects are affected.",
+                        "Start conversion to actually replace materials."
                     };
                     break;
                 case 3: // Converter
                     helpLines = new string[] {
-                        "• Batch-convert materials to a new shader.",
-                        "• Map properties from the old shader to the new one.",
-                        "• Save your mapping configuration as a Preset.",
-                        "• Select a gameojbect to get all materials in the hierarchy to convert",
-                        "• Select a material to replace only that material."
+                        "Batch-convert materials to a new shader.",
+                        "Map properties from the old shader to the new one.",
+                        "Save your mapping configuration as a Preset.",
+                        "Select a gameojbect to get all materials in the hierarchy to convert",
+                        "Select a material to replace only that material."
                     };
                     break;
             }
 
             foreach (var line in helpLines)
             {
-                Label helpLabel = new Label("• " + line.TrimStart('•', ' '));
-                helpLabel.AddToClassList("rex-help-text-item");
-                helpBox.Add(helpLabel);
+                helpBox.AddHelpLine(line);
             }
         }
 

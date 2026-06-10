@@ -169,7 +169,7 @@ namespace RexTools.TextureRepacker.Editor
         private Texture2D previewBuffer;
         private int debugPreviewMode = 0; // 0=RGBA, 1=R, 2=G, 3=B, 4=A
         private bool showHelp = false;
-        private VisualElement helpBox;
+        private RexHelpBox helpBox;
         private List<Button> debugButtons = new List<Button>();
         private List<List<Button>> slotChannelButtons = new List<List<Button>>();
         private List<Button> slotValButtons = new List<Button>();
@@ -198,60 +198,27 @@ namespace RexTools.TextureRepacker.Editor
             }
             if (styleSheet != null) root.styleSheets.Add(styleSheet);
 
-            // --- BRANDED HEADER ---
-            var header = new VisualElement();
-            header.AddToClassList("rex-header-row");
-            header.style.paddingLeft = header.style.paddingRight = 12;
+            // --- BRANDED HEADER & HELP BOX ---
+            helpBox = new RexHelpBox(
+                "PACK: Drop textures into RGBA slots. Swizzle channels with R|G|B|A buttons.",
+                "VAL: Toggle to use a raw value instead of a texture channel.",
+                "UNPACK: Drop a texture to extract its channels into separate files.",
+                "MIX: Drop Base + Layer textures. Select blend mode and optional channel. Click MIX to save result."
+            );
+            helpBox.style.marginLeft = 12;
+            helpBox.style.marginRight = 12;
 
-            var brandStack = new VisualElement();
-            brandStack.AddToClassList("rex-header-stack");
-
-            var brandLabel = new Label("Rex Tools");
-            brandLabel.AddToClassList("rex-brand-label");
-            brandStack.Add(brandLabel);
-
-            var titleLabel = new Label("Texture Repacker");
-            titleLabel.AddToClassList("rex-tool-title");
-            brandStack.Add(titleLabel);
-
-            header.Add(brandStack);
-
-            var helpBtn = new Button { text = "?" };
-            helpBtn.AddToClassList("rex-help-btn");
-            header.Add(helpBtn);
+            var header = new RexHeader("Texture Repacker", showHelpButton: true);
+            header.style.paddingLeft = 12;
+            header.style.paddingRight = 12;
+            header.OnHelpClicked += () => {
+                showHelp = !showHelp;
+                helpBox.ToggleVisibility();
+                header.SetHelpButtonActive(showHelp);
+            };
 
             root.Add(header);
-            // --- HELP BOX ---
-            helpBox = new VisualElement { style = { display = DisplayStyle.None, marginLeft = 12, marginRight = 12 } };
-            helpBox.AddToClassList("rex-box");
-            helpBox.AddToClassList("rex-help-box");
-            
-            var helpTitle = new Label("HOW TO USE:");
-            helpTitle.AddToClassList("rex-help-text-title");
-            helpBox.Add(helpTitle);
-
-            var packTip = new Label("• PACK: Drop textures into RGBA slots. Swizzle channels with R|G|B|A buttons.");
-            packTip.AddToClassList("rex-help-text-item");
-            helpBox.Add(packTip);
-
-            var valTip = new Label("• VAL: Toggle to use a raw value instead of a texture channel.");
-            valTip.AddToClassList("rex-help-text-item");
-            helpBox.Add(valTip);
-
-            var unpackTip = new Label("• UNPACK: Drop a texture to extract its channels into separate files.");
-            unpackTip.AddToClassList("rex-help-text-item");
-            helpBox.Add(unpackTip);
-
-            var mixTip = new Label("• MIX: Drop Base + Layer textures. Select blend mode and optional channel. Click MIX to save result.");
-            mixTip.AddToClassList("rex-help-text-item");
-            helpBox.Add(mixTip);
-            
             root.Add(helpBox);
-
-            helpBtn.clicked += () => {
-                showHelp = !showHelp;
-                helpBox.style.display = showHelp ? DisplayStyle.Flex : DisplayStyle.None;
-            };
 
             // Tabs Header
             var tabs = new VisualElement { style = { flexDirection = FlexDirection.Row, height = 30, marginBottom = 15, flexShrink = 0, marginLeft = 12, marginRight = 12 } };

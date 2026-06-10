@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System;
+using RexTools.Editor.Core;
 
 namespace RexTools.PrefabReplacer.Editor
 {
@@ -21,9 +22,8 @@ namespace RexTools.PrefabReplacer.Editor
         private VisualElement root;
         private ScrollView originalList;
         private ScrollView replacementList;
-        private VisualElement helpBox;
-        private Button helpBtn;
-        private TextField folderPathField;
+        private RexHelpBox helpBox;
+        private RexFolderSelector folderPathField;
 
         [MenuItem("Tools/Rex Tools/Prefab Replacer")]
         public static void ShowWindow()
@@ -42,51 +42,24 @@ namespace RexTools.PrefabReplacer.Editor
             if (styleSheet == null) styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/Editor/RexToolsStyles.uss");
             if (styleSheet != null) root.styleSheets.Add(styleSheet);
 
-            // --- HEADER ---
-            var header = new VisualElement();
-            header.AddToClassList("rex-header-row");
+            // --- HEADER & HELP BOX ---
+            helpBox = new RexHelpBox(
+                "Add scene objects to the 'Original' list.",
+                "Add prefabs to the 'Replacement' list.",
+                "Use 'Find Similar' to auto-populate based on matching names.",
+                "Pairs are matched by longest name overlap.",
+                "Choose transform options and click REPLACE."
+            );
 
-            var brandStack = new VisualElement();
-            brandStack.AddToClassList("rex-header-stack");
-            var brandLabel = new Label("Rex Tools");
-            brandLabel.AddToClassList("rex-brand-label");
-            brandStack.Add(brandLabel);
+            var header = new RexHeader("Prefab Replacer", showHelpButton: true);
+            bool showHelp = false;
+            header.OnHelpClicked += () => {
+                showHelp = !showHelp;
+                helpBox.ToggleVisibility();
+                header.SetHelpButtonActive(showHelp);
+            };
 
-            var titleLabel = new Label("Prefab Replacer");
-            titleLabel.AddToClassList("rex-tool-title");
-            brandStack.Add(titleLabel);
-            header.Add(brandStack);
-
-            helpBtn = new Button(ToggleHelp);
-            helpBtn.AddToClassList("rex-help-btn");
-            header.Add(helpBtn);
             root.Add(header);
-
-            // --- HELP BOX ---
-            helpBox = new VisualElement();
-            helpBox.AddToClassList("rex-help-box");
-            helpBox.AddToClassList("rex-box");
-            helpBox.AddToClassList("rex-hidden");
-            helpBox.Add(new Label("HOW TO USE:") { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 5 } });
-            var h1 = new Label("• Add scene objects to the 'Original' list.");
-            h1.AddToClassList("rex-help-text-item");
-            helpBox.Add(h1);
-
-            var h2 = new Label("• Add prefabs to the 'Replacement' list.");
-            h2.AddToClassList("rex-help-text-item");
-            helpBox.Add(h2);
-
-            var h3 = new Label("• Use 'Find Similar' to auto-populate based on matching names.");
-            h3.AddToClassList("rex-help-text-item");
-            helpBox.Add(h3);
-
-            var h4 = new Label("• Pairs are matched by longest name overlap.");
-            h4.AddToClassList("rex-help-text-item");
-            helpBox.Add(h4);
-
-            var h5 = new Label("• Choose transform options and click REPLACE.");
-            h5.AddToClassList("rex-help-text-item");
-            helpBox.Add(h5);
             root.Add(helpBox);
 
             // --- FOLDER SELECTION ---
@@ -98,22 +71,23 @@ namespace RexTools.PrefabReplacer.Editor
 
             var folderRow = new VisualElement();
             folderRow.AddToClassList("rex-row");
-            folderPathField = new TextField("Replacement Folder") { value = searchFolder, style = { flexGrow = 1 } };
-            folderPathField.RegisterValueChangedCallback(evt => searchFolder = evt.newValue);
-            folderRow.Add(folderPathField);
+            var folderLabel = new Label("Replacement Folder") { style = { marginRight = 5 } };
+            folderRow.Add(folderLabel);
 
-            var folderBtn = new Button(() => {
-                string path = EditorUtility.OpenFolderPanel("Select Search Folder", searchFolder, "");
+            folderPathField = new RexFolderSelector();
+            folderPathField.style.flexGrow = 1;
+            folderPathField.SetPathWithoutNotify(searchFolder);
+            folderPathField.OnValueChanged += path => {
                 if (!string.IsNullOrEmpty(path)) {
-                    if (path.StartsWith(Application.dataPath)) {
-                        path = "Assets" + path.Substring(Application.dataPath.Length);
+                    var dataPath = Application.dataPath.Replace("\\", "/");
+                    if (path.StartsWith(dataPath)) {
+                        path = "Assets" + path.Substring(dataPath.Length);
+                        folderPathField.SetPathWithoutNotify(path);
                     }
-                    searchFolder = path;
-                    folderPathField.value = searchFolder;
                 }
-            }) { text = "..." };
-            folderBtn.style.width = 30;
-            folderRow.Add(folderBtn);
+                searchFolder = path;
+            };
+            folderRow.Add(folderPathField);
             folderBox.Add(folderRow);
             root.Add(folderBox);
 
@@ -245,11 +219,7 @@ namespace RexTools.PrefabReplacer.Editor
             }
         }
 
-        private void ToggleHelp()
-        {
-            helpBox.ToggleInClassList("rex-hidden");
-            helpBtn.ToggleInClassList("rex-help-btn--active");
-        }
+        // ToggleHelp method removed as help interaction is now managed by RexHeader and RexHelpBox directly.
 
         private void FindSimilarOriginals()
         {

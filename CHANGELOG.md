@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Quick Shot: Refactored window layout to use a ScrollView for settings, keeping the header, help box, and capture button fixed.
+- Quick Shot: Enabled the header help button and added a quick start guide help box explaining tool parameters (Export Path, Capture Mode, Render Scale, Transparent BG, and Post Operations).
 - RexToolsStyles: Added `.rex-button` and `.rex-toggle-btn` classes as standard button styling and toggle button styling.
 - Quick Shot: Auto Copy setting to automatically copy captured screenshots to the system clipboard (supported on Windows and macOS).
 - Core: `RexSlider` — reusable custom slider with configurable snap increment, tick marks, draggable thumb, editable value field, and reset button.

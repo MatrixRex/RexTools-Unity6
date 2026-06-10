@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using RexTools.Editor.Core;
 
 namespace RexTools.GitIntegration.Editor
 {
@@ -67,66 +68,25 @@ namespace RexTools.GitIntegration.Editor
             }
             if (styleSheet != null) root.styleSheets.Add(styleSheet);
 
-            // --- BRANDED HEADER ---
-            var header = new VisualElement();
-            header.AddToClassList("rex-header-row");
+            // --- BRANDED HEADER & HELP BOX ---
+            var helpBox = new RexHelpBox(
+                "Fetch: Fetch updates from remote tracking branch.",
+                "Pull: Integrates remote branch updates to local.",
+                "Commit: Stage modified files (git add -A) and commit changes.",
+                "Push: Upload committed changes to remote repository.",
+                "Branch Status: Updates automatically when focus returns to Unity."
+            );
 
-            var brandStack = new VisualElement();
-            brandStack.AddToClassList("rex-header-stack");
-
-            var brandLabel = new Label("Rex Tools");
-            brandLabel.AddToClassList("rex-brand-label");
-            brandStack.Add(brandLabel);
-
-            var titleLabel = new Label("Git Integration");
-            titleLabel.AddToClassList("rex-tool-title");
-            brandStack.Add(titleLabel);
-
-            header.Add(brandStack);
-
-            var helpBtn = new Button();
-            helpBtn.AddToClassList("rex-help-btn");
-            header.Add(helpBtn);
+            var header = new RexHeader("Git Integration", showHelpButton: true);
+            bool showHelp = false;
+            header.OnHelpClicked += () => {
+                showHelp = !showHelp;
+                helpBox.ToggleVisibility();
+                header.SetHelpButtonActive(showHelp);
+            };
 
             root.Add(header);
-
-            // --- HELP BOX ---
-            var helpBox = new VisualElement();
-            helpBox.AddToClassList("rex-help-box");
-            helpBox.AddToClassList("rex-box");
-            helpBox.AddToClassList("rex-hidden");
-
-            var helpTitle = new Label("HOW TO USE:");
-            helpTitle.AddToClassList("rex-help-text-title");
-            helpBox.Add(helpTitle);
-
-            var item1 = new Label("• Fetch: Fetch updates from remote tracking branch.");
-            item1.AddToClassList("rex-help-text-item");
-            helpBox.Add(item1);
-
-            var item2 = new Label("• Pull: Integrates remote branch updates to local.");
-            item2.AddToClassList("rex-help-text-item");
-            helpBox.Add(item2);
-
-            var item3 = new Label("• Commit: Stage modified files (git add -A) and commit changes.");
-            item3.AddToClassList("rex-help-text-item");
-            helpBox.Add(item3);
-
-            var item4 = new Label("• Push: Upload committed changes to remote repository.");
-            item4.AddToClassList("rex-help-text-item");
-            helpBox.Add(item4);
-
-            var item5 = new Label("• Branch Status: Updates automatically when focus returns to Unity.");
-            item5.AddToClassList("rex-help-text-item");
-            helpBox.Add(item5);
-            
             root.Add(helpBox);
-
-            helpBtn.clicked += () =>
-            {
-                helpBox.ToggleInClassList("rex-hidden");
-                helpBtn.ToggleInClassList("rex-help-btn--active");
-            };
 
             // --- CONTAINER SWITCHERS ---
             mainContentContainer = new VisualElement();

@@ -5,6 +5,7 @@ using UnityEditor.UIElements;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using RexTools.Editor.Core;
 
 namespace RexTools.UnusedAssetFinder.Editor
 {
@@ -19,8 +20,8 @@ namespace RexTools.UnusedAssetFinder.Editor
         private int currentTabIndex = 0;
 
         // UI Elements
-        private VisualElement helpBox;
-        private TextField pathField;
+        private RexHelpBox helpBox;
+        private RexFolderSelector pathField;
         private Toggle recursiveToggle;
         private VisualElement resultsContainer;
         private ScrollView resultsScroll;
@@ -57,63 +58,23 @@ namespace RexTools.UnusedAssetFinder.Editor
             }
             if (styleSheet != null) root.styleSheets.Add(styleSheet);
 
-            // --- BRANDED HEADER ---
-            var header = new VisualElement();
-            header.AddToClassList("rex-header-row");
+            // --- BRANDED HEADER & HELP BOX ---
+            helpBox = new RexHelpBox(
+                "Drag and drop folders onto the path field.",
+                "Click on file names to focus them in the Project window.",
+                "Use the trash icon to delete specific assets.",
+                "'Delete All' will remove all assets in the CURRENTLY SELECTED tab."
+            );
 
-            var brandStack = new VisualElement();
-            brandStack.AddToClassList("rex-header-stack");
-
-            var brandLabel = new Label("Rex Tools");
-            brandLabel.AddToClassList("rex-brand-label");
-            brandStack.Add(brandLabel);
-
-            var titleLabel = new Label("Unused Assets Finder");
-            titleLabel.AddToClassList("rex-tool-title");
-            brandStack.Add(titleLabel);
-
-            header.Add(brandStack);
-
-            // --- HELP BUTTON ---
-            // The text property has been removed. Icon is handled by USS.
-            var helpBtn = new Button();
-            helpBtn.AddToClassList("rex-help-btn");
-            header.Add(helpBtn);
+            var header = new RexHeader("Unused Assets Finder", showHelpButton: true);
+            header.OnHelpClicked += () => {
+                showHelp = !showHelp;
+                helpBox.ToggleVisibility();
+                header.SetHelpButtonActive(showHelp);
+            };
 
             root.Add(header);
-
-            // --- HELP BOX ---
-            helpBox = new VisualElement();
-            helpBox.AddToClassList("rex-hidden");
-            helpBox.AddToClassList("rex-box");
-            helpBox.AddToClassList("rex-help-box");
-            
-            var helpTitle = new Label("HOW TO USE:");
-            helpTitle.AddToClassList("rex-help-text-title");
-            helpBox.Add(helpTitle);
-
-            Label help1 = new Label("• Drag and drop folders onto the path field.");
-            help1.AddToClassList("rex-help-text-item");
-            helpBox.Add(help1);
-
-            Label help2 = new Label("• Click on file names to focus them in the Project window.");
-            help2.AddToClassList("rex-help-text-item");
-            helpBox.Add(help2);
-
-            Label help3 = new Label("• Use the trash icon to delete specific assets.");
-            help3.AddToClassList("rex-help-text-item");
-            helpBox.Add(help3);
-
-            Label help4 = new Label("• 'Delete All' will remove all assets in the CURRENTLY SELECTED tab.");
-            help4.AddToClassList("rex-help-text-item");
-            helpBox.Add(help4);
-            
             root.Add(helpBox);
-
-            helpBtn.clicked += () => {
-                showHelp = !showHelp;
-                helpBox.style.display = showHelp ? DisplayStyle.Flex : DisplayStyle.None;
-            };
 
             // --- SETTINGS SECTION ---
             var settingsBox = new VisualElement();
@@ -124,20 +85,13 @@ namespace RexTools.UnusedAssetFinder.Editor
             var folderLabel = new Label("Folder:");
             folderLabel.AddToClassList("rex-label-w50");
             pathRow.Add(folderLabel);
-            pathField = new TextField { value = folderPath };
+            pathField = new RexFolderSelector();
+            pathField.SetPathWithoutNotify(folderPath);
             pathField.AddToClassList("rex-flex-grow");
-            pathField.RegisterValueChangedCallback(e => folderPath = e.newValue);
-            
-            // Drag and Drop for Path Field
-            pathField.RegisterCallback<DragUpdatedEvent>(e => DragAndDrop.visualMode = DragAndDropVisualMode.Copy);
-            pathField.RegisterCallback<DragPerformEvent>(e => {
-                DragAndDrop.AcceptDrag();
-                string path = DragAndDrop.paths.FirstOrDefault();
-                if (!string.IsNullOrEmpty(path) && AssetDatabase.IsValidFolder(path)) {
-                    folderPath = path;
-                    pathField.value = path;
-                }
-            });
+            pathField.OnValueChanged += path => {
+                folderPath = path;
+                RefreshSubfolders();
+            };
 
             pathRow.Add(pathField);
             settingsBox.Add(pathRow);

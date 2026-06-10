@@ -4,6 +4,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using System.Linq;
 using System.Collections.Generic;
+using RexTools.Editor.Core;
 
 namespace RexTools.Animation
 {
@@ -24,7 +25,7 @@ namespace RexTools.Animation
         private VisualElement mappingList;
         private Button btnCopy;
         
-        private VisualElement helpBox;
+        private RexHelpBox helpBox;
         private bool showHelp = false;
 
         [MenuItem("Tools/Rex Tools/Animation Event Copier")]
@@ -83,17 +84,24 @@ namespace RexTools.Animation
             var btnAutoMatch = root.Q<Button>("btn-auto-match");
             btnCopy = root.Q<Button>("btn-copy");
             
-            helpBox = root.Q<VisualElement>("help-box");
-            var helpBtn = root.Q<Button>("help-btn");
-
-            // Event Listeners
-            if (helpBtn != null && helpBox != null)
+            // --- BRANDED HEADER & HELP BOX ---
+            var helpBoxContainer = root.Q<VisualElement>("help-box-container");
+            if (helpBoxContainer != null)
             {
-                helpBtn.clicked += () => {
+                helpBox = new RexHelpBox("Copy animation events from a source FBX to a target FBX. Map specific clips together if their names do not match perfectly.");
+                helpBoxContainer.Add(helpBox);
+            }
+
+            var headerContainer = root.Q<VisualElement>("header-container");
+            if (headerContainer != null)
+            {
+                var header = new RexHeader("Animation Event Copier", showHelpButton: true);
+                header.OnHelpClicked += () => {
                     showHelp = !showHelp;
-                    helpBox.ToggleInClassList("rex-hidden");
-                    helpBtn.ToggleInClassList("rex-help-btn--active");
+                    helpBox?.ToggleVisibility();
+                    header.SetHelpButtonActive(showHelp);
                 };
+                headerContainer.Add(header);
             }
 
             sourceField.RegisterValueChangedCallback(evt => {
