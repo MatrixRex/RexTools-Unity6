@@ -113,12 +113,10 @@ namespace RexTools.QuickShot.Editor
 
             // Render Scale Input
             renderScaleContainer = new VisualElement();
-            renderScaleContainer.AddToClassList("rex-row");
             renderScaleContainer.style.display = isSceneMode ? DisplayStyle.None : DisplayStyle.Flex;
-            
-            var scaleSlider = new Slider("Render Scale", 1f, 8f) { value = renderScale, showInputField = true };
-            scaleSlider.AddToClassList("rex-flex-grow");
-            scaleSlider.RegisterValueChangedCallback(e => renderScale = e.newValue);
+
+            var scaleSlider = new RexSlider(1f, 8f, defaultValue: 1f, value: renderScale, snapIncrement: 0.25f);
+            scaleSlider.OnValueChanged += val => renderScale = val;
             renderScaleContainer.Add(scaleSlider);
             
             settingsBox.Add(renderScaleContainer);
