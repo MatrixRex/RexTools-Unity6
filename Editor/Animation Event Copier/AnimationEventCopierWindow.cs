@@ -21,7 +21,7 @@ namespace RexTools.Animation
 
         private VisualElement mappingSection;
         private VisualElement mappingList;
-        private Button btnCopy;
+        private RexActionButton btnCopy;
         
         private VisualElement warningContainer;
         private Label warningLabel;
@@ -84,8 +84,20 @@ namespace RexTools.Animation
             warningContainer = root.Q<VisualElement>("warning-container");
             warningLabel = root.Q<Label>("warning-label");
 
-            var btnAutoMatch = root.Q<Button>("btn-auto-match");
-            btnCopy = root.Q<Button>("btn-copy");
+            var autoMatchContainer = root.Q<VisualElement>("auto-match-container");
+            RexButton btnAutoMatch = null;
+            if (autoMatchContainer != null)
+            {
+                btnAutoMatch = new RexButton("AUTO-MATCH BY NAME");
+                autoMatchContainer.Add(btnAutoMatch);
+            }
+
+            var copyContainer = root.Q<VisualElement>("copy-container");
+            if (copyContainer != null)
+            {
+                btnCopy = new RexActionButton("COPY ANIMATION EVENTS");
+                copyContainer.Add(btnCopy);
+            }
             
             // --- BRANDED HEADER & HELP BOX ---
             var helpBoxContainer = root.Q<VisualElement>("help-box-container");
@@ -117,8 +129,15 @@ namespace RexTools.Animation
                 RefreshClips();
             });
 
-            btnAutoMatch.clicked += AutoMatch;
-            btnCopy.clicked += CopyEvents;
+            if (btnAutoMatch != null)
+            {
+                btnAutoMatch.OnClick += AutoMatch;
+            }
+
+            if (btnCopy != null)
+            {
+                btnCopy.OnClick += CopyEvents;
+            }
 
             UpdateButtonState();
         }
@@ -261,13 +280,15 @@ namespace RexTools.Animation
 
         private void UpdateButtonState()
         {
+            if (btnCopy == null) return;
+
             if (sourceClips != null && targetClips != null && sourceClips.Length > 0 && targetClips.Length > 0)
             {
-                btnCopy.SetEnabled(true);
+                btnCopy.IsEnabled = true;
             }
             else
             {
-                btnCopy.SetEnabled(false);
+                btnCopy.IsEnabled = false;
             }
         }
 

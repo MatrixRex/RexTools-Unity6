@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch Material Processor: A standalone tool for batch setting material shaders and auto-assigning texture maps from a selected directory using customizable suffix rules and dry-run preview.
 
 ### Changed
+- Animation Event Copier: Refactored the auto-match and copy buttons to use the custom `RexButton` and `RexActionButton` C# components.
 - Animation Event Copier: Displays validation warnings within the window if the source or target object does not contain any animation clips or is not a valid model asset (FBX).
 - RexSlider: Added 3px left and right padding to improve horizontal spacing.
 - Quick Shot: Refactored the export path section to use the custom `RexFoldout` component and standard button/toggle styles for the control row.

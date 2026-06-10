@@ -32,7 +32,7 @@
             <ui:VisualElement name="mapping-section" class="rex-box rex-hidden">
                 <ui:VisualElement class="rex-row" style="justify-content: space-between;">
                     <ui:Label text="CLIP MAPPING" class="rex-section-label" />
-                    <ui:Button name="btn-auto-match" text="AUTO-MATCH BY NAME" class="rex-button-small" style="font-size: 10px; padding: 2px 5px;" />
+                    <ui:VisualElement name="auto-match-container" />
                 </ui:VisualElement>
                 
                 <ui:VisualElement class="rex-row" style="margin-top: 5px; margin-bottom: 5px;">
@@ -44,6 +44,6 @@
             </ui:VisualElement>
         </ui:ScrollView>
 
-        <ui:Button name="btn-copy" text="COPY ANIMATION EVENTS" class="rex-action-button rex-action-button--pack" />
+        <ui:VisualElement name="copy-container" />
     </ui:VisualElement>
 </ui:UXML>

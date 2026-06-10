@@ -287,5 +287,77 @@ parent.Add(selector);
 
 See `QuickShotWindow.cs` for a full usage example.
 
+## 10. Standardized Custom Button (RexButton)
+Use `RexButton` from `Editor/Core/RexButton.cs` (namespace `RexTools.Editor.Core`) for standard buttons, icon-only buttons, or toggle buttons instead of standard UI Toolkit `ui:Button`. It provides standard hovering, pressing, click flashing, toggle behavior, and supports combinations of icons and text.
+
+### Constructor
+```csharp
+public RexButton(string label = null, Texture2D icon = null, bool isToggle = false, bool defaultActive = false)
+```
+
+### Properties & Events
+- **`Label`**: Get or set the text label.
+- **`Icon`**: Get or set the button's icon texture.
+- **`IsToggle`**: Set to `true` to enable toggle button behavior.
+- **`IsActive`**: Get or set the active state of the toggle (toggles `.rex-button--active` class).
+- **`OnClick`**: Fired when the button is clicked.
+- **`OnToggleChanged`**: Fired when the active toggle state changes.
+
+### Methods
+- **`SetActiveWithoutNotify(bool active)`**: Sets the toggle state without triggering `OnToggleChanged`.
+
+### Implementation Pattern (C#)
+```csharp
+using RexTools.Editor.Core;
+
+// Standard button
+var standardBtn = new RexButton("Click Me");
+standardBtn.OnClick += () => Debug.Log("Clicked!");
+
+// Icon-only button
+Texture2D refreshIcon = EditorGUIUtility.IconContent("d_Refresh").image as Texture2D;
+var iconBtn = new RexButton(icon: refreshIcon);
+
+// Toggle button
+var toggleBtn = new RexButton("Auto-Save: OFF", isToggle: true, defaultActive: false);
+toggleBtn.OnToggleChanged += active => {
+    toggleBtn.Label = $"Auto-Save: {(active ? "ON" : "OFF")}";
+};
+```
+
+## 11. Standardized Action Button (RexActionButton)
+Use `RexActionButton` from `Editor/Core/RexActionButton.cs` (namespace `RexTools.Editor.Core`) for prominent primary action buttons (e.g. process/execution buttons at the bottom of a window). It inherits from `VisualElement`, styles itself using the `.rex-action-button` class, handles disabled states, and implements dynamic hovering/pressing background color tints in C#.
+
+### Constructor
+```csharp
+public RexActionButton(string label = null, Texture2D icon = null, Color? tint = null)
+```
+*Note: The default tint is `#3380FF` (`new Color(0.2f, 0.5f, 1f)`), which matches the standard blue highlight color.*
+
+### Properties & Events
+- **`Label`**: Get or set the text label.
+- **`Icon`**: Get or set the button's icon texture.
+- **`Tint`**: Get or set the primary background tint color.
+- **`IsEnabled`**: Get or set the interactive state. Setting this to `false` automatically dims the button (opacity: 0.4) and disables click events.
+- **`OnClick`**: Fired when the button is clicked (if `IsEnabled` is true).
+
+### Methods
+- **`SetEnabledWithoutNotify(bool enabled)`**: Sets the enabled state and updates the visual appearance without notifying any subscribers.
+
+### Implementation Pattern (C#)
+```csharp
+using RexTools.Editor.Core;
+
+// Standard blue action button
+var actionBtn = new RexActionButton("PROCESS ASSETS");
+actionBtn.OnClick += () => StartProcess();
+
+// Custom colored action button (e.g., Red for danger/destructive actions)
+var dangerBtn = new RexActionButton("DELETE ALL", tint: new Color(0.8f, 0.2f, 0.2f));
+
+// Setting enabled/disabled state
+actionBtn.IsEnabled = false; // Automatically dims the button to 40% opacity and blocks clicks
+```
+
 
 
