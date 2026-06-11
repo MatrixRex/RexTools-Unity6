@@ -38,10 +38,7 @@
         <!-- Suffixes/Preview Tabs Panel -->
         <ui:VisualElement style="flex-grow: 1; flex-shrink: 1; flex-direction: column; margin-bottom: 4px;">
             <!-- Tabs Menu -->
-            <ui:VisualElement class="rex-tabs-container" style="margin-bottom: 4px; height: 24px;">
-                <ui:Button name="tab-suffixes" text="Suffixes" class="rex-tab-button rex-tab-button--active" style="font-size: 10px;" />
-                <ui:Button name="tab-preview" text="Preview" class="rex-tab-button rex-tab-button--inactive" style="font-size: 10px;" />
-            </ui:VisualElement>
+            <ui:VisualElement name="tabs-container" />
 
             <!-- Suffix Tab Content -->
             <ui:VisualElement name="pane-suffixes" class="rex-box" style="flex-grow: 1; padding: 6px; margin-bottom: 0px;">

@@ -153,9 +153,7 @@ namespace RexTools.TextureRepacker.Editor
         private VisualElement unpackContainer;
         private VisualElement mixContainer;
         private Button actionButton;
-        private Button packTabBtn;
-        private Button unpackTabBtn;
-        private Button mixTabBtn;
+        private RexTabGroup tabGroup;
         private TextField nameField;
         private RexFolderSelector folderZone;
         private TextField unpackNameField;
@@ -221,12 +219,14 @@ namespace RexTools.TextureRepacker.Editor
             root.Add(helpBox);
 
             // Tabs Header
-            var tabs = new VisualElement { style = { flexDirection = FlexDirection.Row, height = 30, marginBottom = 15, flexShrink = 0, marginLeft = 12, marginRight = 12 } };
-            tabs.AddToClassList("rex-tabs-container");
-            packTabBtn   = CreateTabButton("PACK",   0, tabs);
-            unpackTabBtn = CreateTabButton("UNPACK", 1, tabs);
-            mixTabBtn    = CreateTabButton("MIX",    2, tabs);
-            root.Add(tabs);
+            tabGroup = new RexTabGroup(new string[] { "PACK", "UNPACK", "MIX" });
+            tabGroup.style.marginLeft = 12;
+            tabGroup.style.marginRight = 12;
+            tabGroup.style.marginBottom = 15;
+            tabGroup.style.height = 30;
+            tabGroup.style.flexShrink = 0;
+            tabGroup.OnTabChanged += SwitchTab;
+            root.Add(tabGroup);
 
             // Scrollable Content Area
             var scrollView = new ScrollView(ScrollViewMode.Vertical);
@@ -256,15 +256,6 @@ namespace RexTools.TextureRepacker.Editor
             SwitchTab(currentTabIndex);
         }
 
-        private Button CreateTabButton(string label, int index, VisualElement parent)
-        {
-            var btn = new Button { text = label };
-            btn.AddToClassList("rex-tab-button");
-            btn.clicked += () => SwitchTab(index);
-            parent.Add(btn);
-            return btn;
-        }
-
         private void SwitchTab(int index)
         {
             currentTabIndex = index;
@@ -279,14 +270,7 @@ namespace RexTools.TextureRepacker.Editor
             actionButton.RemoveFromClassList("rex-action-button--unpack");
             actionButton.AddToClassList(index == 0 ? "rex-action-button--pack" : "rex-action-button--unpack");
 
-            // Toggle Tab Classes
-            Button[] tabs = { packTabBtn, unpackTabBtn, mixTabBtn };
-            for (int t = 0; t < tabs.Length; t++) {
-                if (tabs[t] == null) continue;
-                tabs[t].RemoveFromClassList("rex-tab-button--active");
-                tabs[t].RemoveFromClassList("rex-tab-button--inactive");
-                tabs[t].AddToClassList(t == index ? "rex-tab-button--active" : "rex-tab-button--inactive");
-            }
+            tabGroup?.SetSelectedTabWithoutNotify(index);
 
             if (index == 0) UpdatePreview();
             if (index == 2) UpdateMixPreview();

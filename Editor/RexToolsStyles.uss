@@ -41,20 +41,39 @@
     flex-grow: 1;
     margin-right: 2px;
     -unity-font-style: bold;
-    background-color: #383838;
-    border-radius: 0;
+    background-color: #2b2b2b;
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
+    border-top-width: 1px;
+    border-bottom-width: 0;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-color: #222;
+    color: #888;
+    cursor: link;
+    padding: 0;
+}
+
+.rex-tab-button:hover {
+    background-color: #353535;
+    color: #CCC;
 }
 
 .rex-tab-button--active {
-    background-color: #666;
+    background-color: #383838;
+    color: white;
+    border-top-width: 2px;
+    border-top-color: #3380FF;
+}
+
+.rex-tab-button--active:hover {
+    background-color: #3d3d3d;
     color: white;
 }
 
 .rex-tab-button--inactive {
-    background-color: #383838;
-    color: #AAA;
+    background-color: #2b2b2b;
+    color: #888;
 }
 
 /* Drag and Drop Field */

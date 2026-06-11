@@ -22,8 +22,7 @@ namespace RexTools.BatchMaterialProcessor.Editor
         private RexFolderSelector folderSelector;
         private Toggle recursiveToggle;
         
-        private Button tabSuffixes;
-        private Button tabPreview;
+        private RexTabGroup tabGroup;
         private VisualElement paneSuffixes;
         private VisualElement panePreview;
         
@@ -206,13 +205,18 @@ namespace RexTools.BatchMaterialProcessor.Editor
             }
 
             // Tabs
-            tabSuffixes = root.Q<Button>("tab-suffixes");
-            tabPreview = root.Q<Button>("tab-preview");
             paneSuffixes = root.Q<VisualElement>("pane-suffixes");
             panePreview = root.Q<VisualElement>("pane-preview");
 
-            if (tabSuffixes != null) tabSuffixes.clicked += () => SwitchTab(true);
-            if (tabPreview != null) tabPreview.clicked += () => SwitchTab(false);
+            var tabsContainer = root.Q<VisualElement>("tabs-container");
+            if (tabsContainer != null)
+            {
+                tabGroup = new RexTabGroup(new string[] { "Suffixes", "Preview" });
+                tabGroup.style.height = 24;
+                tabGroup.style.marginBottom = 4;
+                tabGroup.OnTabChanged += index => SwitchTab(index == 0);
+                tabsContainer.Add(tabGroup);
+            }
 
             suffixesScroll = root.Q<ScrollView>("suffixes-scroll");
             previewScroll = root.Q<ScrollView>("preview-scroll");
@@ -270,13 +274,7 @@ namespace RexTools.BatchMaterialProcessor.Editor
             paneSuffixes.style.display = toSuffixes ? DisplayStyle.Flex : DisplayStyle.None;
             panePreview.style.display = toSuffixes ? DisplayStyle.None : DisplayStyle.Flex;
 
-            tabSuffixes.RemoveFromClassList("rex-tab-button--active");
-            tabSuffixes.RemoveFromClassList("rex-tab-button--inactive");
-            tabSuffixes.AddToClassList(toSuffixes ? "rex-tab-button--active" : "rex-tab-button--inactive");
-
-            tabPreview.RemoveFromClassList("rex-tab-button--active");
-            tabPreview.RemoveFromClassList("rex-tab-button--inactive");
-            tabPreview.AddToClassList(toSuffixes ? "rex-tab-button--inactive" : "rex-tab-button--active");
+            tabGroup?.SetSelectedTabWithoutNotify(toSuffixes ? 0 : 1);
         }
 
         private void GetSelection()

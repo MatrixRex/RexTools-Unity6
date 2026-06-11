@@ -21,7 +21,7 @@ namespace RexTools.BatchMaterialEditor.Editor
         private ReplacerTab replacerTab;
         private ConverterTab converterTab;
 
-        private List<Button> tabButtons = new List<Button>();
+        private RexTabGroup tabGroup;
         
         private RexHelpBox helpBox;
         private bool showHelp = false;
@@ -102,17 +102,12 @@ namespace RexTools.BatchMaterialEditor.Editor
             }
 
             // Bind Tabs
-            string[] tabNames = { "scanner", "editor", "replacer", "converter" };
-            tabButtons.Clear();
-            for (int i = 0; i < tabNames.Length; i++)
+            var tabsContainer = root.Q<VisualElement>("tabs-container");
+            if (tabsContainer != null)
             {
-                int index = i;
-                var btn = root.Q<Button>($"tab-{tabNames[i]}");
-                if (btn != null)
-                {
-                    btn.clicked += () => SwitchToTab(index);
-                    tabButtons.Add(btn);
-                }
+                tabGroup = new RexTabGroup(new string[] { "Scanner", "Editor", "Replacer", "Converter" });
+                tabGroup.OnTabChanged += SwitchToTab;
+                tabsContainer.Add(tabGroup);
             }
 
             // Initialize Tabs
@@ -138,12 +133,7 @@ namespace RexTools.BatchMaterialEditor.Editor
             replacerTab.SetDisplay(index == 2);
             converterTab.SetDisplay(index == 3);
 
-            for (int i = 0; i < tabButtons.Count; i++)
-            {
-                tabButtons[i].RemoveFromClassList("rex-tab-button--active");
-                tabButtons[i].RemoveFromClassList("rex-tab-button--inactive");
-                tabButtons[i].AddToClassList(i == index ? "rex-tab-button--active" : "rex-tab-button--inactive");
-            }
+            tabGroup?.SetSelectedTabWithoutNotify(index);
             
             UpdateHelpContext(index);
         }

@@ -25,8 +25,7 @@ namespace RexTools.UnusedAssetFinder.Editor
         private Toggle recursiveToggle;
         private VisualElement resultsContainer;
         private ScrollView resultsScroll;
-        private VisualElement tabsContainer;
-        private List<Button> tabButtons = new List<Button>();
+        private RexTabGroup tabGroup;
         private Button runButton;
         private Button deleteAllButton;
 
@@ -131,17 +130,9 @@ namespace RexTools.UnusedAssetFinder.Editor
             root.Add(actionRow);
 
             // --- TABS ---
-            tabsContainer = new VisualElement();
-            tabsContainer.AddToClassList("rex-tabs-container");
-            for (int i = 0; i < tabs.Length; i++) {
-                int index = i;
-                var btn = new Button { text = tabs[i] };
-                btn.AddToClassList("rex-tab-button");
-                btn.clicked += () => SwitchTab(index);
-                tabButtons.Add(btn);
-                tabsContainer.Add(btn);
-            }
-            root.Add(tabsContainer);
+            tabGroup = new RexTabGroup(tabs);
+            tabGroup.OnTabChanged += SwitchTab;
+            root.Add(tabGroup);
 
             // --- RESULTS AREA ---
             resultsContainer = new VisualElement();
@@ -201,11 +192,7 @@ namespace RexTools.UnusedAssetFinder.Editor
         private void SwitchTab(int index)
         {
             currentTabIndex = index;
-            for (int i = 0; i < tabButtons.Count; i++) {
-                tabButtons[i].RemoveFromClassList("rex-tab-button--active");
-                tabButtons[i].RemoveFromClassList("rex-tab-button--inactive");
-                tabButtons[i].AddToClassList(i == index ? "rex-tab-button--active" : "rex-tab-button--inactive");
-            }
+            tabGroup?.SetSelectedTabWithoutNotify(index);
             RefreshResultsList();
         }
 

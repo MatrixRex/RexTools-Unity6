@@ -13,12 +13,7 @@
         <ui:VisualElement name="help-box-container" />
 
         <!-- Tabs -->
-        <ui:VisualElement name="tabs-container" class="rex-tabs-container">
-            <ui:Button name="tab-scanner" class="rex-tab-button" text="Scanner" />
-            <ui:Button name="tab-editor" class="rex-tab-button" text="Editor" />
-            <ui:Button name="tab-replacer" class="rex-tab-button" text="Replacer" />
-            <ui:Button name="tab-converter" class="rex-tab-button" text="Converter" />
-        </ui:VisualElement>
+        <ui:VisualElement name="tabs-container" />
 
         <!-- Content -->
         <ui:VisualElement name="content-container" class="rex-tab-content-container" />
