@@ -152,7 +152,8 @@ namespace RexTools.TextureRepacker.Editor
         private VisualElement packContainer;
         private VisualElement unpackContainer;
         private VisualElement mixContainer;
-        private Button actionButton;
+        private RexActionButton actionButton;
+        private List<RexSlider> slotSliders = new List<RexSlider>();
         private RexTabGroup tabGroup;
         private TextField nameField;
         private RexFolderSelector folderZone;
@@ -248,9 +249,8 @@ namespace RexTools.TextureRepacker.Editor
             SetupMixUI();
 
             // Footer Button (Fixed at Bottom)
-            actionButton = new Button { style = { flexShrink = 0, marginLeft = 12, marginRight = 12 } };
-            actionButton.AddToClassList("rex-action-button");
-            actionButton.clicked += Process;
+            actionButton = new RexActionButton("PACK") { style = { flexShrink = 0, marginLeft = 12, marginRight = 12 } };
+            actionButton.OnClick += Process;
             root.Add(actionButton);
 
             SwitchTab(currentTabIndex);
@@ -264,11 +264,14 @@ namespace RexTools.TextureRepacker.Editor
             mixContainer.style.display    = index == 2 ? DisplayStyle.Flex : DisplayStyle.None;
 
             string[] labels = { "PACK", "UNPACK", "MIX" };
-            actionButton.text = labels[index];
+            actionButton.Label = labels[index];
             
-            actionButton.RemoveFromClassList("rex-action-button--pack");
-            actionButton.RemoveFromClassList("rex-action-button--unpack");
-            actionButton.AddToClassList(index == 0 ? "rex-action-button--pack" : "rex-action-button--unpack");
+            if (index == 0)
+                actionButton.Tint = new Color(0.2f, 0.6f, 0.3f); // Emerald green for PACK
+            else if (index == 1)
+                actionButton.Tint = new Color(0.7f, 0.3f, 0.2f); // Orange-Red for UNPACK
+            else
+                actionButton.Tint = new Color(0.2f, 0.5f, 0.8f); // Royal Blue for MIX
 
             tabGroup?.SetSelectedTabWithoutNotify(index);
 
@@ -281,6 +284,7 @@ namespace RexTools.TextureRepacker.Editor
             slotChannelButtons.Clear();
             slotValButtons.Clear();
             slotDropZones.Clear();
+            slotSliders.Clear();
             // --- TOP PREVIEW SECTION ---
             var previewSection = new VisualElement { style = { marginBottom = 15, flexDirection = FlexDirection.Row, justifyContent = Justify.Center, alignItems = Align.Center, flexShrink = 0, height = 180 } };
             
@@ -317,19 +321,27 @@ namespace RexTools.TextureRepacker.Editor
             
             var nameRow = new VisualElement();
             nameRow.AddToClassList("rex-row-cols-2");
-            nameRow.Add(new Label("Name:") { style = { width = 80, flexShrink = 0 } });
+            
+            var nameLabel = new Label("Name:");
+            nameLabel.AddToClassList("rex-col-left");
+            nameRow.Add(nameLabel);
+            
             nameField = new TextField { value = outputName };
             nameField.AddToClassList("rex-col-right");
             nameField.RegisterValueChangedCallback(e => outputName = e.newValue);
             nameRow.Add(nameField);
             saveBox.Add(nameRow);
-
+ 
             var pathRow = new VisualElement();
             pathRow.AddToClassList("rex-row-cols-2");
-            pathRow.Add(new Label("Path:") { style = { width = 80, flexShrink = 0 } });
+            
+            var pathLabel = new Label("Path:");
+            pathLabel.AddToClassList("rex-col-left");
+            pathRow.Add(pathLabel);
+            
             folderZone = new RexFolderSelector();
+            folderZone.AddToClassList("rex-col-right");
             folderZone.OnValueChanged += p => outputPath = p;
-            folderZone.style.flexGrow = 1;
             pathRow.Add(folderZone);
             saveBox.Add(pathRow);
             
@@ -377,41 +389,34 @@ namespace RexTools.TextureRepacker.Editor
                 var invertToggle = new Toggle("Invert") { value = packSlots[index].invert, style = { fontSize = 9, marginBottom = 2 } };
                 invertToggle.RegisterValueChangedCallback(e => { packSlots[index].invert = e.newValue; UpdatePreview(); });
                 controls.Add(invertToggle);
+                                var customRow = new VisualElement();
+                customRow.AddToClassList("rex-row");
                 
-                var customRow = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
                 var customValBtn = new Button { text = "VAL", style = { fontSize = 8, width = 32, height = 18, marginRight = 4 } };
                 customValBtn.AddToClassList("rex-button-small");
                 
-                var slider = new Slider(0, 1) { value = packSlots[index].customValue, style = { flexGrow = 1, height = 15, marginRight = 4 } };
-                var numField = new FloatField { value = packSlots[index].customValue, style = { width = 35, fontSize = 8 } };
+                var slider = new RexSlider(0f, 1f, defaultValue: 0.5f, value: packSlots[index].customValue);
+                slider.AddToClassList("rex-field-flex");
+                slider.style.height = 18;
                 
                 customValBtn.clicked += () => {
                     bool newState = !packSlots[index].useCustom;
                     packSlots[index].useCustom = newState;
                     slider.SetEnabled(newState);
-                    numField.SetEnabled(newState);
                     UpdatePreview();
                 };
                 slotValButtons.Add(customValBtn);
                
-                slider.RegisterValueChangedCallback(e => { 
-                    packSlots[index].customValue = e.newValue; 
-                    numField.SetValueWithoutNotify(e.newValue);
-                    UpdatePreview(); 
-                });
-                numField.RegisterValueChangedCallback(e => {
-                    float val = Mathf.Clamp01(e.newValue);
+                slider.OnValueChanged += val => {
                     packSlots[index].customValue = val;
-                    slider.SetValueWithoutNotify(val);
                     UpdatePreview();
-                });
-
+                };
+ 
                 slider.SetEnabled(packSlots[index].useCustom);
-                numField.SetEnabled(packSlots[index].useCustom);
-                
+                slotSliders.Add(slider);
+
                 customRow.Add(customValBtn);
                 customRow.Add(slider);
-                customRow.Add(numField);
                 controls.Add(customRow);
                 slot.Add(controls);
 
@@ -468,7 +473,11 @@ namespace RexTools.TextureRepacker.Editor
 
             var nameRow = new VisualElement();
             nameRow.AddToClassList("rex-row-cols-2");
-            nameRow.Add(new Label("Name:") { style = { width = 80, flexShrink = 0 } });
+            
+            var nameLabel = new Label("Name:");
+            nameLabel.AddToClassList("rex-col-left");
+            nameRow.Add(nameLabel);
+            
             unpackNameField = new TextField { value = unpackOutputName };
             unpackNameField.AddToClassList("rex-col-right");
             unpackNameField.RegisterValueChangedCallback(e => unpackOutputName = e.newValue);
@@ -477,10 +486,14 @@ namespace RexTools.TextureRepacker.Editor
 
             var unpackPathRow = new VisualElement();
             unpackPathRow.AddToClassList("rex-row-cols-2");
-            unpackPathRow.Add(new Label("Path:") { style = { width = 80, flexShrink = 0 } });
+            
+            var pathLabel = new Label("Path:");
+            pathLabel.AddToClassList("rex-col-left");
+            unpackPathRow.Add(pathLabel);
+            
             unpackFolderZone = new RexFolderSelector();
+            unpackFolderZone.AddToClassList("rex-col-right");
             unpackFolderZone.OnValueChanged += p => unpackOutputPath = p;
-            unpackFolderZone.style.flexGrow = 1;
             unpackPathRow.Add(unpackFolderZone);
             outputBox.Add(unpackPathRow);
             unpackContainer.Add(outputBox);
@@ -493,13 +506,21 @@ namespace RexTools.TextureRepacker.Editor
             string[] names = { "Red", "Green", "Blue", "Alpha" };
             for (int i = 0; i < 4; i++) {
                 int idx = i;
-                var row = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginBottom = 4 } };
-                var toggle = new Toggle(names[i]) { value = unpackModes[i], style = { flexGrow = 1 } };
-                var suffix = new TextField { value = unpackSuffixes[i], style = { width = 60 } };
+                var row = new VisualElement();
+                row.AddToClassList("rex-row");
+                row.style.marginBottom = 4;
+                
+                var toggle = new Toggle(names[i]) { value = unpackModes[i] };
+                toggle.AddToClassList("rex-field-flex");
+                
+                var suffixLabel = new Label("Suffix: ") { style = { fontSize = 10, color = Color.gray, flexShrink = 0 } };
+                var suffix = new TextField { value = unpackSuffixes[i], style = { width = 60, flexShrink = 0 } };
+                
                 toggle.RegisterValueChangedCallback(e => { unpackModes[idx] = e.newValue; suffix.SetEnabled(e.newValue); });
                 suffix.RegisterValueChangedCallback(e => unpackSuffixes[idx] = e.newValue);
+                
                 row.Add(toggle);
-                row.Add(new Label("Suffix: ") { style = { fontSize = 10, color = Color.gray } });
+                row.Add(suffixLabel);
                 row.Add(suffix);
                 channelsBox.Add(row);
             }
@@ -541,6 +562,9 @@ namespace RexTools.TextureRepacker.Editor
                 } else {
                     slotValButtons[i].RemoveFromClassList("rex-button-small--active");
                     slotDropZones[i].ClearColor();
+                }
+                if (i < slotSliders.Count) {
+                    slotSliders[i].SetEnabled(packSlots[i].useCustom);
                 }
             }
         }
@@ -833,23 +857,17 @@ namespace RexTools.TextureRepacker.Editor
 
             var opacityRow = new VisualElement();
             opacityRow.AddToClassList("rex-row");
-            opacityRow.Add(new Label("Opacity:") { style = { width = 55, flexShrink = 0 } });
-            var opacitySlider = new Slider(0f, 1f) { value = mixOpacity };
+            
+            var opacityLabel = new Label("Opacity:") { style = { width = 55, flexShrink = 0 } };
+            opacityRow.Add(opacityLabel);
+            
+            var opacitySlider = new RexSlider(0f, 1f, defaultValue: 1f, value: mixOpacity);
             opacitySlider.AddToClassList("rex-field-flex");
-            var opacityNum = new FloatField { value = mixOpacity, style = { width = 40, fontSize = 9, marginLeft = 5 } };
-            opacitySlider.RegisterValueChangedCallback(e => {
-                mixOpacity = e.newValue;
-                opacityNum.SetValueWithoutNotify(e.newValue);
+            opacitySlider.OnValueChanged += val => {
+                mixOpacity = val;
                 UpdateMixPreview();
-            });
-            opacityNum.RegisterValueChangedCallback(e => {
-                float v = Mathf.Clamp01(e.newValue);
-                mixOpacity = v;
-                opacitySlider.SetValueWithoutNotify(v);
-                UpdateMixPreview();
-            });
+            };
             opacityRow.Add(opacitySlider);
-            opacityRow.Add(opacityNum);
             blendBox.Add(opacityRow);
             mixContainer.Add(blendBox);
 
@@ -884,8 +902,12 @@ namespace RexTools.TextureRepacker.Editor
                 box.Add(drop);
 
                 // Channel selector: Full | R | G | B | A
-                var chanRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginTop = 5, alignItems = Align.Center } };
-                chanRow.Add(new Label("Channel:") { style = { width = 55, fontSize = 10, color = Color.gray } });
+                var chanRow = new VisualElement();
+                chanRow.AddToClassList("rex-row");
+                chanRow.style.marginTop = 5;
+                
+                var chanLabel = new Label("Channel:") { style = { width = 55, fontSize = 10, color = Color.gray, flexShrink = 0 } };
+                chanRow.Add(chanLabel);
                 string[] chanLabels = { "Full", "R", "G", "B", "A" };
                 var chanBtns = new List<Button>();
                 for (int c = 0; c < 5; c++) {
@@ -919,7 +941,11 @@ namespace RexTools.TextureRepacker.Editor
 
             var nameRow2 = new VisualElement();
             nameRow2.AddToClassList("rex-row-cols-2");
-            nameRow2.Add(new Label("Name:") { style = { width = 80, flexShrink = 0 } });
+            
+            var nameLabel2 = new Label("Name:");
+            nameLabel2.AddToClassList("rex-col-left");
+            nameRow2.Add(nameLabel2);
+            
             mixNameField = new TextField { value = mixOutputName };
             mixNameField.AddToClassList("rex-col-right");
             mixNameField.RegisterValueChangedCallback(e => mixOutputName = e.newValue);
@@ -928,10 +954,14 @@ namespace RexTools.TextureRepacker.Editor
 
             var mixPathRow = new VisualElement();
             mixPathRow.AddToClassList("rex-row-cols-2");
-            mixPathRow.Add(new Label("Path:") { style = { width = 80, flexShrink = 0 } });
+            
+            var pathLabel2 = new Label("Path:");
+            pathLabel2.AddToClassList("rex-col-left");
+            mixPathRow.Add(pathLabel2);
+            
             mixFolderZone = new RexFolderSelector();
+            mixFolderZone.AddToClassList("rex-col-right");
             mixFolderZone.OnValueChanged += p => mixOutputPath = p;
-            mixFolderZone.style.flexGrow = 1;
             mixPathRow.Add(mixFolderZone);
             outBox.Add(mixPathRow);
             mixContainer.Add(outBox);
