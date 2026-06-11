@@ -29,6 +29,10 @@ namespace RexTools.UnusedAssetFinder.Editor
         private RexActionButton runButton;
         private RexActionButton deleteSelectedButton;
 
+        private Button selectAllBtn;
+        private Button deselectAllBtn;
+        private HashSet<string> selectedFiles = new HashSet<string>();
+
         private RexFoldout subfolderFoldout;
         private List<FolderNode> subfolderTree = new List<FolderNode>();
         private int progressId = -1;
@@ -136,6 +140,49 @@ namespace RexTools.UnusedAssetFinder.Editor
             resultsContainer.AddToClassList("rex-box");
             resultsContainer.AddToClassList("rex-result-list");
 
+            // --- LIST HEADER WITH SELECT/DESELECT ALL ---
+            var listHeader = new VisualElement();
+            listHeader.style.flexDirection = FlexDirection.Row;
+            listHeader.style.justifyContent = Justify.SpaceBetween;
+            listHeader.style.alignItems = Align.Center;
+            listHeader.style.paddingLeft = 10;
+            listHeader.style.paddingRight = 10;
+            listHeader.style.paddingTop = 4;
+            listHeader.style.paddingBottom = 4;
+            listHeader.style.borderBottomWidth = 1;
+            listHeader.style.borderBottomColor = new Color(0.2f, 0.2f, 0.2f);
+            listHeader.style.marginBottom = 5;
+
+            var headerLabel = new Label("Unused Assets");
+            headerLabel.AddToClassList("rex-section-label");
+            headerLabel.style.marginBottom = 0;
+            listHeader.Add(headerLabel);
+
+            var buttonContainer = new VisualElement();
+            buttonContainer.style.flexDirection = FlexDirection.Row;
+
+            selectAllBtn = new Button { text = "Select All" };
+            selectAllBtn.AddToClassList("rex-button");
+            selectAllBtn.style.marginRight = 5;
+            selectAllBtn.style.height = 18;
+            selectAllBtn.style.fontSize = 9;
+            selectAllBtn.style.paddingLeft = 6;
+            selectAllBtn.style.paddingRight = 6;
+            selectAllBtn.clicked += SelectAll;
+
+            deselectAllBtn = new Button { text = "Deselect All" };
+            deselectAllBtn.AddToClassList("rex-button");
+            deselectAllBtn.style.height = 18;
+            deselectAllBtn.style.fontSize = 9;
+            deselectAllBtn.style.paddingLeft = 6;
+            deselectAllBtn.style.paddingRight = 6;
+            deselectAllBtn.clicked += DeselectAll;
+
+            buttonContainer.Add(selectAllBtn);
+            buttonContainer.Add(deselectAllBtn);
+            listHeader.Add(buttonContainer);
+            resultsContainer.Add(listHeader);
+
             resultsScroll = new ScrollView();
             resultsScroll.AddToClassList("rex-flex-grow");
             resultsScroll.style.maxHeight = 300;
@@ -212,6 +259,7 @@ namespace RexTools.UnusedAssetFinder.Editor
             }
 
             categorizedUnusedFiles.Clear();
+            selectedFiles.Clear();
             progressId = Progress.Start("Finding Unused Assets", "Scanning scene references...", Progress.Options.Indefinite);
             
             // Run in background next frame
@@ -243,6 +291,7 @@ namespace RexTools.UnusedAssetFinder.Editor
                     var relativePath = file.Replace(Application.dataPath, "Assets").Replace("\\", "/");
                     if (!sceneReferences.Contains(relativePath)) {
                         CategorizeFile(relativePath);
+                        selectedFiles.Add(relativePath); // Selected by default on new scan
                     }
                 }
             } finally {
@@ -271,18 +320,23 @@ namespace RexTools.UnusedAssetFinder.Editor
             resultsScroll.Clear();
             string currentTabName = tabs[currentTabIndex];
             
-            if (categorizedUnusedFiles.TryGetValue(currentTabName, out var files) && files.Count > 0) {
-                deleteSelectedButton.IsEnabled = true;
+            bool hasFiles = categorizedUnusedFiles.TryGetValue(currentTabName, out var files) && files.Count > 0;
+            
+            if (selectAllBtn != null) selectAllBtn.SetEnabled(hasFiles);
+            if (deselectAllBtn != null) deselectAllBtn.SetEnabled(hasFiles);
+            
+            if (hasFiles) {
                 foreach (var file in files) {
                     var item = CreateResultItem(file);
                     resultsScroll.Add(item);
                 }
             } else {
-                deleteSelectedButton.IsEnabled = false;
                 var emptyLabel = new Label("No unused assets found in this category.");
                 emptyLabel.AddToClassList("rex-empty-label");
                 resultsScroll.Add(emptyLabel);
             }
+            
+            UpdateDeleteButtonState();
         }
 
         private VisualElement CreateResultItem(string path)
@@ -291,6 +345,21 @@ namespace RexTools.UnusedAssetFinder.Editor
             row.AddToClassList("rex-result-item");
             // Set flex direction to ensure button and icon sit side-by-side
             row.style.flexDirection = FlexDirection.Row;
+            row.style.alignItems = Align.Center;
+
+            // --- TICKMARK SELECTOR ---
+            var toggle = new Toggle();
+            toggle.value = selectedFiles.Contains(path);
+            toggle.style.marginRight = 5;
+            toggle.RegisterValueChangedCallback(evt => {
+                if (evt.newValue) {
+                    selectedFiles.Add(path);
+                } else {
+                    selectedFiles.Remove(path);
+                }
+                UpdateDeleteButtonState();
+            });
+            row.Add(toggle);
 
             var fileName = Path.GetFileName(path);
             var nameBtn = new Button { text = fileName };
@@ -300,7 +369,6 @@ namespace RexTools.UnusedAssetFinder.Editor
             row.Add(nameBtn);
 
             // --- DELETE BUTTON ---
-            // The text property has been removed here as well.
             var deleteBtn = new Button();
             deleteBtn.AddToClassList("rex-result-delete-btn");
             
@@ -311,6 +379,7 @@ namespace RexTools.UnusedAssetFinder.Editor
             deleteBtn.clicked += () => {
                 if (DeleteAsset(path)) {
                     categorizedUnusedFiles[tabs[currentTabIndex]].Remove(path);
+                    selectedFiles.Remove(path);
                     RefreshResultsList();
                 }
             };
@@ -338,17 +407,63 @@ namespace RexTools.UnusedAssetFinder.Editor
         {
             string currentTabName = tabs[currentTabIndex];
             if (categorizedUnusedFiles.TryGetValue(currentTabName, out var files)) {
-                if (EditorUtility.DisplayDialog("Delete Selected", $"Delete {files.Count} unused {currentTabName} assets?", "Yes", "No")) {
+                var filesToDelete = files.Where(file => selectedFiles.Contains(file)).ToList();
+                if (filesToDelete.Count == 0) return;
+
+                if (EditorUtility.DisplayDialog("Delete Selected", $"Delete {filesToDelete.Count} selected unused assets?", "Yes", "No")) {
                     AssetDatabase.StartAssetEditing();
                     try {
-                        foreach (var file in files) AssetDatabase.DeleteAsset(file);
+                        foreach (var file in filesToDelete) {
+                            AssetDatabase.DeleteAsset(file);
+                            selectedFiles.Remove(file);
+                        }
                     } finally {
                         AssetDatabase.StopAssetEditing();
                     }
-                    categorizedUnusedFiles[currentTabName].Clear();
+                    
+                    foreach (var file in filesToDelete) {
+                        files.Remove(file);
+                    }
                     RefreshResultsList();
                 }
             }
+        }
+
+        private void SelectAll()
+        {
+            string currentTabName = tabs[currentTabIndex];
+            if (categorizedUnusedFiles.TryGetValue(currentTabName, out var files)) {
+                foreach (var file in files) {
+                    selectedFiles.Add(file);
+                }
+                RefreshResultsList();
+            }
+        }
+
+        private void DeselectAll()
+        {
+            string currentTabName = tabs[currentTabIndex];
+            if (categorizedUnusedFiles.TryGetValue(currentTabName, out var files)) {
+                foreach (var file in files) {
+                    selectedFiles.Remove(file);
+                }
+                RefreshResultsList();
+            }
+        }
+
+        private void UpdateDeleteButtonState()
+        {
+            string currentTabName = tabs[currentTabIndex];
+            bool hasSelected = false;
+            if (categorizedUnusedFiles.TryGetValue(currentTabName, out var files) && files.Count > 0) {
+                foreach (var file in files) {
+                    if (selectedFiles.Contains(file)) {
+                        hasSelected = true;
+                        break;
+                    }
+                }
+            }
+            deleteSelectedButton.IsEnabled = hasSelected;
         }
 
         private class FolderNode
