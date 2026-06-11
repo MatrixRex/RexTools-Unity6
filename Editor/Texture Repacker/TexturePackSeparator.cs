@@ -45,6 +45,7 @@ namespace RexTools.TextureRepacker.Editor
         private string[] unpackSuffixes = { "_R", "_G", "_B", "_A" };
         private string unpackOutputName = "UnpackedTexture";
         private string unpackOutputPath = "Assets";
+        private bool[] unpackInvert = { false, false, false, false }; // R, G, B, A
 
         // Mix settings
         public enum BlendMode { Multiply, Add, Screen, Overlay, Subtract, Divide, Darken, Lighten, SoftLight, HardLight }
@@ -58,7 +59,7 @@ namespace RexTools.TextureRepacker.Editor
         private string mixOutputPath = "Assets";
 
         // UI
-        private Image combinedPreview;
+        private RexTexturePreview combinedPreview;
         private VisualElement packContainer;
         private VisualElement unpackContainer;
         private VisualElement mixContainer;
@@ -71,7 +72,7 @@ namespace RexTools.TextureRepacker.Editor
         private RexFolderSelector unpackFolderZone;
         private TextField mixNameField;
         private RexFolderSelector mixFolderZone;
-        private Image mixPreviewImage;
+        private RexTexturePreview mixPreviewImage;
         private Texture2D mixPreviewBuffer;
         private bool _mixPreviewDirty = false;
         private IVisualElementScheduledItem _mixPreviewSchedule;
@@ -86,6 +87,8 @@ namespace RexTools.TextureRepacker.Editor
         private List<VisualElement> slotTextureContainers = new List<VisualElement>();
         private List<VisualElement> slotValueContainers = new List<VisualElement>();
         private List<RexTextureField> slotDropZones = new List<RexTextureField>();
+        private RexTexturePreview[] unpackPreviews = new RexTexturePreview[4];
+        private Texture2D[] unpackPreviewBuffers = new Texture2D[4];
         [MenuItem("Tools/Rex Tools/Texture Repacker")]
         public static void ShowWindow() {
             var window = GetWindow<TexturePackSeparator>("Texture Repacker");
@@ -189,6 +192,7 @@ namespace RexTools.TextureRepacker.Editor
             tabGroup?.SetSelectedTabWithoutNotify(index);
 
             if (index == 0) UpdatePreview();
+            if (index == 1) UpdateUnpackPreviews();
             if (index == 2) UpdateMixPreview();
         }
 
@@ -204,25 +208,10 @@ namespace RexTools.TextureRepacker.Editor
             // --- TOP PREVIEW SECTION ---
             var previewSection = new VisualElement { style = { marginBottom = 15, flexDirection = FlexDirection.Row, justifyContent = Justify.Center, alignItems = Align.Center, flexShrink = 0, height = 180 } };
             
-            var previewWrap = new VisualElement { style = { width = 160, height = 160, marginRight = 10 } };
-            combinedPreview = new Image { style = { width = 160, height = 160, backgroundColor = Color.black } };
-            combinedPreview.scaleMode = ScaleMode.ScaleToFit;
-            previewWrap.Add(combinedPreview);
-
-            var maxBtn = new Button();
-            maxBtn.AddToClassList("rex-maximize-btn");
-            maxBtn.tooltip = "Show full-size preview";
-            maxBtn.clicked += () => LivePreviewWindow.ShowWindow(this, 0, "Pack Preview");
-            
-            var maxIcon = new Image { image = EditorGUIUtility.IconContent("d_Profiler.Open").image, pickingMode = PickingMode.Ignore };
-            maxIcon.style.width = 14;
-            maxIcon.style.height = 14;
-            maxIcon.tintColor = new Color(0.8f, 0.8f, 0.8f, 1f);
-            maxBtn.Add(maxIcon);
-            
-            previewWrap.Add(maxBtn);
-
-            previewSection.Add(previewWrap);
+            combinedPreview = new RexTexturePreview(160, "Show full-size preview");
+            combinedPreview.style.marginRight = 10;
+            combinedPreview.OnMaximizeClicked += () => LivePreviewWindow.ShowWindow(this, 0, "Pack Preview");
+            previewSection.Add(combinedPreview);
 
             var debugColumn = new VisualElement { style = { flexDirection = FlexDirection.Column, justifyContent = Justify.Center } };
             debugButtons.Clear();
@@ -336,6 +325,7 @@ namespace RexTools.TextureRepacker.Editor
                 textureContainer.Add(iconGrid);
 
                 var invertToggle = new Toggle("Invert") { value = packSlots[index].invert, style = { fontSize = 9, marginTop = 6, marginBottom = 2 } };
+                invertToggle.AddToClassList("rex-toggle-centered");
                 invertToggle.RegisterValueChangedCallback(e => { packSlots[index].invert = e.newValue; UpdatePreview(); });
                 textureContainer.Add(invertToggle);
                 
@@ -420,6 +410,7 @@ namespace RexTools.TextureRepacker.Editor
                         unpackNameField.value = unpackOutputName;
                     }
                 }
+                UpdateUnpackPreviews();
             };
             sourceBox.Add(drop);
             unpackContainer.Add(sourceBox);
@@ -436,7 +427,9 @@ namespace RexTools.TextureRepacker.Editor
             nameRow.Add(nameLabel);
             
             unpackNameField = new TextField { value = unpackOutputName };
-            unpackNameField.RegisterValueChangedCallback(e => unpackOutputName = e.newValue);
+            unpackNameField.RegisterValueChangedCallback(e => {
+                unpackOutputName = e.newValue;
+            });
             nameRow.Add(unpackNameField);
             outputBox.Add(nameRow);
 
@@ -450,7 +443,9 @@ namespace RexTools.TextureRepacker.Editor
             unpackFolderZone = new RexFolderSelector(required: true);
             unpackFolderZone.SetPathWithoutNotify(unpackOutputPath);
             unpackFolderZone.style.flexGrow = 1;
-            unpackFolderZone.OnValueChanged += p => unpackOutputPath = p;
+            unpackFolderZone.OnValueChanged += p => {
+                unpackOutputPath = p;
+            };
             unpackPathRow.Add(unpackFolderZone);
             outputBox.Add(unpackPathRow);
             unpackContainer.Add(outputBox);
@@ -460,27 +455,86 @@ namespace RexTools.TextureRepacker.Editor
             channelsBox.AddToClassList("rex-box");
             channelsBox.Add(new Label("CHANNEL EXTRACTION") { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 5, color = Color.gray } });
             
-            string[] names = { "Red", "Green", "Blue", "Alpha" };
+            var grid = new VisualElement { style = { flexDirection = FlexDirection.Row, flexWrap = Wrap.Wrap, justifyContent = Justify.SpaceBetween, flexShrink = 0 } };
+            grid.AddToClassList("rex-grid");
+            
+            string[] names = { "RED (R)", "GREEN (G)", "BLUE (B)", "ALPHA (A)" };
+            Color[] colors = { new Color(1, 0.3f, 0.3f), new Color(0.3f, 1, 0.3f), new Color(0.3f, 0.6f, 1), Color.white };
+
             for (int i = 0; i < 4; i++) {
                 int idx = i;
-                var row = new VisualElement();
-                row.AddToClassList("rex-row");
-                row.style.marginBottom = 4;
-                
-                var toggle = new Toggle(names[i]) { value = unpackModes[i] };
-                toggle.AddToClassList("rex-field-flex");
-                
-                var suffixLabel = new Label("Suffix: ") { style = { fontSize = 10, color = Color.gray, flexShrink = 0 } };
-                var suffix = new TextField { value = unpackSuffixes[i], style = { width = 60, flexShrink = 0 } };
-                
-                toggle.RegisterValueChangedCallback(e => { unpackModes[idx] = e.newValue; suffix.SetEnabled(e.newValue); });
-                suffix.RegisterValueChangedCallback(e => unpackSuffixes[idx] = e.newValue);
-                
-                row.Add(toggle);
-                row.Add(suffixLabel);
-                row.Add(suffix);
-                channelsBox.Add(row);
+                var slot = new VisualElement();
+                slot.AddToClassList("rex-box");
+                slot.style.width = 200;
+
+                // Header Row containing Channel Label and Toggle beside it
+                var headerRow = new VisualElement();
+                headerRow.AddToClassList("rex-row");
+                headerRow.style.justifyContent = Justify.SpaceBetween;
+                headerRow.style.marginBottom = 6;
+                headerRow.style.alignItems = Align.Center;
+
+                var chanLabel = new Label(names[idx]) { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, color = colors[idx] } };
+                var toggle = new Toggle { value = unpackModes[idx], style = { marginRight = 0 } };
+
+                headerRow.Add(chanLabel);
+                headerRow.Add(toggle);
+                slot.Add(headerRow);
+
+                // Preview Box (RexTexturePreview)
+                var preview = new RexTexturePreview(90, $"Show full-size {names[idx]} preview");
+                preview.style.alignSelf = Align.Center;
+                preview.style.marginTop = 4;
+                preview.style.marginBottom = 6;
+                preview.OnMaximizeClicked += () => LivePreviewWindow.ShowWindow(this, 10 + idx, $"{names[idx]} Channel Preview");
+                unpackPreviews[idx] = preview;
+                slot.Add(preview);
+
+                // Row for Suffix
+                var suffixRow = new VisualElement();
+                suffixRow.AddToClassList("rex-row");
+                var suffixLabel = new Label("Suffix:") { style = { fontSize = 10, color = Color.gray, width = 45, flexShrink = 0 } };
+                var suffix = new TextField { value = unpackSuffixes[idx] };
+                suffix.AddToClassList("rex-field-flex");
+                suffixRow.Add(suffixLabel);
+                suffixRow.Add(suffix);
+                slot.Add(suffixRow);
+
+                // Row for Invert button
+                var invertRow = new VisualElement();
+                invertRow.AddToClassList("rex-row");
+                invertRow.style.justifyContent = Justify.Center;
+                var invertBtn = new RexButton("Invert Channel", isToggle: true, defaultActive: unpackInvert[idx]);
+                invertBtn.style.flexGrow = 1;
+                invertBtn.style.height = 18;
+                invertBtn.style.fontSize = 9;
+                invertBtn.OnToggleChanged += active => {
+                    unpackInvert[idx] = active;
+                    UpdateUnpackPreviews();
+                };
+                invertRow.Add(invertBtn);
+                slot.Add(invertRow);
+
+                // Register event listeners
+                toggle.RegisterValueChangedCallback(e => {
+                    unpackModes[idx] = e.newValue;
+                    suffix.SetEnabled(e.newValue);
+                    invertBtn.SetEnabled(e.newValue);
+                    preview.SetEnabled(e.newValue);
+                    slot.style.opacity = e.newValue ? 1f : 0.4f;
+                });
+                suffix.RegisterValueChangedCallback(e => {
+                    unpackSuffixes[idx] = e.newValue;
+                });
+
+                suffix.SetEnabled(unpackModes[idx]);
+                invertBtn.SetEnabled(unpackModes[idx]);
+                preview.SetEnabled(unpackModes[idx]);
+                slot.style.opacity = unpackModes[idx] ? 1f : 0.4f;
+
+                grid.Add(slot);
             }
+            channelsBox.Add(grid);
             unpackContainer.Add(channelsBox);
         }
 
@@ -610,6 +664,50 @@ namespace RexTools.TextureRepacker.Editor
             return result;
         }
 
+        private void UpdateUnpackPreviews()
+        {
+            if (unpackSource == null) {
+                for (int i = 0; i < 4; i++) {
+                    if (unpackPreviews[i] != null) unpackPreviews[i].image = null;
+                }
+                return;
+            }
+
+            const int size = 32;
+            int total = size * size;
+            Color[] srcPixels = GetReadablePixels(unpackSource);
+            int srcW = unpackSource.width;
+            int srcH = unpackSource.height;
+
+            for (int i = 0; i < 4; i++) {
+                if (unpackPreviews[i] == null) continue;
+
+                if (unpackPreviewBuffers[i] == null) {
+                    unpackPreviewBuffers[i] = new Texture2D(size, size, TextureFormat.RGB24, false);
+                }
+
+                Color[] pixels = new Color[total];
+                bool invert = unpackInvert[i];
+                int channel = i;
+
+                for (int y = 0; y < size; y++) {
+                    int srcY = Mathf.Clamp(y * srcH / size, 0, srcH - 1);
+                    for (int x = 0; x < size; x++) {
+                        int srcX = Mathf.Clamp(x * srcW / size, 0, srcW - 1);
+                        Color p = srcPixels[srcY * srcW + srcX];
+                        float val = channel == 0 ? p.r : channel == 1 ? p.g : channel == 2 ? p.b : p.a;
+                        if (invert) val = 1f - val;
+                        pixels[y * size + x] = new Color(val, val, val, 1f);
+                    }
+                }
+
+                unpackPreviewBuffers[i].SetPixels(pixels);
+                unpackPreviewBuffers[i].Apply();
+                unpackPreviews[i].image = unpackPreviewBuffers[i];
+            }
+        }
+
+
         private void Process() {
             if (currentTabIndex == 0) Pack();
             else if (currentTabIndex == 1) Unpack();
@@ -645,18 +743,25 @@ namespace RexTools.TextureRepacker.Editor
         private Texture2D GenerateFullResResult(int tabIndex)
         {
             int w = 512, h = 512;
-            string title = tabIndex == 0 ? "Packing Texture" : "Mixing Texture";
+            string title = "Processing Texture";
 
             if (tabIndex == 0) {
+                title = "Packing Texture";
                 var nonNull = packSlots.Where(s => !s.useCustom && s.texture != null).ToList();
                 if (nonNull.Count > 0) {
                     w = nonNull.Max(s => s.texture.width);
                     h = nonNull.Max(s => s.texture.height);
                 }
-            } else {
+            } else if (tabIndex == 2) {
+                title = "Mixing Texture";
                 if (mixBase == null) return null;
                 w = mixBase.width;
                 h = mixBase.height;
+            } else if (tabIndex >= 10 && tabIndex <= 13) {
+                title = "Extracting Channel Preview";
+                if (unpackSource == null) return null;
+                w = unpackSource.width;
+                h = unpackSource.height;
             }
 
             try {
@@ -704,7 +809,7 @@ namespace RexTools.TextureRepacker.Editor
                             pixels[y * w + x] = new Color(channels[0], channels[1], channels[2], channels[3]);
                         }
                     }
-                } else {
+                } else if (tabIndex == 2) {
                     // --- MIX ENGINE ---
                     Color[] basePixels = GetReadablePixels(mixBase);
                     Color[] layerPixels = mixLayer != null ? GetReadablePixels(mixLayer) : null;
@@ -726,6 +831,21 @@ namespace RexTools.TextureRepacker.Editor
                             Color fl = ApplyChannelSelect(lc, mixLayerChannel);
                             Color blended = BlendColors(fb, fl, mixBlendMode);
                             pixels[y * w + x] = Color.Lerp(fb, blended, mixOpacity);
+                        }
+                    }
+                } else if (tabIndex >= 10 && tabIndex <= 13) {
+                    int channel = tabIndex - 10;
+                    Color[] srcPixels = GetReadablePixels(unpackSource);
+                    bool invert = unpackInvert[channel];
+                    
+                    int progressInterval = Mathf.Max(1, h / 20);
+                    for (int y = 0; y < h; y++) {
+                        if (y % progressInterval == 0) EditorUtility.DisplayProgressBar(title, $"Processing row {y}/{h}...", (float)y / h);
+                        for (int x = 0; x < w; x++) {
+                            Color p = srcPixels[y * w + x];
+                            float val = channel == 0 ? p.r : channel == 1 ? p.g : channel == 2 ? p.b : p.a;
+                            if (invert) val = 1f - val;
+                            pixels[y * w + x] = new Color(val, val, val, 1f);
                         }
                     }
                 }
@@ -771,8 +891,10 @@ namespace RexTools.TextureRepacker.Editor
                 if (!unpackModes[i]) continue;
                 Texture2D res = new Texture2D(w, h, TextureFormat.RGB24, false);
                 Color[] resPixels = new Color[pixels.Length];
+                bool invert = unpackInvert[i];
                 for (int p = 0; p < pixels.Length; p++) {
                     float val = i == 0 ? pixels[p].r : i == 1 ? pixels[p].g : i == 2 ? pixels[p].b : pixels[p].a;
+                    if (invert) val = 1f - val;
                     resPixels[p] = new Color(val, val, val, 1f);
                 }
                 res.SetPixels(resPixels);
@@ -793,25 +915,9 @@ namespace RexTools.TextureRepacker.Editor
             // ── Preview ──
             var previewSection = new VisualElement { style = { marginBottom = 15, flexDirection = FlexDirection.Row, justifyContent = Justify.Center, alignItems = Align.Center, flexShrink = 0, height = 180 } };
             
-            var previewWrap = new VisualElement { style = { width = 160, height = 160 } };
-            mixPreviewImage = new Image { style = { width = 160, height = 160, backgroundColor = Color.black } };
-            mixPreviewImage.scaleMode = ScaleMode.ScaleToFit;
-            previewWrap.Add(mixPreviewImage);
-
-            var maxBtn = new Button();
-            maxBtn.AddToClassList("rex-maximize-btn");
-            maxBtn.tooltip = "Show full-size preview";
-            maxBtn.clicked += () => LivePreviewWindow.ShowWindow(this, 2, "Mix Preview");
-            
-            var maxIcon = new Image { image = EditorGUIUtility.IconContent("d_Profiler.Open").image, pickingMode = PickingMode.Ignore };
-            maxIcon.style.width = 14;
-            maxIcon.style.height = 14;
-            maxIcon.tintColor = new Color(0.8f, 0.8f, 0.8f, 1f);
-            maxBtn.Add(maxIcon);
-            
-            previewWrap.Add(maxBtn);
-
-            previewSection.Add(previewWrap);
+            mixPreviewImage = new RexTexturePreview(160, "Show full-size preview");
+            mixPreviewImage.OnMaximizeClicked += () => LivePreviewWindow.ShowWindow(this, 2, "Mix Preview");
+            previewSection.Add(mixPreviewImage);
             mixContainer.Add(previewSection);
 
             // ── Blend Mode ──
@@ -1104,6 +1210,15 @@ namespace RexTools.TextureRepacker.Editor
             string[] suffixes = { "_packed", "_pack", "_combined", "_tex", "_diffuse", "_albedo" };
             foreach (var s in suffixes) if (name.EndsWith(s, System.StringComparison.OrdinalIgnoreCase)) name = name.Substring(0, name.Length - s.Length);
             return name.TrimEnd('_', '-', ' ');
+        }
+
+        private void OnDestroy()
+        {
+            if (previewBuffer != null) DestroyImmediate(previewBuffer);
+            if (mixPreviewBuffer != null) DestroyImmediate(mixPreviewBuffer);
+            for (int i = 0; i < 4; i++) {
+                if (unpackPreviewBuffers[i] != null) DestroyImmediate(unpackPreviewBuffers[i]);
+            }
         }
 
         // ──────────────────────────────────────────────────────────────────────────

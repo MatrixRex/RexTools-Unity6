@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unused Assets Finder: Replaced obsolete `FindObjectsOfType` calls with `FindObjectsByType`.
 
 ### Added
+- Core: `RexTexturePreview` — reusable styled texture preview component featuring an image container and a maximize button to view the texture full-size.
+- Texture Repacker: Unified all preview areas (combined preview in PACK, mixed preview in MIX, and channel extraction previews in UNPACK) to use the new `RexTexturePreview` component.
+- Texture Repacker: Refactored the UNPACK channel layout to use a 2x2 grid of slot boxes matching the PACK tab, rendering real-time greyscale channel previews with custom suffix inputs, invert toggle buttons, maximize buttons, header checkboxes, and card opacity fading when disabled.
 - Core: `RexTextureField` — reusable styled drag-and-drop field for Texture2D assets with support for object pickers, custom color previewing, action events, and multi-line instruction labels ("or click to select").
 - Core: Path validation support to `RexFolderSelector` with a `required` parameter/property, empty path border highlight, and a required tip label below the input.
 - Quick Shot: Refactored window layout to use a ScrollView for settings, keeping the header, help box, and capture button fixed.
@@ -46,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Texture Repacker: Adjusted output settings rows in PACK, UNPACK, and MIX tabs to use a compact 50px fixed-width left column for "Name:" and "Path:" labels, allowing text fields and folder selectors to expand and fill the remaining space.
 - Texture Repacker: Split channel slots in the PACK tab into distinct **Texture** and **Value** modes, showing only the relevant controls (drop zone, swizzle row, and invert toggle for Texture mode; value slider for Value mode) to simplify the workflow and reduce visual clutter.
 - Texture Repacker: Made output folder paths required across PACK, UNPACK, and MIX tabs, defaulting the initial path to "Assets" while auto-detecting and filling the dropped asset's directory path, prompting validation errors, and blocking execution with dialogs if an operation is run with an empty folder path.
+- Texture Repacker: Centered the Invert toggle and positioned its label and checkbox closer together inside the PACK slots to improve alignment and layout.
+- Texture Repacker: Adjusted the UNPACK mode channel extraction row layout to place checkboxes first, followed by the channel names, and introduced toggle buttons to invert individual channels during unpacking.
 - Texture Repacker: Fixed full-size preview maximize button missing/unsupported Unicode icon by replacing it with a styled Image element rendering Unity's built-in "d_Profiler.Open" icon and added a tooltip.
 - Animation Event Copier: Refactored the auto-match and copy buttons to use the custom `RexButton` and `RexActionButton` C# components.
 - Animation Event Copier: Displays validation warnings within the window if the source or target object does not contain any animation clips or is not a valid model asset (FBX).

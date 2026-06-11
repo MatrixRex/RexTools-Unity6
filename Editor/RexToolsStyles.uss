@@ -804,3 +804,22 @@
     font-size: 11px;
     white-space: normal;
 }
+
+/* Centered Toggle */
+.rex-toggle-centered {
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+}
+
+.rex-toggle-centered .unity-toggle__label {
+    flex-grow: 0;
+    flex-shrink: 0;
+    margin-right: 4px;
+    min-width: auto;
+}
+
+.rex-toggle-centered .unity-toggle__input {
+    flex-grow: 0;
+    flex-shrink: 0;
+}
