@@ -11,97 +11,7 @@ namespace RexTools.TextureRepacker.Editor
 {
     public enum ChannelSource { R, G, B, A }
 
-    /// <summary>
-    /// A reusable Drag and Drop field for Texture2D assets.
-    /// </summary>
-    public class DragAndDropTextureField : VisualElement
-    {
-        public System.Action<Texture2D> OnTextureChanged;
-        private Texture2D currentTexture;
-        private Image previewImage;
-        private Label placeholderLabel;
-        private string labelText;
 
-        public Texture2D Value { get => currentTexture; set => SetTexture(value, true); }
-
-        public DragAndDropTextureField(string label = "Drop Texture", float height = 80)
-        {
-            labelText = label;
-            AddToClassList("rex-drag-drop-field");
-            style.height = height;
-            style.flexDirection = FlexDirection.Column;
-            style.alignItems = Align.Center;
-            style.justifyContent = Justify.Center;
-            style.minHeight = height;
-
-            previewImage = new Image { scaleMode = ScaleMode.ScaleToFit };
-            previewImage.AddToClassList("rex-drag-drop-preview");
-            previewImage.style.width = height * 0.7f;
-            previewImage.style.height = height * 0.7f;
-            previewImage.style.display = DisplayStyle.None;
-            Add(previewImage);
-
-            placeholderLabel = new Label(labelText);
-            placeholderLabel.AddToClassList("rex-drag-drop-label");
-            placeholderLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-            Add(placeholderLabel);
-
-            RegisterCallback<DragUpdatedEvent>(e => {
-                DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-                AddToClassList("rex-drag-drop-field--active");
-            });
-            RegisterCallback<DragLeaveEvent>(e => RemoveFromClassList("rex-drag-drop-field--active"));
-            RegisterCallback<DragPerformEvent>(e => {
-                RemoveFromClassList("rex-drag-drop-field--active");
-                DragAndDrop.AcceptDrag();
-                var tex = DragAndDrop.objectReferences.OfType<Texture2D>().FirstOrDefault();
-                if (tex != null) SetTexture(tex, true);
-            });
-            RegisterCallback<MouseDownEvent>(e => {
-                if (e.button == 0) EditorGUIUtility.ShowObjectPicker<Texture2D>(currentTexture, false, "", GetHashCode());
-            });
-
-            this.schedule.Execute(() => {
-                if (Event.current != null && Event.current.type == EventType.ExecuteCommand && Event.current.commandName == "ObjectSelectorUpdated") {
-                    if (EditorGUIUtility.GetObjectPickerControlID() == GetHashCode())
-                        SetTexture(EditorGUIUtility.GetObjectPickerObject() as Texture2D, true);
-                }
-            }).Every(50);
-        }
-
-        public void SetColor(Color col)
-        {
-            previewImage.image = null;
-            previewImage.style.backgroundColor = col;
-            previewImage.style.display = DisplayStyle.Flex;
-            placeholderLabel.text = $"Value: {col.r:F2}";
-            placeholderLabel.style.color = Color.white;
-        }
-
-        public void ClearColor()
-        {
-            previewImage.style.backgroundColor = Color.clear;
-            SetTexture(currentTexture, false);
-        }
-
-        private void SetTexture(Texture2D tex, bool notify = true)
-        {
-            currentTexture = tex;
-            previewImage.style.backgroundColor = Color.clear;
-            if (tex != null) {
-                previewImage.image = tex;
-                previewImage.style.display = DisplayStyle.Flex;
-                placeholderLabel.text = tex.name;
-                placeholderLabel.style.color = Color.white;
-            } else {
-                previewImage.image = null;
-                previewImage.style.display = DisplayStyle.None;
-                placeholderLabel.text = labelText;
-                placeholderLabel.style.color = new Color(0.5f, 0.5f, 0.5f);
-            }
-            if (notify) OnTextureChanged?.Invoke(tex);
-        }
-    }
 
     public class TexturePackSeparator : EditorWindow
     {
@@ -172,7 +82,7 @@ namespace RexTools.TextureRepacker.Editor
         private List<RexButton> debugButtons = new List<RexButton>();
         private List<List<RexButton>> slotChannelButtons = new List<List<RexButton>>();
         private List<RexButton> slotValButtons = new List<RexButton>();
-        private List<DragAndDropTextureField> slotDropZones = new List<DragAndDropTextureField>();
+        private List<RexTextureField> slotDropZones = new List<RexTextureField>();
         [MenuItem("Tools/Rex Tools/Texture Repacker")]
         public static void ShowWindow() {
             var window = GetWindow<TexturePackSeparator>("Texture Repacker");
@@ -363,7 +273,7 @@ namespace RexTools.TextureRepacker.Editor
                 slot.style.width = 200; // Increased width for better fitting in 450px window
                 slot.Add(new Label(names[i]) { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 4, color = colors[i] } });
                 
-                var drop = new DragAndDropTextureField();
+                var drop = new RexTextureField();
                 drop.OnTextureChanged = tex => {
                     packSlots[index].texture = tex;
                     OnSlotTextureDropped(tex);
@@ -458,7 +368,7 @@ namespace RexTools.TextureRepacker.Editor
             sourceBox.AddToClassList("rex-box");
             sourceBox.Add(new Label("SOURCE TEXTURE") { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 5, color = Color.gray } });
             
-            var drop = new DragAndDropTextureField("Drop Texture to Unpack", 100);
+            var drop = new RexTextureField("Drop Texture to Unpack", 100);
             drop.OnTextureChanged = tex => {
                 unpackSource = tex;
                 if (tex != null) {
@@ -885,7 +795,7 @@ namespace RexTools.TextureRepacker.Editor
                 box.AddToClassList("rex-box");
                 box.Add(new Label(texLabels[t]) { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 5, color = ti == 0 ? new Color(0.5f, 0.8f, 1f) : new Color(1f, 0.7f, 0.4f) } });
 
-                var drop = new DragAndDropTextureField("Drop " + texLabels[t] + " Texture", 90);
+                var drop = new RexTextureField("Drop " + texLabels[t] + " Texture", 90);
                 drop.OnTextureChanged = tex => {
                     if (ti == 0) {
                         mixBase = tex;
