@@ -81,7 +81,10 @@ namespace RexTools.TextureRepacker.Editor
         private RexHelpBox helpBox;
         private List<RexButton> debugButtons = new List<RexButton>();
         private List<List<RexButton>> slotChannelButtons = new List<List<RexButton>>();
-        private List<RexButton> slotValButtons = new List<RexButton>();
+        private List<RexButton> slotTexModeButtons = new List<RexButton>();
+        private List<RexButton> slotValModeButtons = new List<RexButton>();
+        private List<VisualElement> slotTextureContainers = new List<VisualElement>();
+        private List<VisualElement> slotValueContainers = new List<VisualElement>();
         private List<RexTextureField> slotDropZones = new List<RexTextureField>();
         [MenuItem("Tools/Rex Tools/Texture Repacker")]
         public static void ShowWindow() {
@@ -192,7 +195,10 @@ namespace RexTools.TextureRepacker.Editor
         private void SetupPackUI()
         {
             slotChannelButtons.Clear();
-            slotValButtons.Clear();
+            slotTexModeButtons.Clear();
+            slotValModeButtons.Clear();
+            slotTextureContainers.Clear();
+            slotValueContainers.Clear();
             slotDropZones.Clear();
             slotSliders.Clear();
             // --- TOP PREVIEW SECTION ---
@@ -273,6 +279,29 @@ namespace RexTools.TextureRepacker.Editor
                 slot.style.width = 200; // Increased width for better fitting in 450px window
                 slot.Add(new Label(names[i]) { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 4, color = colors[i] } });
                 
+                // Mode Selector Row
+                var modeSelectorRow = new VisualElement();
+                modeSelectorRow.AddToClassList("rex-row");
+                modeSelectorRow.style.marginBottom = 6;
+                
+                var texModeBtn = new RexButton("Texture");
+                texModeBtn.style.flexGrow = 1;
+                texModeBtn.style.height = 18;
+                texModeBtn.style.fontSize = 9;
+                
+                var valModeBtn = new RexButton("Value");
+                valModeBtn.style.flexGrow = 1;
+                valModeBtn.style.height = 18;
+                valModeBtn.style.fontSize = 9;
+                
+                modeSelectorRow.Add(texModeBtn);
+                modeSelectorRow.Add(valModeBtn);
+                slot.Add(modeSelectorRow);
+
+                // Texture Container (drop field, channel buttons, invert toggle)
+                var textureContainer = new VisualElement();
+                textureContainer.style.marginTop = 4;
+                
                 var drop = new RexTextureField();
                 drop.OnTextureChanged = tex => {
                     packSlots[index].texture = tex;
@@ -280,10 +309,10 @@ namespace RexTools.TextureRepacker.Editor
                     UpdatePreview();
                 };
                 slotDropZones.Add(drop);
-                slot.Add(drop);
+                textureContainer.Add(drop);
 
                 // Channel Icons Grid [R][G][B][A]
-                var iconGrid = new VisualElement { style = { flexDirection = FlexDirection.Row, marginTop = 4, justifyContent = Justify.Center } };
+                var iconGrid = new VisualElement { style = { flexDirection = FlexDirection.Row, marginTop = 6, justifyContent = Justify.Center } };
                 var slotButtons = new List<RexButton>();
                 for (int c = 0; c < 4; c++) {
                     int chan = c;
@@ -297,47 +326,50 @@ namespace RexTools.TextureRepacker.Editor
                     iconGrid.Add(btn);
                 }
                 slotChannelButtons.Add(slotButtons);
-                slot.Add(iconGrid);
+                textureContainer.Add(iconGrid);
 
-                // Controls
-                var controls = new VisualElement { style = { paddingLeft = 4, paddingRight = 4, marginTop = 4 } };
-                
-                var invertToggle = new Toggle("Invert") { value = packSlots[index].invert, style = { fontSize = 9, marginBottom = 2 } };
+                var invertToggle = new Toggle("Invert") { value = packSlots[index].invert, style = { fontSize = 9, marginTop = 6, marginBottom = 2 } };
                 invertToggle.RegisterValueChangedCallback(e => { packSlots[index].invert = e.newValue; UpdatePreview(); });
-                controls.Add(invertToggle);
-                                var customRow = new VisualElement();
-                customRow.AddToClassList("rex-row");
+                textureContainer.Add(invertToggle);
                 
-                var customValBtn = new RexButton("VAL");
-                customValBtn.style.fontSize = 8;
-                customValBtn.style.width = 32;
-                customValBtn.style.height = 18;
-                customValBtn.style.marginRight = 4;
+                slot.Add(textureContainer);
+                slotTextureContainers.Add(textureContainer);
+
+                // Value Container (slider)
+                var valueContainer = new VisualElement();
+                valueContainer.style.marginTop = 4;
                 
                 var slider = new RexSlider(0f, 1f, defaultValue: 0.5f, value: packSlots[index].customValue);
                 slider.AddToClassList("rex-field-flex");
-                slider.style.height = 18;
-                
-                customValBtn.OnClick += () => {
-                    bool newState = !packSlots[index].useCustom;
-                    packSlots[index].useCustom = newState;
-                    slider.SetEnabled(newState);
-                    UpdatePreview();
-                };
-                slotValButtons.Add(customValBtn);
-               
+                slider.style.height = 28; // Default RexSlider height is 28px
                 slider.OnValueChanged += val => {
                     packSlots[index].customValue = val;
                     UpdatePreview();
                 };
- 
-                slider.SetEnabled(packSlots[index].useCustom);
+                valueContainer.Add(slider);
                 slotSliders.Add(slider);
+                
+                slot.Add(valueContainer);
+                slotValueContainers.Add(valueContainer);
+                
+                // Click handlers for mode buttons
+                texModeBtn.OnClick += () => {
+                    packSlots[index].useCustom = false;
+                    UpdatePreview();
+                    UpdateButtonStates();
+                };
+                valModeBtn.OnClick += () => {
+                    packSlots[index].useCustom = true;
+                    UpdatePreview();
+                    UpdateButtonStates();
+                };
+                
+                slotTexModeButtons.Add(texModeBtn);
+                slotValModeButtons.Add(valModeBtn);
 
-                customRow.Add(customValBtn);
-                customRow.Add(slider);
-                controls.Add(customRow);
-                slot.Add(controls);
+                // Initial visibility
+                textureContainer.style.display = packSlots[index].useCustom ? DisplayStyle.None : DisplayStyle.Flex;
+                valueContainer.style.display = packSlots[index].useCustom ? DisplayStyle.Flex : DisplayStyle.None;
 
                 grid.Add(slot);
             }
@@ -470,17 +502,22 @@ namespace RexTools.TextureRepacker.Editor
                 debugButtons[i].IsActive = (debugPreviewMode == i);
             }
             for (int i = 0; i < slotChannelButtons.Count; i++) {
+                bool custom = packSlots[i].useCustom;
+                slotTexModeButtons[i].IsActive = !custom;
+                slotValModeButtons[i].IsActive = custom;
+                slotTextureContainers[i].style.display = custom ? DisplayStyle.None : DisplayStyle.Flex;
+                slotValueContainers[i].style.display = custom ? DisplayStyle.Flex : DisplayStyle.None;
+                
                 for (int c = 0; c < slotChannelButtons[i].Count; c++) {
                     slotChannelButtons[i][c].IsActive = (packSlots[i].channelIndex == c);
                 }
-                slotValButtons[i].IsActive = packSlots[i].useCustom;
-                if (packSlots[i].useCustom) {
+                if (custom) {
                     slotDropZones[i].SetColor(new Color(packSlots[i].customValue, packSlots[i].customValue, packSlots[i].customValue, 1f));
                 } else {
                     slotDropZones[i].ClearColor();
                 }
                 if (i < slotSliders.Count) {
-                    slotSliders[i].SetEnabled(packSlots[i].useCustom);
+                    slotSliders[i].SetEnabled(custom);
                 }
             }
         }
