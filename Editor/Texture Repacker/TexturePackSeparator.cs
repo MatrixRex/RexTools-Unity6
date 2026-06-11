@@ -169,9 +169,9 @@ namespace RexTools.TextureRepacker.Editor
         private int debugPreviewMode = 0; // 0=RGBA, 1=R, 2=G, 3=B, 4=A
         private bool showHelp = false;
         private RexHelpBox helpBox;
-        private List<Button> debugButtons = new List<Button>();
-        private List<List<Button>> slotChannelButtons = new List<List<Button>>();
-        private List<Button> slotValButtons = new List<Button>();
+        private List<RexButton> debugButtons = new List<RexButton>();
+        private List<List<RexButton>> slotChannelButtons = new List<List<RexButton>>();
+        private List<RexButton> slotValButtons = new List<RexButton>();
         private List<DragAndDropTextureField> slotDropZones = new List<DragAndDropTextureField>();
         [MenuItem("Tools/Rex Tools/Texture Repacker")]
         public static void ShowWindow() {
@@ -305,9 +305,12 @@ namespace RexTools.TextureRepacker.Editor
             string[] modes = { "RGBA", "R", "G", "B", "A" };
             for (int i = 0; i < modes.Length; i++) {
                 int m = i;
-                var btn = new Button { text = modes[i], style = { width = 45, height = 25, fontSize = 9, marginBottom = 4 } };
-                btn.AddToClassList("rex-button-small");
-                btn.clicked += () => { debugPreviewMode = m; UpdatePreview(); };
+                var btn = new RexButton(modes[i]);
+                btn.style.width = 45;
+                btn.style.height = 25;
+                btn.style.fontSize = 9;
+                btn.style.marginBottom = 4;
+                btn.OnClick += () => { debugPreviewMode = m; UpdatePreview(); };
                 debugButtons.Add(btn);
                 debugColumn.Add(btn);
             }
@@ -371,12 +374,15 @@ namespace RexTools.TextureRepacker.Editor
 
                 // Channel Icons Grid [R][G][B][A]
                 var iconGrid = new VisualElement { style = { flexDirection = FlexDirection.Row, marginTop = 4, justifyContent = Justify.Center } };
-                var slotButtons = new List<Button>();
+                var slotButtons = new List<RexButton>();
                 for (int c = 0; c < 4; c++) {
                     int chan = c;
-                    var btn = new Button { text = modes[c+1], style = { width = 30, height = 20, fontSize = 9, marginRight = 2 } };
-                    btn.AddToClassList("rex-button-small");
-                    btn.clicked += () => { packSlots[index].channelIndex = chan; UpdatePreview(); };
+                    var btn = new RexButton(modes[c+1]);
+                    btn.style.width = 30;
+                    btn.style.height = 20;
+                    btn.style.fontSize = 9;
+                    btn.style.marginRight = 2;
+                    btn.OnClick += () => { packSlots[index].channelIndex = chan; UpdatePreview(); };
                     slotButtons.Add(btn);
                     iconGrid.Add(btn);
                 }
@@ -392,14 +398,17 @@ namespace RexTools.TextureRepacker.Editor
                                 var customRow = new VisualElement();
                 customRow.AddToClassList("rex-row");
                 
-                var customValBtn = new Button { text = "VAL", style = { fontSize = 8, width = 32, height = 18, marginRight = 4 } };
-                customValBtn.AddToClassList("rex-button-small");
+                var customValBtn = new RexButton("VAL");
+                customValBtn.style.fontSize = 8;
+                customValBtn.style.width = 32;
+                customValBtn.style.height = 18;
+                customValBtn.style.marginRight = 4;
                 
                 var slider = new RexSlider(0f, 1f, defaultValue: 0.5f, value: packSlots[index].customValue);
                 slider.AddToClassList("rex-field-flex");
                 slider.style.height = 18;
                 
-                customValBtn.clicked += () => {
+                customValBtn.OnClick += () => {
                     bool newState = !packSlots[index].useCustom;
                     packSlots[index].useCustom = newState;
                     slider.SetEnabled(newState);
@@ -548,19 +557,16 @@ namespace RexTools.TextureRepacker.Editor
         private void UpdateButtonStates()
         {
             for (int i = 0; i < debugButtons.Count; i++) {
-                if (debugPreviewMode == i) debugButtons[i].AddToClassList("rex-button-small--active");
-                else debugButtons[i].RemoveFromClassList("rex-button-small--active");
+                debugButtons[i].IsActive = (debugPreviewMode == i);
             }
             for (int i = 0; i < slotChannelButtons.Count; i++) {
                 for (int c = 0; c < slotChannelButtons[i].Count; c++) {
-                    if (packSlots[i].channelIndex == c) slotChannelButtons[i][c].AddToClassList("rex-button-small--active");
-                    else slotChannelButtons[i][c].RemoveFromClassList("rex-button-small--active");
+                    slotChannelButtons[i][c].IsActive = (packSlots[i].channelIndex == c);
                 }
+                slotValButtons[i].IsActive = packSlots[i].useCustom;
                 if (packSlots[i].useCustom) {
-                    slotValButtons[i].AddToClassList("rex-button-small--active");
                     slotDropZones[i].SetColor(new Color(packSlots[i].customValue, packSlots[i].customValue, packSlots[i].customValue, 1f));
                 } else {
-                    slotValButtons[i].RemoveFromClassList("rex-button-small--active");
                     slotDropZones[i].ClearColor();
                 }
                 if (i < slotSliders.Count) {
@@ -909,27 +915,29 @@ namespace RexTools.TextureRepacker.Editor
                 var chanLabel = new Label("Channel:") { style = { width = 55, fontSize = 10, color = Color.gray, flexShrink = 0 } };
                 chanRow.Add(chanLabel);
                 string[] chanLabels = { "Full", "R", "G", "B", "A" };
-                var chanBtns = new List<Button>();
+                var chanBtns = new List<RexButton>();
                 for (int c = 0; c < 5; c++) {
                     int ci = c;
-                    var btn = new Button { text = chanLabels[c], style = { width = 34, height = 20, fontSize = 9, marginRight = 2 } };
-                    btn.AddToClassList("rex-button-small");
+                    var btn = new RexButton(chanLabels[c]);
+                    btn.style.width = 34;
+                    btn.style.height = 20;
+                    btn.style.fontSize = 9;
+                    btn.style.marginRight = 2;
                     int channelValue = ci - 1; // Full=-1 (ci=0 → -1), R=0, G=1, B=2, A=3
-                    btn.clicked += () => {
+                    btn.OnClick += () => {
                         if (ti == 0) mixBaseChannel  = channelValue;
                         else         mixLayerChannel = channelValue;
                         // Update active state
                         for (int j = 0; j < chanBtns.Count; j++) {
-                            chanBtns[j].RemoveFromClassList("rex-button-small--active");
+                            chanBtns[j].IsActive = (j == ci);
                         }
-                        chanBtns[ci].AddToClassList("rex-button-small--active");
                         UpdateMixPreview();
                     };
                     chanBtns.Add(btn);
                     chanRow.Add(btn);
                 }
                 // Default active = Full
-                chanBtns[0].AddToClassList("rex-button-small--active");
+                chanBtns[0].IsActive = true;
                 box.Add(chanRow);
                 mixContainer.Add(box);
             }

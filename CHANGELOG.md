@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch Material Processor: A standalone tool for batch setting material shaders and auto-assigning texture maps from a selected directory using customizable suffix rules and dry-run preview.
 
 ### Changed
-- Texture Repacker: Refactored the UI to reuse custom `RexSlider` and `RexActionButton` components (featuring tab-specific background tints for PACK, UNPACK, and MIX operations), and cleaned up C# inline style properties to use standard USS layout classes (`.rex-row`, `.rex-row-cols-2`, `.rex-col-left`, `.rex-col-right`).
+- Texture Repacker: Refactored the UI to reuse custom `RexSlider`, `RexButton` (for preview modes, channel swizzling, VAL toggles, and mix selectors), and `RexActionButton` components (featuring tab-specific background tints for PACK, UNPACK, and MIX operations), and cleaned up C# inline style properties to use standard USS layout classes (`.rex-row`, `.rex-row-cols-2`, `.rex-col-left`, `.rex-col-right`).
 - Animation Event Copier: Refactored the auto-match and copy buttons to use the custom `RexButton` and `RexActionButton` C# components.
 - Animation Event Copier: Displays validation warnings within the window if the source or target object does not contain any animation clips or is not a valid model asset (FBX).
 - RexSlider: Added 3px left and right padding to improve horizontal spacing.
