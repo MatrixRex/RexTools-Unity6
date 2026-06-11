@@ -46,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RexSlider: Added 3px left and right padding to improve horizontal spacing.
 - Quick Shot: Refactored the export path section to use the custom `RexFoldout` component and standard button/toggle styles for the control row.
 - Batch Material Editor: Removed the focus button from the scanner list; the ObjectFields are now interactive and can be clicked to ping/focus the material in the Project window, while remaining read-only.
+- Unused Assets Finder: Refactored the subfolders tree view section to use the custom `RexFoldout` component with a scrollable list area inside, wrapped the screen content in a main ScrollView, wrapped the tab results inside a scrollarea with a max-height limit, refactored the scan and delete-all buttons to use the custom `RexActionButton` component, and moved the delete-all button (renamed to "DELETE SELECTED") to the bottom of the window as a full-width sticky action button.
+- Unused Assets Finder: Consolidated the legacy IMGUI implementation and the UI Toolkit implementation into a single `UnusedAssetsFinder.cs` file.
 
 ## [0.4.0] - 2026-02-23
 
