@@ -295,17 +295,21 @@
     height: 24px;
     background-color: rgba(0, 0, 0, 0.5);
     border-radius: 4px;
-    color: #CCC;
     border-width: 0;
-    font-size: 14px;
-    -unity-font-style: bold;
     justify-content: center;
     align-items: center;
 }
 
 .rex-maximize-btn:hover {
     background-color: #4D99FF;
-    color: white;
+}
+
+.rex-maximize-btn Image {
+    tint-color: #CCC;
+}
+
+.rex-maximize-btn:hover Image {
+    tint-color: white;
 }
 
 /* Header & Help */

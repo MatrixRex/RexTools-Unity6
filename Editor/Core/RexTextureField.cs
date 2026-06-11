@@ -25,7 +25,7 @@ namespace RexTools.Editor.Core
 
         public RexTextureField(string label = "Drop Texture", float height = 80)
         {
-            labelText = label;
+            labelText = label + "\nor click to select";
             AddToClassList("rex-drag-drop-field");
             style.height = height;
             style.flexDirection = FlexDirection.Column;
@@ -43,6 +43,7 @@ namespace RexTools.Editor.Core
             placeholderLabel = new Label(labelText);
             placeholderLabel.AddToClassList("rex-drag-drop-label");
             placeholderLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            placeholderLabel.style.whiteSpace = WhiteSpace.Normal;
             Add(placeholderLabel);
 
             RegisterCallback<DragUpdatedEvent>(e => {

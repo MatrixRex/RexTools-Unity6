@@ -209,9 +209,17 @@ namespace RexTools.TextureRepacker.Editor
             combinedPreview.scaleMode = ScaleMode.ScaleToFit;
             previewWrap.Add(combinedPreview);
 
-            var maxBtn = new Button { text = "⛶" };
+            var maxBtn = new Button();
             maxBtn.AddToClassList("rex-maximize-btn");
+            maxBtn.tooltip = "Show full-size preview";
             maxBtn.clicked += () => LivePreviewWindow.ShowWindow(this, 0, "Pack Preview");
+            
+            var maxIcon = new Image { image = EditorGUIUtility.IconContent("d_Profiler.Open").image, pickingMode = PickingMode.Ignore };
+            maxIcon.style.width = 14;
+            maxIcon.style.height = 14;
+            maxIcon.tintColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+            maxBtn.Add(maxIcon);
+            
             previewWrap.Add(maxBtn);
 
             previewSection.Add(previewWrap);
@@ -386,7 +394,7 @@ namespace RexTools.TextureRepacker.Editor
                 nameField.value = outputName;
             }
             // Auto folder from first dropped texture
-            if (string.IsNullOrEmpty(outputPath)) {
+            if (string.IsNullOrEmpty(outputPath) || outputPath == "Assets") {
                 outputPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(tex));
                 folderZone.SetPathWithoutNotify(outputPath);
             }
@@ -403,7 +411,7 @@ namespace RexTools.TextureRepacker.Editor
             drop.OnTextureChanged = tex => {
                 unpackSource = tex;
                 if (tex != null) {
-                    if (string.IsNullOrEmpty(unpackOutputPath)) {
+                    if (string.IsNullOrEmpty(unpackOutputPath) || unpackOutputPath == "Assets") {
                         unpackOutputPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(tex));
                         unpackFolderZone.SetPathWithoutNotify(unpackOutputPath);
                     }
@@ -790,9 +798,17 @@ namespace RexTools.TextureRepacker.Editor
             mixPreviewImage.scaleMode = ScaleMode.ScaleToFit;
             previewWrap.Add(mixPreviewImage);
 
-            var maxBtn = new Button { text = "⛶" };
+            var maxBtn = new Button();
             maxBtn.AddToClassList("rex-maximize-btn");
+            maxBtn.tooltip = "Show full-size preview";
             maxBtn.clicked += () => LivePreviewWindow.ShowWindow(this, 2, "Mix Preview");
+            
+            var maxIcon = new Image { image = EditorGUIUtility.IconContent("d_Profiler.Open").image, pickingMode = PickingMode.Ignore };
+            maxIcon.style.width = 14;
+            maxIcon.style.height = 14;
+            maxIcon.tintColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+            maxBtn.Add(maxIcon);
+            
             previewWrap.Add(maxBtn);
 
             previewSection.Add(previewWrap);
@@ -846,7 +862,7 @@ namespace RexTools.TextureRepacker.Editor
                             mixOutputName = GenerateBaseName(tex.name) + "_mixed";
                             if (mixNameField != null) mixNameField.value = mixOutputName;
                         }
-                        if (tex != null && string.IsNullOrEmpty(mixOutputPath)) {
+                        if (tex != null && (string.IsNullOrEmpty(mixOutputPath) || mixOutputPath == "Assets")) {
                             mixOutputPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(tex));
                             if (mixFolderZone != null) mixFolderZone.SetPathWithoutNotify(mixOutputPath);
                         }
