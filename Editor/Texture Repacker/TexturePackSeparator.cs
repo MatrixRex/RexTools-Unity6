@@ -31,7 +31,7 @@ namespace RexTools.TextureRepacker.Editor
         };
 
         private string outputName = "PackedTexture";
-        private string outputPath = "";
+        private string outputPath = "Assets";
         private int currentTabIndex = 0;
 
         // Performance: pixel cache and debounce
@@ -44,7 +44,7 @@ namespace RexTools.TextureRepacker.Editor
         private bool[] unpackModes = { true, true, true, false }; // R, G, B, A
         private string[] unpackSuffixes = { "_R", "_G", "_B", "_A" };
         private string unpackOutputName = "UnpackedTexture";
-        private string unpackOutputPath = "";
+        private string unpackOutputPath = "Assets";
 
         // Mix settings
         public enum BlendMode { Multiply, Add, Screen, Overlay, Subtract, Divide, Darken, Lighten, SoftLight, HardLight }
@@ -55,7 +55,7 @@ namespace RexTools.TextureRepacker.Editor
         private BlendMode mixBlendMode = BlendMode.Multiply;
         private float mixOpacity = 1f;
         private string mixOutputName = "MixedTexture";
-        private string mixOutputPath = "";
+        private string mixOutputPath = "Assets";
 
         // UI
         private Image combinedPreview;
@@ -251,11 +251,13 @@ namespace RexTools.TextureRepacker.Editor
  
             var pathRow = new VisualElement();
             pathRow.AddToClassList("rex-row");
+            pathRow.style.alignItems = Align.FlexStart;
             
-            var pathLabel = new Label("Path:") { style = { width = 50, flexShrink = 0 } };
+            var pathLabel = new Label("Path:") { style = { width = 50, flexShrink = 0, marginTop = 3 } };
             pathRow.Add(pathLabel);
             
-            folderZone = new RexFolderSelector();
+            folderZone = new RexFolderSelector(required: true);
+            folderZone.SetPathWithoutNotify(outputPath);
             folderZone.style.flexGrow = 1;
             folderZone.OnValueChanged += p => outputPath = p;
             pathRow.Add(folderZone);
@@ -432,11 +434,13 @@ namespace RexTools.TextureRepacker.Editor
 
             var unpackPathRow = new VisualElement();
             unpackPathRow.AddToClassList("rex-row");
+            unpackPathRow.style.alignItems = Align.FlexStart;
             
-            var pathLabel = new Label("Path:") { style = { width = 50, flexShrink = 0 } };
+            var pathLabel = new Label("Path:") { style = { width = 50, flexShrink = 0, marginTop = 3 } };
             unpackPathRow.Add(pathLabel);
             
-            unpackFolderZone = new RexFolderSelector();
+            unpackFolderZone = new RexFolderSelector(required: true);
+            unpackFolderZone.SetPathWithoutNotify(unpackOutputPath);
             unpackFolderZone.style.flexGrow = 1;
             unpackFolderZone.OnValueChanged += p => unpackOutputPath = p;
             unpackPathRow.Add(unpackFolderZone);
@@ -606,7 +610,11 @@ namespace RexTools.TextureRepacker.Editor
 
         private void Pack()
         {
-            string finalPath = Path.Combine(outputPath ?? "", outputName + ".png").Replace('\\', '/');
+            if (string.IsNullOrEmpty(outputPath)) {
+                EditorUtility.DisplayDialog("Path Required", "Please select a valid output path.", "OK");
+                return;
+            }
+            string finalPath = Path.Combine(outputPath, outputName + ".png").Replace('\\', '/');
             if (File.Exists(finalPath)) {
                 if (!EditorUtility.DisplayDialog("File Exists", $"An asset already exists at {finalPath}. Do you want to overwrite it?", "Overwrite", "Cancel"))
                     return;
@@ -726,9 +734,11 @@ namespace RexTools.TextureRepacker.Editor
         {
             if (unpackSource == null) return;
             
-            string finalPath = string.IsNullOrEmpty(unpackOutputPath) 
-                ? Path.GetDirectoryName(AssetDatabase.GetAssetPath(unpackSource)) 
-                : unpackOutputPath;
+            if (string.IsNullOrEmpty(unpackOutputPath)) {
+                EditorUtility.DisplayDialog("Path Required", "Please select a valid output path.", "OK");
+                return;
+            }
+            string finalPath = unpackOutputPath;
             
             string name = unpackOutputName;
             
@@ -901,11 +911,13 @@ namespace RexTools.TextureRepacker.Editor
 
             var mixPathRow = new VisualElement();
             mixPathRow.AddToClassList("rex-row");
+            mixPathRow.style.alignItems = Align.FlexStart;
             
-            var pathLabel2 = new Label("Path:") { style = { width = 50, flexShrink = 0 } };
+            var pathLabel2 = new Label("Path:") { style = { width = 50, flexShrink = 0, marginTop = 3 } };
             mixPathRow.Add(pathLabel2);
             
-            mixFolderZone = new RexFolderSelector();
+            mixFolderZone = new RexFolderSelector(required: true);
+            mixFolderZone.SetPathWithoutNotify(mixOutputPath);
             mixFolderZone.style.flexGrow = 1;
             mixFolderZone.OnValueChanged += p => mixOutputPath = p;
             mixPathRow.Add(mixFolderZone);
@@ -1004,8 +1016,13 @@ namespace RexTools.TextureRepacker.Editor
                 return;
             }
 
+            if (string.IsNullOrEmpty(mixOutputPath)) {
+                EditorUtility.DisplayDialog("Path Required", "Please select a valid output path.", "OK");
+                return;
+            }
+
             string finalPath = Path.Combine(
-                string.IsNullOrEmpty(mixOutputPath) ? Path.GetDirectoryName(AssetDatabase.GetAssetPath(mixBase)) : mixOutputPath,
+                mixOutputPath,
                 (string.IsNullOrEmpty(mixOutputName) ? "MixedTexture" : mixOutputName) + ".png"
             ).Replace('\\', '/');
 
