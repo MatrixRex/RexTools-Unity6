@@ -239,27 +239,24 @@ namespace RexTools.TextureRepacker.Editor
             saveBox.Add(new Label("OUTPUT SETTINGS") { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 5, color = Color.gray } });
             
             var nameRow = new VisualElement();
-            nameRow.AddToClassList("rex-row-cols-2");
+            nameRow.AddToClassList("rex-row");
             
-            var nameLabel = new Label("Name:");
-            nameLabel.AddToClassList("rex-col-left");
+            var nameLabel = new Label("Name:") { style = { width = 50, flexShrink = 0 } };
             nameRow.Add(nameLabel);
             
             nameField = new TextField { value = outputName };
-            nameField.AddToClassList("rex-col-right");
             nameField.RegisterValueChangedCallback(e => outputName = e.newValue);
             nameRow.Add(nameField);
             saveBox.Add(nameRow);
  
             var pathRow = new VisualElement();
-            pathRow.AddToClassList("rex-row-cols-2");
+            pathRow.AddToClassList("rex-row");
             
-            var pathLabel = new Label("Path:");
-            pathLabel.AddToClassList("rex-col-left");
+            var pathLabel = new Label("Path:") { style = { width = 50, flexShrink = 0 } };
             pathRow.Add(pathLabel);
             
             folderZone = new RexFolderSelector();
-            folderZone.AddToClassList("rex-col-right");
+            folderZone.style.flexGrow = 1;
             folderZone.OnValueChanged += p => outputPath = p;
             pathRow.Add(folderZone);
             saveBox.Add(pathRow);
@@ -423,27 +420,24 @@ namespace RexTools.TextureRepacker.Editor
             outputBox.Add(new Label("OUTPUT SETTINGS") { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 5, color = Color.gray } });
 
             var nameRow = new VisualElement();
-            nameRow.AddToClassList("rex-row-cols-2");
+            nameRow.AddToClassList("rex-row");
             
-            var nameLabel = new Label("Name:");
-            nameLabel.AddToClassList("rex-col-left");
+            var nameLabel = new Label("Name:") { style = { width = 50, flexShrink = 0 } };
             nameRow.Add(nameLabel);
             
             unpackNameField = new TextField { value = unpackOutputName };
-            unpackNameField.AddToClassList("rex-col-right");
             unpackNameField.RegisterValueChangedCallback(e => unpackOutputName = e.newValue);
             nameRow.Add(unpackNameField);
             outputBox.Add(nameRow);
 
             var unpackPathRow = new VisualElement();
-            unpackPathRow.AddToClassList("rex-row-cols-2");
+            unpackPathRow.AddToClassList("rex-row");
             
-            var pathLabel = new Label("Path:");
-            pathLabel.AddToClassList("rex-col-left");
+            var pathLabel = new Label("Path:") { style = { width = 50, flexShrink = 0 } };
             unpackPathRow.Add(pathLabel);
             
             unpackFolderZone = new RexFolderSelector();
-            unpackFolderZone.AddToClassList("rex-col-right");
+            unpackFolderZone.style.flexGrow = 1;
             unpackFolderZone.OnValueChanged += p => unpackOutputPath = p;
             unpackPathRow.Add(unpackFolderZone);
             outputBox.Add(unpackPathRow);
@@ -895,27 +889,24 @@ namespace RexTools.TextureRepacker.Editor
             outBox.Add(new Label("OUTPUT SETTINGS") { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 5, color = Color.gray } });
 
             var nameRow2 = new VisualElement();
-            nameRow2.AddToClassList("rex-row-cols-2");
+            nameRow2.AddToClassList("rex-row");
             
-            var nameLabel2 = new Label("Name:");
-            nameLabel2.AddToClassList("rex-col-left");
+            var nameLabel2 = new Label("Name:") { style = { width = 50, flexShrink = 0 } };
             nameRow2.Add(nameLabel2);
             
             mixNameField = new TextField { value = mixOutputName };
-            mixNameField.AddToClassList("rex-col-right");
             mixNameField.RegisterValueChangedCallback(e => mixOutputName = e.newValue);
             nameRow2.Add(mixNameField);
             outBox.Add(nameRow2);
 
             var mixPathRow = new VisualElement();
-            mixPathRow.AddToClassList("rex-row-cols-2");
+            mixPathRow.AddToClassList("rex-row");
             
-            var pathLabel2 = new Label("Path:");
-            pathLabel2.AddToClassList("rex-col-left");
+            var pathLabel2 = new Label("Path:") { style = { width = 50, flexShrink = 0 } };
             mixPathRow.Add(pathLabel2);
             
             mixFolderZone = new RexFolderSelector();
-            mixFolderZone.AddToClassList("rex-col-right");
+            mixFolderZone.style.flexGrow = 1;
             mixFolderZone.OnValueChanged += p => mixOutputPath = p;
             mixPathRow.Add(mixFolderZone);
             outBox.Add(mixPathRow);
