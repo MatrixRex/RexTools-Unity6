@@ -28,6 +28,7 @@ namespace RexTools.UnusedAssetFinder.Editor
         private RexTabGroup tabGroup;
         private RexActionButton runButton;
         private RexActionButton deleteSelectedButton;
+        private RexActionButton createBackupButton;
 
         private Button selectAllBtn;
         private Button deselectAllBtn;
@@ -190,12 +191,26 @@ namespace RexTools.UnusedAssetFinder.Editor
 
             mainScroll.Add(resultsContainer);
 
-            // --- DELETE SELECTED BUTTON AT THE BOTTOM ---
+            // --- ACTION BUTTONS AT THE BOTTOM ---
+            var bottomActionRow = new VisualElement();
+            bottomActionRow.style.flexDirection = FlexDirection.Row;
+            bottomActionRow.style.marginTop = 10;
+            bottomActionRow.style.flexShrink = 0;
+
+            createBackupButton = new RexActionButton("CREATE BACKUP");
+            createBackupButton.style.flexGrow = 1;
+            createBackupButton.style.marginRight = 5;
+            createBackupButton.OnClick += CreateBackup;
+            createBackupButton.IsEnabled = false;
+            bottomActionRow.Add(createBackupButton);
+
             deleteSelectedButton = new RexActionButton("DELETE SELECTED", tint: new Color(0.7f, 0.2f, 0.2f));
-            deleteSelectedButton.style.marginTop = 10;
+            deleteSelectedButton.style.flexGrow = 1;
             deleteSelectedButton.OnClick += DeleteSelectedVisible;
             deleteSelectedButton.IsEnabled = false;
-            root.Add(deleteSelectedButton);
+            bottomActionRow.Add(deleteSelectedButton);
+
+            root.Add(bottomActionRow);
 
             SwitchTab(0);
             RefreshSubfolders();
@@ -336,7 +351,7 @@ namespace RexTools.UnusedAssetFinder.Editor
                 resultsScroll.Add(emptyLabel);
             }
             
-            UpdateDeleteButtonState();
+            UpdateActionButtonsState();
         }
 
         private VisualElement CreateResultItem(string path)
@@ -357,7 +372,7 @@ namespace RexTools.UnusedAssetFinder.Editor
                 } else {
                     selectedFiles.Remove(path);
                 }
-                UpdateDeleteButtonState();
+                UpdateActionButtonsState();
             });
             row.Add(toggle);
 
@@ -451,7 +466,29 @@ namespace RexTools.UnusedAssetFinder.Editor
             }
         }
 
-        private void UpdateDeleteButtonState()
+        private void CreateBackup()
+        {
+            string currentTabName = tabs[currentTabIndex];
+            if (categorizedUnusedFiles.TryGetValue(currentTabName, out var files)) {
+                var filesToBackup = files.Where(file => selectedFiles.Contains(file)).ToArray();
+                if (filesToBackup.Length == 0) return;
+
+                string projectPath = Path.GetDirectoryName(Application.dataPath);
+                string projectName = string.IsNullOrEmpty(projectPath) ? "UnityProject" : Path.GetFileName(projectPath);
+                string timestamp = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+                string defaultName = $"{projectName}_Backup_{timestamp}";
+                string savePath = EditorUtility.SaveFilePanel("Create Backup Package", "", defaultName, "unitypackage");
+
+                if (!string.IsNullOrEmpty(savePath)) {
+                    AssetDatabase.ExportPackage(filesToBackup, savePath, ExportPackageOptions.Default);
+                    Debug.Log($"[RexTools] Backup package created successfully at: {savePath}");
+                    EditorUtility.DisplayDialog("Backup Created", $"Backup package successfully created at:\n{savePath}", "OK");
+                }
+            }
+        }
+
+        private void UpdateActionButtonsState()
         {
             string currentTabName = tabs[currentTabIndex];
             bool hasSelected = false;
@@ -464,6 +501,7 @@ namespace RexTools.UnusedAssetFinder.Editor
                 }
             }
             deleteSelectedButton.IsEnabled = hasSelected;
+            if (createBackupButton != null) createBackupButton.IsEnabled = hasSelected;
         }
 
         private class FolderNode
