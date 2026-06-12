@@ -33,11 +33,20 @@ All UI tools and Editor extensions within RexTools should adhere to these visual
 - **Help Button (`.rex-help-btn`)**: Placed in the `.rex-header-row`, usually aligned to the right. Use the modifier `.rex-help-btn--active` when toggled on to highlight it.
 - **Help Box (`.rex-help-box`)**: A designated container for instructions. It should generally have `.rex-box` and start with `.rex-hidden`. Toggle `.rex-hidden` via script when the help button is pressed. Use `.rex-help-text-title` and `.rex-help-text-item` for text inside it.
 
-## General Layout Structure (Example)
+## Standard Window Layout Structure
+Whenever creating a new window or modifying an existing one, you MUST follow this standardized layout hierarchy to keep UI consistent and responsive on smaller windows:
+
+1. **Header (Fixed)**: Pinned at the top of the root. Contains the brand title and the help button.
+2. **Help Box (Fixed)**: Positioned directly under the header. Toggles visibility but stays fixed at the top layout.
+3. **ScrollView (Scrollable)**: A vertical scroll area that consumes all remaining vertical space (`flex-grow: 1; margin-top: 4px; margin-bottom: 4px;`).
+4. **Content Area (Scrollable)**: All setting panels, lists, foldouts, and input fields must be placed inside the ScrollView so they scroll when window height is constrained.
+5. **Primary Actions (Fixed, Optional)**: Large execution buttons (e.g. `RexActionButton`) should be placed at the bottom of the window root (outside the ScrollView) so they remain fixed and always accessible.
+
+### General Layout Structure (Example)
 ```xml
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
-    <ui:VisualElement class="rex-root-padding">
-        <!-- Header -->
+    <ui:VisualElement class="rex-root-padding" style="flex-grow: 1;">
+        <!-- 1. Header (Fixed) -->
         <ui:VisualElement class="rex-header-row">
             <ui:VisualElement class="rex-header-stack">
                 <ui:Label text="REXTOOLS" class="rex-brand-label" />
@@ -46,21 +55,24 @@ All UI tools and Editor extensions within RexTools should adhere to these visual
             <ui:Button name="help-btn" class="rex-help-btn" />
         </ui:VisualElement>
 
-        <!-- Help Box -->
+        <!-- 2. Help Box (Fixed) -->
         <ui:VisualElement name="help-box" class="rex-help-box rex-box rex-hidden">
             <ui:Label text="HOW TO USE:" class="rex-help-text-title" />
             <ui:Label text="• Follow these steps..." class="rex-help-text-item" />
         </ui:VisualElement>
 
-        <!-- Content Section -->
-        <ui:VisualElement class="rex-box">
-            <ui:Label text="SECTION TITLE" class="rex-section-label" />
-            <ui:VisualElement class="rex-row">
-                <!-- Controls go here -->
+        <!-- 3. ScrollView (Scrollable) -->
+        <ui:ScrollView mode="Vertical" style="flex-grow: 1; margin-top: 4px; margin-bottom: 4px;">
+            <!-- 4. Content Area (Scrollable) -->
+            <ui:VisualElement class="rex-box">
+                <ui:Label text="SECTION TITLE" class="rex-section-label" />
+                <ui:VisualElement class="rex-row">
+                    <!-- Controls go here -->
+                </ui:VisualElement>
             </ui:VisualElement>
-        </ui:VisualElement>
+        </ui:ScrollView>
 
-        <!-- Primary Action -->
+        <!-- 5. Primary Action (Fixed, Optional) -->
         <ui:Button text="EXECUTE" class="rex-action-button rex-action-button--pack" />
     </ui:VisualElement>
 </ui:UXML>

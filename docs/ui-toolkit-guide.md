@@ -359,5 +359,44 @@ var dangerBtn = new RexActionButton("DELETE ALL", tint: new Color(0.8f, 0.2f, 0.
 actionBtn.IsEnabled = false; // Automatically dims the button to 40% opacity and blocks clicks
 ```
 
+## 12. Standardized Window Layout Structure (ScrollView Wrapping)
+To prevent window contents from clipping or overflowing on smaller screens, always wrap the central content area in a `ScrollView` and keep headers and actions fixed.
+
+### Layout Guidelines
+1. **Header (Fixed)**: Placed directly on the window's root. It contains the branded title and help button.
+2. **Help Box (Fixed)**: Placed directly on the window's root below the header. It toggles visibility but does not scroll.
+3. **ScrollView (Scrollable)**: A vertical scroll area that handles all central content. It must fill the remaining vertical space using flex-grow.
+4. **Primary Actions (Fixed, Optional)**: Execution buttons (e.g., `RexActionButton`) are placed at the bottom of the root window, outside the ScrollView, so they remain fixed and always visible.
+
+### Implementation Pattern (C#)
+```csharp
+public void CreateGUI()
+{
+    VisualElement root = rootVisualElement;
+    root.AddToClassList("rex-root-padding");
+    // (Load stylesheet and build header/helpBox)
+
+    root.Add(header);
+    root.Add(helpBox);
+
+    // --- SCROLLABLE CONTENT AREA ---
+    var scrollView = new ScrollView(ScrollViewMode.Vertical);
+    scrollView.style.flexGrow = 1;
+    scrollView.style.marginTop = 4;
+    scrollView.style.marginBottom = 4;
+    root.Add(scrollView);
+
+    // --- CENTRAL CONTENT (Added to scrollView) ---
+    var contentBox = new VisualElement();
+    contentBox.AddToClassList("rex-box");
+    scrollView.Add(contentBox);
+
+    // --- MAIN ACTIONS (Fixed at bottom of root) ---
+    var actionBtn = new RexActionButton("EXECUTE");
+    root.Add(actionBtn);
+}
+```
+
+
 
 
