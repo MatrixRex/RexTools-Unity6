@@ -366,12 +366,18 @@ namespace RexTools.GitIntegration.Editor
                 string cleanPath = GetFilePathFromLine(line);
                 if (string.IsNullOrEmpty(cleanPath)) continue;
 
+                // Skip directories directly listed by git
+                if (cleanPath.EndsWith("/") || cleanPath.EndsWith("\\")) continue;
+
                 // Strip .meta if present
                 string baseCleanPath = cleanPath;
                 if (cleanPath.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
                 {
                     baseCleanPath = cleanPath.Substring(0, cleanPath.Length - 5);
                 }
+
+                // If the base clean path is a directory (e.g. folder .meta), skip it
+                if (IsDirectoryPath(baseCleanPath)) continue;
 
                 if (!cleanPathsSeen.Contains(baseCleanPath))
                 {
@@ -542,6 +548,38 @@ namespace RexTools.GitIntegration.Editor
             RebuildChangedFilesListUI();
         }
 
+        private bool IsDirectoryPath(string basePath)
+        {
+            string repoRoot = GitRunner.FindRepositoryRoot();
+            string fullPath = Path.Combine(repoRoot, basePath).Replace("\\", "/");
+            if (Directory.Exists(fullPath)) return true;
+
+            if (basePath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase) || 
+                basePath.StartsWith("Packages/", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrEmpty(Path.GetExtension(basePath)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private List<string> GetParentDirectories(string path)
+        {
+            var parents = new List<string>();
+            string dir = Path.GetDirectoryName(path);
+            while (!string.IsNullOrEmpty(dir))
+            {
+                dir = dir.Replace("\\", "/");
+                if (dir == "Assets" || dir == "Packages" || dir == "") break;
+                parents.Add(dir);
+                dir = Path.GetDirectoryName(dir);
+            }
+            return parents;
+        }
+
         private Texture GetAssetIcon(string cleanPath)
         {
             // 1. Explicitly check if it's a folder/directory first
@@ -694,6 +732,63 @@ namespace RexTools.GitIntegration.Editor
                 if (baseCleanPath == cleanPath)
                 {
                     rawLinesToDiscard.Add(rawLine);
+                }
+            }
+
+            // Check parent directories of this cleanPath to see if we should discard their .meta files
+            var parents = GetParentDirectories(cleanPath);
+            foreach (var parent in parents)
+            {
+                string parentMeta = parent + ".meta";
+                
+                // Check if this parent .meta is modified/untracked
+                bool isParentMetaChanged = false;
+                string parentMetaRawLine = null;
+                foreach (var rawLine in rawChangedFileLines)
+                {
+                    string rawCleanPath = GetFilePathFromLine(rawLine);
+                    if (rawCleanPath == parentMeta)
+                    {
+                        isParentMetaChanged = true;
+                        parentMetaRawLine = rawLine;
+                        break;
+                    }
+                }
+
+                if (isParentMetaChanged)
+                {
+                    // Check if there are any OTHER changed files under this parent folder
+                    // (excluding the current cleanPath we are discarding, and excluding the parent .meta files themselves)
+                    bool hasOtherChanges = false;
+                    foreach (var rawLine in rawChangedFileLines)
+                    {
+                        string rawCleanPath = GetFilePathFromLine(rawLine);
+                        
+                        // Skip the file we are currently discarding and its .meta
+                        string baseClean = rawCleanPath;
+                        if (rawCleanPath.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
+                        {
+                            baseClean = rawCleanPath.Substring(0, rawCleanPath.Length - 5);
+                        }
+                        if (baseClean == cleanPath) continue;
+
+                        // Skip parent directories and their .meta files
+                        if (baseClean == parent || baseClean.StartsWith(parent + "/", StringComparison.OrdinalIgnoreCase))
+                        {
+                            // If baseClean is a parent directory (no extension) or its .meta, skip it
+                            // otherwise it's a real file change under parent
+                            string ext = Path.GetExtension(baseClean);
+                            if (string.IsNullOrEmpty(ext)) continue;
+                            
+                            hasOtherChanges = true;
+                            break;
+                        }
+                    }
+
+                    if (!hasOtherChanges && parentMetaRawLine != null)
+                    {
+                        rawLinesToDiscard.Add(parentMetaRawLine);
+                    }
                 }
             }
 
@@ -969,6 +1064,27 @@ namespace RexTools.GitIntegration.Editor
                     pathsToStage.AddRange(GetPathsFromLine(rawLine));
                 }
             }
+
+            // Automatically find and stage parent folder .meta files if they are modified/untracked
+            var parentMetasToStage = new HashSet<string>();
+            foreach (var path in pathsToStage)
+            {
+                var parents = GetParentDirectories(path);
+                foreach (var parent in parents)
+                {
+                    string parentMeta = parent + ".meta";
+                    foreach (var rawLine in rawChangedFileLines)
+                    {
+                        string rawCleanPath = GetFilePathFromLine(rawLine);
+                        if (rawCleanPath == parentMeta)
+                        {
+                            parentMetasToStage.Add(parentMeta);
+                            break;
+                        }
+                    }
+                }
+            }
+            pathsToStage.AddRange(parentMetasToStage);
 
             string addArgs = "add -- " + string.Join(" ", pathsToStage.Select(p => $"\"{p}\""));
             Log($"> git {addArgs}");

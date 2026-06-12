@@ -166,7 +166,7 @@ namespace RexTools.GitIntegration.Editor
         {
             if (!HasGitRepository()) return 0;
             int count = 0;
-            await RunCommandAsync("status --porcelain", line =>
+            await RunCommandAsync("status --porcelain -u", line =>
             {
                 if (!string.IsNullOrWhiteSpace(line))
                 {
@@ -184,7 +184,7 @@ namespace RexTools.GitIntegration.Editor
             var list = new System.Collections.Generic.List<string>();
             if (!HasGitRepository()) return list;
 
-            await RunCommandAsync("status --porcelain", line =>
+            await RunCommandAsync("status --porcelain -u", line =>
             {
                 if (!string.IsNullOrWhiteSpace(line))
                 {
