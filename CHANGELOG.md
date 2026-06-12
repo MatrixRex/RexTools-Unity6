@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch Material Processor: A standalone tool for batch setting material shaders and auto-assigning texture maps from a selected directory using customizable suffix rules and dry-run preview.
 
 ### Changed
+- Git Integration: Hide `.meta` files from the changed files list UI while automatically staging, committing, and discarding them alongside their corresponding source assets.
 - Git Integration: Wrapped repository status and changed files foldout in a ScrollView while pinning the operations panel to the bottom of the window (fixed) to prevent UI overflow in smaller editor windows.
 - Texture Repacker: Replaced the standard Unity `Toggle` for channel inverting on the PACK tab with the custom toggle `RexButton` component matching the UNPACK tab.
 - Texture Repacker: Wrapped the PACK tab channel grid inside a new container titled `"PACK SETTINGS"` to match the container hierarchy and styling of the UNPACK tab.

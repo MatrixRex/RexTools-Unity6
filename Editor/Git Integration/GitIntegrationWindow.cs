@@ -38,6 +38,7 @@ namespace RexTools.GitIntegration.Editor
 
         private HashSet<string> deselectedFiles = new HashSet<string>();
         private List<string> currentChangedFileLines = new List<string>();
+        private List<string> rawChangedFileLines = new List<string>();
 
         [MenuItem("Tools/Rex Tools/Git Integration")]
         public static void ShowWindow()
@@ -324,9 +325,18 @@ namespace RexTools.GitIntegration.Editor
 
             string branch = await GitRunner.GetCurrentBranchAsync();
             var (ahead, behind) = await GitRunner.GetSyncCountsAsync();
-            int modifiedCount = await GitRunner.GetModifiedFilesCountAsync();
 
             branchStatusLabel.text = $"Branch: {branch}";
+            
+            // Rebuild the changed files list first to get correct count
+            if (changedFilesScroll != null)
+            {
+                rawChangedFileLines = await GitRunner.GetChangedFilesAsync();
+                currentChangedFileLines = FilterAndDeduplicateChangedFiles(rawChangedFileLines);
+                RebuildChangedFilesListUI();
+            }
+
+            int modifiedCount = currentChangedFileLines.Count;
             
             string syncText = "";
             if (ahead == 0 && behind == 0)
@@ -340,17 +350,48 @@ namespace RexTools.GitIntegration.Editor
                 syncText += " (Clean working directory)";
 
             syncStatusLabel.text = syncText;
-
-            // Rebuild the changed files list
-            if (changedFilesScroll != null)
-            {
-                var changedFiles = await GitRunner.GetChangedFilesAsync();
-                currentChangedFileLines = changedFiles;
-                RebuildChangedFilesListUI();
-            }
             
             // Sync status to playmode toolbar button
             GitToolbarExtender.ForceRefresh();
+        }
+
+        private List<string> FilterAndDeduplicateChangedFiles(List<string> rawLines)
+        {
+            var cleanPathsSeen = new HashSet<string>();
+            var filtered = new List<string>();
+
+            foreach (var line in rawLines)
+            {
+                if (line.Length < 3) continue;
+                string cleanPath = GetFilePathFromLine(line);
+                if (string.IsNullOrEmpty(cleanPath)) continue;
+
+                // Strip .meta if present
+                string baseCleanPath = cleanPath;
+                if (cleanPath.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
+                {
+                    baseCleanPath = cleanPath.Substring(0, cleanPath.Length - 5);
+                }
+
+                if (!cleanPathsSeen.Contains(baseCleanPath))
+                {
+                    cleanPathsSeen.Add(baseCleanPath);
+                    
+                    // If this was a .meta entry itself, format a new porcelain line
+                    // that points to the base asset but keeps the status prefix.
+                    if (cleanPath.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string prefix = line.Substring(0, 2);
+                        filtered.Add($"{prefix} {baseCleanPath}");
+                    }
+                    else
+                    {
+                        filtered.Add(line);
+                    }
+                }
+            }
+
+            return filtered;
         }
 
         private void RebuildChangedFilesListUI()
@@ -455,7 +496,7 @@ namespace RexTools.GitIntegration.Editor
                         if (EditorUtility.DisplayDialog("Discard Changes", $"Are you sure you want to discard changes for:\n{cleanPath}?\nThis action cannot be undone.", "Yes", "No"))
                         {
                             SetUIExecuting(true);
-                            await DiscardChangesAsync(fileLine);
+                            await DiscardChangesForCleanPathAsync(cleanPath);
                             SetUIExecuting(false);
                             await RefreshStatusAsync();
                         }
@@ -549,26 +590,45 @@ namespace RexTools.GitIntegration.Editor
             return paths;
         }
 
-        private async Task DiscardChangesAsync(string fileLine)
+        private async Task DiscardChangesForCleanPathAsync(string cleanPath)
         {
-            string prefix = fileLine.Substring(0, 2);
-            var paths = GetPathsFromLine(fileLine);
-            foreach (var path in paths)
+            var rawLinesToDiscard = new List<string>();
+            foreach (var rawLine in rawChangedFileLines)
             {
-                if (prefix.Contains("?"))
+                string rawCleanPath = GetFilePathFromLine(rawLine);
+                string baseCleanPath = rawCleanPath;
+                if (rawCleanPath.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
                 {
-                    DeleteFileOrDirectory(path);
+                    baseCleanPath = rawCleanPath.Substring(0, rawCleanPath.Length - 5);
                 }
-                else
+
+                if (baseCleanPath == cleanPath)
                 {
-                    // 1. Unstage the file
-                    await GitRunner.RunCommandAsync($"reset HEAD -- \"{path}\"", null, null);
-                    // 2. Try checkout from HEAD
-                    int exitCode = await GitRunner.RunCommandAsync($"checkout HEAD -- \"{path}\"", null, null);
-                    // 3. If it wasn't in HEAD (failed checkout), delete it
-                    if (exitCode != 0)
+                    rawLinesToDiscard.Add(rawLine);
+                }
+            }
+
+            foreach (var fileLine in rawLinesToDiscard)
+            {
+                string prefix = fileLine.Substring(0, 2);
+                var paths = GetPathsFromLine(fileLine);
+                foreach (var path in paths)
+                {
+                    if (prefix.Contains("?"))
                     {
                         DeleteFileOrDirectory(path);
+                    }
+                    else
+                    {
+                        // 1. Unstage the file
+                        await GitRunner.RunCommandAsync($"reset HEAD -- \"{path}\"", null, null);
+                        // 2. Try checkout from HEAD
+                        int exitCode = await GitRunner.RunCommandAsync($"checkout HEAD -- \"{path}\"", null, null);
+                        // 3. If it wasn't in HEAD (failed checkout), delete it
+                        if (exitCode != 0)
+                        {
+                            DeleteFileOrDirectory(path);
+                        }
                     }
                 }
             }
@@ -615,32 +675,32 @@ namespace RexTools.GitIntegration.Editor
 
         private async Task RunDiscardSelectedAsync()
         {
-            var selectedLines = new List<string>();
+            var selectedCleanPaths = new List<string>();
             foreach (var fileLine in currentChangedFileLines)
             {
                 string cleanPath = GetFilePathFromLine(fileLine);
                 if (!deselectedFiles.Contains(cleanPath))
                 {
-                    selectedLines.Add(fileLine);
+                    selectedCleanPaths.Add(cleanPath);
                 }
             }
 
-            if (selectedLines.Count == 0)
+            if (selectedCleanPaths.Count == 0)
             {
                 Log("No files selected to discard.");
                 return;
             }
 
-            string fileListStr = string.Join("\n", selectedLines.Select(line => GetFilePathFromLine(line)));
+            string fileListStr = string.Join("\n", selectedCleanPaths);
             if (EditorUtility.DisplayDialog("Discard Selected Changes", 
-                $"Are you sure you want to discard changes for the {selectedLines.Count} selected file(s)?\n\n{fileListStr}\n\nThis action cannot be undone.", 
+                $"Are you sure you want to discard changes for the {selectedCleanPaths.Count} selected file(s)?\n\n{fileListStr}\n\nThis action cannot be undone.", 
                 "Yes", "No"))
             {
                 SetUIExecuting(true);
                 Log("> Discarding selected files...");
-                foreach (var fileLine in selectedLines)
+                foreach (var cleanPath in selectedCleanPaths)
                 {
-                    await DiscardChangesAsync(fileLine);
+                    await DiscardChangesForCleanPathAsync(cleanPath);
                 }
                 Log("Discard completed.");
                 SetUIExecuting(false);
@@ -784,17 +844,17 @@ namespace RexTools.GitIntegration.Editor
                 return;
             }
 
-            var selectedLines = new List<string>();
+            var selectedCleanPaths = new HashSet<string>();
             foreach (var fileLine in currentChangedFileLines)
             {
                 string cleanPath = GetFilePathFromLine(fileLine);
                 if (!deselectedFiles.Contains(cleanPath))
                 {
-                    selectedLines.Add(fileLine);
+                    selectedCleanPaths.Add(cleanPath);
                 }
             }
 
-            if (selectedLines.Count == 0)
+            if (selectedCleanPaths.Count == 0)
             {
                 Log("Error: No files selected to commit.");
                 return;
@@ -806,9 +866,19 @@ namespace RexTools.GitIntegration.Editor
             await GitRunner.RunCommandAsync("reset", Log, LogError);
 
             var pathsToStage = new List<string>();
-            foreach (var line in selectedLines)
+            foreach (var rawLine in rawChangedFileLines)
             {
-                pathsToStage.AddRange(GetPathsFromLine(line));
+                string rawCleanPath = GetFilePathFromLine(rawLine);
+                string baseCleanPath = rawCleanPath;
+                if (rawCleanPath.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
+                {
+                    baseCleanPath = rawCleanPath.Substring(0, rawCleanPath.Length - 5);
+                }
+
+                if (selectedCleanPaths.Contains(baseCleanPath))
+                {
+                    pathsToStage.AddRange(GetPathsFromLine(rawLine));
+                }
             }
 
             string addArgs = "add -- " + string.Join(" ", pathsToStage.Select(p => $"\"{p}\""));
