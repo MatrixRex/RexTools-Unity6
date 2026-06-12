@@ -477,6 +477,7 @@ namespace RexTools.GitIntegration.Editor
                         var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(cleanPath);
                         if (asset != null)
                         {
+                            Selection.activeObject = asset;
                             EditorGUIUtility.PingObject(asset);
                         }
                     });
