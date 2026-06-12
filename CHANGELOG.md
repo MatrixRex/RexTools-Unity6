@@ -46,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch Material Processor: A standalone tool for batch setting material shaders and auto-assigning texture maps from a selected directory using customizable suffix rules and dry-run preview.
 
 ### Changed
+- Texture Repacker: Replaced the standard Unity `Toggle` for channel inverting on the PACK tab with the custom toggle `RexButton` component matching the UNPACK tab.
+- Texture Repacker: Wrapped the PACK tab channel grid inside a new container titled `"PACK SETTINGS"` to match the container hierarchy and styling of the UNPACK tab.
 - Core: Updated `RexTexturePreview` to feature a 1px border, 4px rounded corners, and render the drop component's background color when empty.
 - Texture Repacker: Added context-specific placeholder messages ("packed texture preview", "mixed texture preview", "channel preview") to empty preview components and dynamically hide their maximize buttons when no texture is bound.
 - Texture Repacker: Refactored the UI to reuse custom `RexSlider`, `RexButton` (for preview modes, channel swizzling, VAL toggles, and mix selectors), and `RexActionButton` components (featuring tab-specific background tints for PACK, UNPACK, and MIX operations), and cleaned up C# inline style properties to use standard USS layout classes.

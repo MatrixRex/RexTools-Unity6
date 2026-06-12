@@ -263,6 +263,10 @@ namespace RexTools.TextureRepacker.Editor
             packContainer.Add(saveBox);
 
             // --- CHANNEL SLOTS GRID ---
+            var channelsBox = new VisualElement { style = { flexShrink = 0 } };
+            channelsBox.AddToClassList("rex-box");
+            channelsBox.Add(new Label("PACK SETTINGS") { style = { unityFontStyleAndWeight = FontStyle.Bold, fontSize = 10, marginBottom = 5, color = Color.gray } });
+
             var grid = new VisualElement { style = { flexDirection = FlexDirection.Row, flexWrap = Wrap.Wrap, justifyContent = Justify.SpaceBetween, flexShrink = 0 } };
             grid.AddToClassList("rex-grid");
             string[] names = { "RED (R)", "GREEN (G)", "BLUE (B)", "ALPHA (A)" };
@@ -324,10 +328,23 @@ namespace RexTools.TextureRepacker.Editor
                 slotChannelButtons.Add(slotButtons);
                 textureContainer.Add(iconGrid);
 
-                var invertToggle = new Toggle("Invert") { value = packSlots[index].invert, style = { fontSize = 9, marginTop = 6, marginBottom = 2 } };
-                invertToggle.AddToClassList("rex-toggle-centered");
-                invertToggle.RegisterValueChangedCallback(e => { packSlots[index].invert = e.newValue; UpdatePreview(); });
-                textureContainer.Add(invertToggle);
+                // Row for Invert button
+                var invertRow = new VisualElement();
+                invertRow.AddToClassList("rex-row");
+                invertRow.style.justifyContent = Justify.Center;
+                invertRow.style.marginTop = 6;
+                invertRow.style.marginBottom = 2;
+
+                var invertBtn = new RexButton("Invert Channel", isToggle: true, defaultActive: packSlots[index].invert);
+                invertBtn.style.flexGrow = 1;
+                invertBtn.style.height = 18;
+                invertBtn.style.fontSize = 9;
+                invertBtn.OnToggleChanged += active => {
+                    packSlots[index].invert = active;
+                    UpdatePreview();
+                };
+                invertRow.Add(invertBtn);
+                textureContainer.Add(invertRow);
                 
                 slot.Add(textureContainer);
                 slotTextureContainers.Add(textureContainer);
@@ -370,7 +387,8 @@ namespace RexTools.TextureRepacker.Editor
 
                 grid.Add(slot);
             }
-            packContainer.Add(grid);
+            channelsBox.Add(grid);
+            packContainer.Add(channelsBox);
         }
 
         private void OnSlotTextureDropped(Texture2D tex)
