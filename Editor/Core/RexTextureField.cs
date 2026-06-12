@@ -16,6 +16,8 @@ namespace RexTools.Editor.Core
         private Image previewImage;
         private Label placeholderLabel;
         private string labelText;
+        private RexButton clearBtn;
+        private bool isColorMode = false;
 
         public Texture2D Value
         {
@@ -46,6 +48,27 @@ namespace RexTools.Editor.Core
             placeholderLabel.style.whiteSpace = WhiteSpace.Normal;
             Add(placeholderLabel);
 
+            // Load remove icon texture
+            string[] possibleIconPaths = {
+                "Packages/com.matrixrex.rextools/Editor/Icons/remove.png",
+                "Assets/Editor/Icons/remove.png"
+            };
+            Texture2D removeIcon = null;
+            foreach (var path in possibleIconPaths) {
+                removeIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                if (removeIcon != null) break;
+            }
+
+            // Create clear button using our custom button component
+            clearBtn = new RexButton(label: null, icon: removeIcon);
+            clearBtn.AddToClassList("rex-field-clear-btn");
+            clearBtn.tooltip = "Clear texture";
+            clearBtn.OnClick += () => SetTexture(null, true);
+            
+            // Stop MouseDownEvent propagation to prevent opening Unity Object Picker
+            clearBtn.RegisterCallback<MouseDownEvent>(e => e.StopPropagation());
+            Add(clearBtn);
+
             RegisterCallback<DragUpdatedEvent>(e => {
                 DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
                 AddToClassList("rex-drag-drop-field--active");
@@ -65,27 +88,33 @@ namespace RexTools.Editor.Core
                 if (Event.current != null && Event.current.type == EventType.ExecuteCommand && Event.current.commandName == "ObjectSelectorUpdated") {
                     if (EditorGUIUtility.GetObjectPickerControlID() == GetHashCode())
                         SetTexture(EditorGUIUtility.GetObjectPickerObject() as Texture2D, true);
-                }
-            }).Every(50);
+                  }
+              }).Every(50);
+
+            UpdateClearButtonVisibility();
         }
 
         public void SetColor(Color col)
         {
+            isColorMode = true;
             previewImage.image = null;
             previewImage.style.backgroundColor = col;
             previewImage.style.display = DisplayStyle.Flex;
             placeholderLabel.text = $"Value: {col.r:F2}";
             placeholderLabel.style.color = Color.white;
+            UpdateClearButtonVisibility();
         }
 
         public void ClearColor()
         {
+            isColorMode = false;
             previewImage.style.backgroundColor = Color.clear;
             SetTexture(currentTexture, false);
         }
 
         private void SetTexture(Texture2D tex, bool notify = true)
         {
+            isColorMode = false;
             currentTexture = tex;
             previewImage.style.backgroundColor = Color.clear;
             if (tex != null) {
@@ -99,7 +128,13 @@ namespace RexTools.Editor.Core
                 placeholderLabel.text = labelText;
                 placeholderLabel.style.color = new Color(0.5f, 0.5f, 0.5f);
             }
+            UpdateClearButtonVisibility();
             if (notify) OnTextureChanged?.Invoke(tex);
+        }
+
+        private void UpdateClearButtonVisibility()
+        {
+            clearBtn.style.display = (currentTexture != null && !isColorMode) ? DisplayStyle.Flex : DisplayStyle.None;
         }
     }
 }

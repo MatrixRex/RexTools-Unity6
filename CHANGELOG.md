@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unused Assets Finder: Replaced obsolete `FindObjectsOfType` calls with `FindObjectsByType`.
 
 ### Added
+- Core: Added a "clear" button component to `RexTextureField` slots that appears when a texture is bound, enabling fast clearing with mouse propagation prevention to avoid opening Unity's object selector.
 - Core: `RexTexturePreview` — reusable styled texture preview component featuring an image container and a maximize button to view the texture full-size.
 - Texture Repacker: Unified all preview areas (combined preview in PACK, mixed preview in MIX, and channel extraction previews in UNPACK) to use the new `RexTexturePreview` component.
 - Texture Repacker: Refactored the UNPACK channel layout to use a 2x2 grid of slot boxes matching the PACK tab, rendering real-time greyscale channel previews with custom suffix inputs, invert toggle buttons, maximize buttons, header checkboxes, and card opacity fading when disabled.

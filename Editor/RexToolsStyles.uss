@@ -84,6 +84,7 @@
     border-width: 1px;
     border-color: #1a1a1a;
     border-radius: 4px;
+    position: relative; /* Add this to support absolute positioning of children */
 }
 
 .rex-drag-drop-field--active {
@@ -851,4 +852,30 @@
     white-space: normal;
     padding: 8px;
     pointer-events: none;
+}
+
+/* RexTextureField Clear Button Styles */
+.rex-field-clear-btn {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    width: 20px;
+    height: 20px;
+    border-width: 0;
+    padding: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 3px;
+}
+
+.rex-field-clear-btn:hover {
+    background-color: #B33333;
+}
+
+.rex-field-clear-btn .rex-button__icon {
+    width: 10px;
+    height: 10px;
+}
+
+.rex-field-clear-btn:hover .rex-button__icon {
+    tint-color: white;
 }
