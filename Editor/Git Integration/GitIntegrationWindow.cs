@@ -460,6 +460,18 @@ namespace RexTools.GitIntegration.Editor
 
                     row.Add(prefixLabel);
 
+                    // Asset Icon
+                    Texture iconTexture = GetAssetIcon(cleanPath);
+                    if (iconTexture != null)
+                    {
+                        var assetIcon = new Image();
+                        assetIcon.image = iconTexture;
+                        assetIcon.style.width = 16;
+                        assetIcon.style.height = 16;
+                        assetIcon.style.marginRight = 4;
+                        row.Add(assetIcon);
+                    }
+
                     // File path label
                     var pathLabel = new Label(path);
                     pathLabel.AddToClassList("rex-result-name-btn");
@@ -528,6 +540,82 @@ namespace RexTools.GitIntegration.Editor
                 }
             }
             RebuildChangedFilesListUI();
+        }
+
+        private Texture GetAssetIcon(string cleanPath)
+        {
+            // 1. Explicitly check if it's a folder/directory first
+            string repoRoot = GitRunner.FindRepositoryRoot();
+            string fullPath = Path.Combine(repoRoot, cleanPath).Replace("\\", "/");
+            if (Directory.Exists(fullPath) || string.IsNullOrEmpty(Path.GetExtension(cleanPath)))
+            {
+                return EditorGUIUtility.IconContent("Folder Icon")?.image;
+            }
+
+            // 2. Try to get the main asset type if the file exists on disk
+            Type assetType = AssetDatabase.GetMainAssetTypeAtPath(cleanPath);
+            if (assetType != null)
+            {
+                var content = EditorGUIUtility.ObjectContent(null, assetType);
+                if (content != null && content.image != null)
+                {
+                    return content.image;
+                }
+            }
+
+            // 3. Fallback based on extension (for deleted files or files not imported yet)
+            string ext = Path.GetExtension(cleanPath).ToLowerInvariant();
+            switch (ext)
+            {
+                case ".cs":
+                    return EditorGUIUtility.ObjectContent(null, typeof(MonoScript))?.image;
+                case ".prefab":
+                    return EditorGUIUtility.IconContent("Prefab Icon")?.image ?? EditorGUIUtility.ObjectContent(null, typeof(GameObject))?.image;
+                case ".unity":
+                    return EditorGUIUtility.IconContent("SceneAsset Icon")?.image ?? EditorGUIUtility.ObjectContent(null, typeof(SceneAsset))?.image;
+                case ".mat":
+                    return EditorGUIUtility.ObjectContent(null, typeof(Material))?.image;
+                case ".png":
+                case ".jpg":
+                case ".jpeg":
+                case ".tga":
+                case ".psd":
+                case ".tif":
+                case ".tiff":
+                case ".bmp":
+                case ".exr":
+                    return EditorGUIUtility.ObjectContent(null, typeof(Texture2D))?.image;
+                case ".mp3":
+                case ".wav":
+                case ".ogg":
+                case ".aif":
+                case ".aiff":
+                    return EditorGUIUtility.ObjectContent(null, typeof(AudioClip))?.image;
+                case ".txt":
+                case ".json":
+                case ".xml":
+                case ".csv":
+                case ".yaml":
+                case ".md":
+                case ".uss":
+                case ".uxml":
+                    return EditorGUIUtility.ObjectContent(null, typeof(TextAsset))?.image;
+                case ".shader":
+                case ".shaderview":
+                case ".shadergraph":
+                case ".subgraph":
+                    return EditorGUIUtility.IconContent("Shader Icon")?.image ?? EditorGUIUtility.ObjectContent(null, typeof(Shader))?.image;
+                case ".anim":
+                    return EditorGUIUtility.ObjectContent(null, typeof(AnimationClip))?.image;
+                case ".controller":
+                    return EditorGUIUtility.ObjectContent(null, typeof(RuntimeAnimatorController))?.image;
+                case ".fbx":
+                case ".obj":
+                case ".blend":
+                    return EditorGUIUtility.ObjectContent(null, typeof(Mesh))?.image;
+                default:
+                    return EditorGUIUtility.IconContent("DefaultAsset Icon")?.image;
+            }
         }
 
         private string UnquotePath(string p)
