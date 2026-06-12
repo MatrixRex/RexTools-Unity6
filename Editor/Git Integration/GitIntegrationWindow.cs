@@ -95,19 +95,14 @@ namespace RexTools.GitIntegration.Editor
             root.Add(header);
             root.Add(helpBox);
 
-            // --- SCROLLABLE CONTENT AREA ---
-            var scrollView = new ScrollView(ScrollViewMode.Vertical);
-            scrollView.style.flexGrow = 1;
-            scrollView.style.marginTop = 4;
-            scrollView.style.marginBottom = 4;
-            root.Add(scrollView);
-
             // --- CONTAINER SWITCHERS ---
             mainContentContainer = new VisualElement();
+            mainContentContainer.style.flexGrow = 1;
             noRepoContainer = new VisualElement();
+            noRepoContainer.style.flexGrow = 1;
 
-            scrollView.Add(mainContentContainer);
-            scrollView.Add(noRepoContainer);
+            root.Add(mainContentContainer);
+            root.Add(noRepoContainer);
 
             BuildMainLayout();
             BuildNoRepoLayout();
@@ -118,18 +113,24 @@ namespace RexTools.GitIntegration.Editor
 
         private void BuildNoRepoLayout()
         {
-            noRepoContainer.AddToClassList("rex-box");
-            noRepoContainer.style.alignItems = Align.Center;
-            noRepoContainer.style.paddingTop = 20;
-            noRepoContainer.style.paddingBottom = 20;
-            noRepoContainer.style.paddingLeft = 20;
-            noRepoContainer.style.paddingRight = 20;
+            var noRepoScroll = new ScrollView(ScrollViewMode.Vertical);
+            noRepoScroll.style.flexGrow = 1;
+            noRepoContainer.Add(noRepoScroll);
+
+            var box = new VisualElement();
+            box.AddToClassList("rex-box");
+            box.style.alignItems = Align.Center;
+            box.style.paddingTop = 20;
+            box.style.paddingBottom = 20;
+            box.style.paddingLeft = 20;
+            box.style.paddingRight = 20;
+            noRepoScroll.Add(box);
 
             var warningLabel = new Label("No Git repository found in the project root or parent directories.");
             warningLabel.style.whiteSpace = WhiteSpace.Normal;
             warningLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
             warningLabel.style.marginBottom = 15;
-            noRepoContainer.Add(warningLabel);
+            box.Add(warningLabel);
 
             var detectBtn = new Button { text = "Scan for Repository" };
             detectBtn.AddToClassList("rex-action-button");
@@ -137,14 +138,23 @@ namespace RexTools.GitIntegration.Editor
             detectBtn.style.width = 200;
             detectBtn.style.height = 30;
             detectBtn.clicked += RefreshLayout;
-            noRepoContainer.Add(detectBtn);
+            box.Add(detectBtn);
         }
 
         private void BuildMainLayout()
         {
+            // --- SCROLLABLE CONTENT AREA ---
+            var mainScrollView = new ScrollView(ScrollViewMode.Vertical);
+            mainScrollView.style.flexGrow = 1;
+            mainScrollView.style.marginTop = 4;
+            mainScrollView.style.marginBottom = 4;
+            mainScrollView.contentContainer.style.flexGrow = 1; // Allow children to expand
+            mainContentContainer.Add(mainScrollView);
+
             // --- REPOSITORY INFO ---
             var infoBox = new VisualElement();
             infoBox.AddToClassList("rex-box");
+            infoBox.style.flexShrink = 0; // Prevent status area from shrinking
 
             var infoLabel = new Label("REPOSITORY STATUS");
             infoLabel.AddToClassList("rex-section-label");
@@ -164,11 +174,15 @@ namespace RexTools.GitIntegration.Editor
             syncStatusLabel.style.fontSize = 11;
             infoBox.Add(syncStatusLabel);
 
-            mainContentContainer.Add(infoBox);
+            mainScrollView.Add(infoBox);
 
             // --- CHANGED FILES LIST (RexFoldout + RexList) ---
             changedFilesFoldout = new RexFoldout("Changed Files", count: 0, defaultExpanded: true);
             changedFilesFoldout.style.marginTop = 6;
+            changedFilesFoldout.style.flexGrow = 1;
+            changedFilesFoldout.style.flexShrink = 0;
+            changedFilesFoldout.contentContainer.style.flexGrow = 1;
+            changedFilesFoldout.contentContainer.style.flexShrink = 0;
 
             var listHeader = new VisualElement();
             listHeader.style.flexDirection = FlexDirection.Row;
@@ -211,16 +225,20 @@ namespace RexTools.GitIntegration.Editor
             listHeader.Add(buttonContainer);
             changedFilesFoldout.Add(listHeader);
 
-            changedFilesScroll = new ScrollView(ScrollViewMode.Vertical);
+            changedFilesScroll = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
             changedFilesScroll.AddToClassList("rex-result-list");
-            changedFilesScroll.style.height = 120;
+            changedFilesScroll.style.flexGrow = 1;
+            changedFilesScroll.style.flexShrink = 0;
+            changedFilesScroll.style.minHeight = 120; // Default minimum height for the list
             
             changedFilesFoldout.Add(changedFilesScroll);
-            mainContentContainer.Add(changedFilesFoldout);
+            mainScrollView.Add(changedFilesFoldout);
 
             // --- OPERATIONS PANEL ---
             var opsBox = new VisualElement();
             opsBox.AddToClassList("rex-box");
+            opsBox.style.flexShrink = 0; // Prevent operations area from shrinking
+            opsBox.style.minHeight = 180; // Set minimum height to prevent squashing
 
             var opsLabel = new Label("OPERATIONS");
             opsLabel.AddToClassList("rex-section-label");
