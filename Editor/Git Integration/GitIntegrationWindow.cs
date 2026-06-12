@@ -95,12 +95,19 @@ namespace RexTools.GitIntegration.Editor
             root.Add(header);
             root.Add(helpBox);
 
+            // --- SCROLLABLE CONTENT AREA ---
+            var scrollView = new ScrollView(ScrollViewMode.Vertical);
+            scrollView.style.flexGrow = 1;
+            scrollView.style.marginTop = 4;
+            scrollView.style.marginBottom = 4;
+            root.Add(scrollView);
+
             // --- CONTAINER SWITCHERS ---
             mainContentContainer = new VisualElement();
             noRepoContainer = new VisualElement();
 
-            root.Add(mainContentContainer);
-            root.Add(noRepoContainer);
+            scrollView.Add(mainContentContainer);
+            scrollView.Add(noRepoContainer);
 
             BuildMainLayout();
             BuildNoRepoLayout();
