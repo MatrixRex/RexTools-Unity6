@@ -226,7 +226,7 @@ namespace RexTools.GitIntegration.Editor
             listHeader.Add(buttonContainer);
             changedFilesFoldout.Add(listHeader);
 
-            changedFilesScroll = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
+            changedFilesScroll = new ScrollView(ScrollViewMode.Vertical);
             changedFilesScroll.AddToClassList("rex-result-list");
             changedFilesScroll.style.flexGrow = 1;
             changedFilesScroll.style.flexShrink = 0;
@@ -482,6 +482,9 @@ namespace RexTools.GitIntegration.Editor
                     var pathLabel = new Label(path);
                     pathLabel.AddToClassList("rex-result-name-btn");
                     pathLabel.style.flexGrow = 1;
+                    pathLabel.style.flexShrink = 1;
+                    pathLabel.style.overflow = Overflow.Hidden;
+                    pathLabel.style.textOverflow = TextOverflow.Ellipsis;
                     pathLabel.style.fontSize = 10;
                     pathLabel.style.color = new Color(0.85f, 0.85f, 0.85f);
                     pathLabel.style.paddingLeft = 4;
@@ -500,27 +503,6 @@ namespace RexTools.GitIntegration.Editor
                         }
                     });
                     row.Add(pathLabel);
-
-                    // Discard button for this item
-                    var itemDiscardBtn = new Button();
-                    itemDiscardBtn.AddToClassList("rex-result-delete-btn");
-                    itemDiscardBtn.tooltip = "Discard changes for this file";
-                    
-                    var discardIcon = new VisualElement();
-                    discardIcon.AddToClassList("rex-result-delete-icon");
-                    itemDiscardBtn.Add(discardIcon);
-
-                    itemDiscardBtn.clicked += async () =>
-                    {
-                        if (EditorUtility.DisplayDialog("Discard Changes", $"Are you sure you want to discard changes for:\n{cleanPath}?\nThis action cannot be undone.", "Yes", "No"))
-                        {
-                            SetUIExecuting(true);
-                            await DiscardChangesForCleanPathAsync(cleanPath);
-                            SetUIExecuting(false);
-                            await RefreshStatusAsync();
-                        }
-                    };
-                    row.Add(itemDiscardBtn);
 
                     changedFilesScroll.Add(row);
                 }

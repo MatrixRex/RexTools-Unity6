@@ -46,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch Material Processor: A standalone tool for batch setting material shaders and auto-assigning texture maps from a selected directory using customizable suffix rules and dry-run preview.
 
 ### Changed
+- Git Integration: Removed horizontal scrollability on the changed files ScrollView to prevent hijacking mouse vertical scrolling, and added ellipsis truncation (`...`) to file path labels.
+- Git Integration: Removed the individual row discard (delete) buttons in the changed files list, relying instead on the global "DISCARD SELECTED" button.
 - Git Integration: Skip folder entries and list all changed files recursively (using `--untracked-files=all` status mode) while automatically staging, committing, and discarding parent folder `.meta` files to match standard Git client behavior.
 - Git Integration: Display generic asset type icons (script, prefab, folder, material, etc.) next to the changed file status prefixes.
 - Git Integration: Select the clicked asset in the Project window (in addition to highlighting/pinging it) when clicking a path in the changed files list.
