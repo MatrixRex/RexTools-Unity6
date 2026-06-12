@@ -13,25 +13,36 @@ namespace RexTools.Editor.Core
     {
         private Image previewImage;
         private Button maxBtn;
+        private Label placeholderLabel;
 
         public Texture image
         {
             get => previewImage.image;
-            set => previewImage.image = value;
+            set
+            {
+                previewImage.image = value;
+                UpdateVisibility();
+            }
         }
 
         public Action OnMaximizeClicked;
 
-        public RexTexturePreview(float size = 160, string tooltip = "Show full-size preview")
+        public RexTexturePreview(float size = 160, string tooltip = "Show full-size preview", string placeholderText = "No Preview")
         {
+            AddToClassList("rex-texture-preview");
             style.width = size;
             style.height = size;
             style.position = Position.Relative;
             style.flexShrink = 0;
 
-            previewImage = new Image { style = { width = Length.Percent(100), height = Length.Percent(100), backgroundColor = Color.black } };
+            previewImage = new Image();
+            previewImage.AddToClassList("rex-texture-preview__image");
             previewImage.scaleMode = ScaleMode.ScaleToFit;
             Add(previewImage);
+
+            placeholderLabel = new Label(placeholderText);
+            placeholderLabel.AddToClassList("rex-texture-preview__placeholder");
+            Add(placeholderLabel);
 
             maxBtn = new Button();
             maxBtn.AddToClassList("rex-maximize-btn");
@@ -45,6 +56,15 @@ namespace RexTools.Editor.Core
             maxBtn.Add(maxIcon);
 
             Add(maxBtn);
+
+            UpdateVisibility();
+        }
+
+        private void UpdateVisibility()
+        {
+            bool hasImage = previewImage.image != null;
+            placeholderLabel.style.display = hasImage ? DisplayStyle.None : DisplayStyle.Flex;
+            maxBtn.style.display = hasImage ? DisplayStyle.Flex : DisplayStyle.None;
         }
     }
 }

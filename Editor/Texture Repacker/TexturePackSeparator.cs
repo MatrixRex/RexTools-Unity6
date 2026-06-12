@@ -208,7 +208,7 @@ namespace RexTools.TextureRepacker.Editor
             // --- TOP PREVIEW SECTION ---
             var previewSection = new VisualElement { style = { marginBottom = 15, flexDirection = FlexDirection.Row, justifyContent = Justify.Center, alignItems = Align.Center, flexShrink = 0, height = 180 } };
             
-            combinedPreview = new RexTexturePreview(160, "Show full-size preview");
+            combinedPreview = new RexTexturePreview(160, "Show full-size preview", "packed texture preview");
             combinedPreview.style.marginRight = 10;
             combinedPreview.OnMaximizeClicked += () => LivePreviewWindow.ShowWindow(this, 0, "Pack Preview");
             previewSection.Add(combinedPreview);
@@ -482,7 +482,7 @@ namespace RexTools.TextureRepacker.Editor
                 slot.Add(headerRow);
 
                 // Preview Box (RexTexturePreview)
-                var preview = new RexTexturePreview(90, $"Show full-size {names[idx]} preview");
+                var preview = new RexTexturePreview(90, $"Show full-size {names[idx]} preview", "channel preview");
                 preview.style.alignSelf = Align.Center;
                 preview.style.marginTop = 4;
                 preview.style.marginBottom = 6;
@@ -590,6 +590,12 @@ namespace RexTools.TextureRepacker.Editor
         {
             if (!_previewDirty) return;
             _previewDirty = false;
+
+            bool hasAnyInput = packSlots.Any(s => s.useCustom || s.texture != null);
+            if (!hasAnyInput) {
+                combinedPreview.image = null;
+                return;
+            }
 
             const int size = 128;
             int totalPixels = size * size;
@@ -915,7 +921,7 @@ namespace RexTools.TextureRepacker.Editor
             // ── Preview ──
             var previewSection = new VisualElement { style = { marginBottom = 15, flexDirection = FlexDirection.Row, justifyContent = Justify.Center, alignItems = Align.Center, flexShrink = 0, height = 180 } };
             
-            mixPreviewImage = new RexTexturePreview(160, "Show full-size preview");
+            mixPreviewImage = new RexTexturePreview(160, "Show full-size preview", "mixed texture preview");
             mixPreviewImage.OnMaximizeClicked += () => LivePreviewWindow.ShowWindow(this, 2, "Mix Preview");
             previewSection.Add(mixPreviewImage);
             mixContainer.Add(previewSection);
@@ -1059,6 +1065,11 @@ namespace RexTools.TextureRepacker.Editor
         {
             if (!_mixPreviewDirty || mixPreviewImage == null) return;
             _mixPreviewDirty = false;
+
+            if (mixBase == null) {
+                mixPreviewImage.image = null;
+                return;
+            }
 
             const int size = 128;
             int total = size * size;
