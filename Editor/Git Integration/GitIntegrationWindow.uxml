@@ -1,0 +1,42 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi:noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <!-- No Git Repository View -->
+    <ui:VisualElement name="no-repo-container" style="flex-grow: 1;">
+        <ui:ScrollView>
+            <ui:VisualElement class="rex-box git-no-repo-box">
+                <ui:Label text="No Git repository found in the project root or parent directories." class="git-no-repo-warning" />
+                <ui:Button name="scan-btn" text="Scan for Repository" class="rex-action-button rex-action-button--pack git-scan-btn" />
+            </ui:VisualElement>
+        </ui:ScrollView>
+    </ui:VisualElement>
+
+    <!-- Main Git Repository View -->
+    <ui:VisualElement name="main-content-container" style="flex-grow: 1;">
+        <ui:ScrollView name="main-scroll-view" class="git-main-scroll">
+            <!-- Repository Status Box -->
+            <ui:VisualElement class="rex-box" style="flex-shrink: 0;">
+                <ui:Label text="REPOSITORY STATUS" class="rex-section-label" />
+                <ui:Label name="repo-path-label" text="Path: --" class="git-repo-path" />
+                <ui:Label name="branch-status-label" text="Branch: --" class="git-branch-status" />
+                <ui:Label name="sync-status-label" text="Sync: --" class="git-sync-status" />
+            </ui:VisualElement>
+
+            <!-- Foldout Zone placeholder for RexFoldout in C# -->
+            <ui:VisualElement name="changed-files-foldout-container" class="git-foldout-container" />
+        </ui:ScrollView>
+
+        <!-- Operations Box (pinned to bottom) -->
+        <ui:VisualElement class="rex-box git-ops-box">
+            <ui:Label text="OPERATIONS" class="rex-section-label" />
+            <ui:VisualElement class="rex-row">
+                <ui:Button name="fetch-btn" text="Fetch" style="flex-grow: 1;" />
+                <ui:Button name="pull-btn" text="Pull" style="flex-grow: 1;" />
+                <ui:Button name="push-btn" text="Push" style="flex-grow: 1;" />
+            </ui:VisualElement>
+            <ui:TextField name="commit-msg-field" label="Commit Message" multiline="true" class="git-commit-msg-field" />
+            <ui:VisualElement class="rex-row git-commit-action-row">
+                <ui:Button name="commit-btn" text="COMMIT SELECTED" class="rex-action-button rex-action-button--pack git-action-btn" />
+                <ui:Button name="discard-btn" text="DISCARD SELECTED" class="rex-action-button rex-action-button--pack git-action-btn git-discard-btn" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

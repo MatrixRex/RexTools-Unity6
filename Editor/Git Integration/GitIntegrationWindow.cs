@@ -63,18 +63,31 @@ namespace RexTools.GitIntegration.Editor
             VisualElement root = rootVisualElement;
             root.AddToClassList("rex-root-padding");
 
-            // Load Global Styles
-            string[] possiblePaths = {
-                "Packages/com.matrixrex.rextools/Editor/RexToolsStyles.uss",
-                "Assets/Editor/RexToolsStyles.uss"
+            // Load stylesheets
+            LoadStyleSheet(root, "Packages/com.matrixrex.rextools/Editor/RexToolsStyles.uss", "Assets/Editor/RexToolsStyles.uss");
+            LoadStyleSheet(root, "Packages/com.matrixrex.rextools/Editor/Git Integration/GitIntegrationStyles.uss", "Assets/Editor/Git Integration/GitIntegrationStyles.uss");
+
+            // Load UXML
+            VisualTreeAsset uxml = null;
+            string[] possibleUxmlPaths = {
+                "Packages/com.matrixrex.rextools/Editor/Git Integration/GitIntegrationWindow.uxml",
+                "Assets/Editor/Git Integration/GitIntegrationWindow.uxml"
             };
-            StyleSheet styleSheet = null;
-            foreach (var path in possiblePaths)
+            foreach (var path in possibleUxmlPaths)
             {
-                styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(path);
-                if (styleSheet != null) break;
+                uxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(path);
+                if (uxml != null) break;
             }
-            if (styleSheet != null) root.styleSheets.Add(styleSheet);
+
+            if (uxml != null)
+            {
+                uxml.CloneTree(root);
+            }
+            else
+            {
+                Debug.LogError("GitIntegrationWindow: Failed to load UXML layout.");
+                return;
+            }
 
             // --- BRANDED HEADER & HELP BOX ---
             var helpBox = new RexHelpBox(
@@ -93,212 +106,88 @@ namespace RexTools.GitIntegration.Editor
                 header.SetHelpButtonActive(showHelp);
             };
 
-            root.Add(header);
-            root.Add(helpBox);
+            root.Insert(0, header);
+            root.Insert(1, helpBox);
 
-            // --- CONTAINER SWITCHERS ---
-            mainContentContainer = new VisualElement();
-            mainContentContainer.style.flexGrow = 1;
-            noRepoContainer = new VisualElement();
-            noRepoContainer.style.flexGrow = 1;
+            // Query elements
+            mainContentContainer = root.Q<VisualElement>("main-content-container");
+            noRepoContainer = root.Q<VisualElement>("no-repo-container");
+            repoPathLabel = root.Q<Label>("repo-path-label");
+            branchStatusLabel = root.Q<Label>("branch-status-label");
+            syncStatusLabel = root.Q<Label>("sync-status-label");
 
-            root.Add(mainContentContainer);
-            root.Add(noRepoContainer);
+            fetchBtn = root.Q<Button>("fetch-btn");
+            pullBtn = root.Q<Button>("pull-btn");
+            pushBtn = root.Q<Button>("push-btn");
+            commitBtn = root.Q<Button>("commit-btn");
+            discardBtn = root.Q<Button>("discard-btn");
+            commitMsgField = root.Q<TextField>("commit-msg-field");
 
-            BuildMainLayout();
-            BuildNoRepoLayout();
+            // Bind button callbacks
+            var scanBtn = root.Q<Button>("scan-btn");
+            if (scanBtn != null) scanBtn.clicked += RefreshLayout;
 
-            // Initial check
+            fetchBtn.clicked += async () => await RunFetchAsync(false);
+            pullBtn.clicked += async () => await RunPullAsync();
+            pushBtn.clicked += async () => await RunPushAsync();
+            commitBtn.clicked += async () => await RunCommitAsync();
+            discardBtn.clicked += async () => await RunDiscardSelectedAsync();
+
+            // Dynamically build foldout list inside the foldout placeholder
+            var foldoutContainer = root.Q<VisualElement>("changed-files-foldout-container");
+            if (foldoutContainer != null)
+            {
+                changedFilesFoldout = new RexFoldout("Changed Files", count: 0, defaultExpanded: true);
+                
+                var listHeader = new VisualElement();
+                listHeader.AddToClassList("git-list-header");
+
+                var headerLabel = new Label("Changed Files");
+                headerLabel.AddToClassList("rex-section-label");
+                headerLabel.AddToClassList("git-list-header-label");
+                listHeader.Add(headerLabel);
+
+                var buttonContainer = new VisualElement();
+                buttonContainer.AddToClassList("git-header-btn-row");
+
+                var selectAllBtn = new Button { text = "Select All" };
+                selectAllBtn.AddToClassList("rex-button");
+                selectAllBtn.AddToClassList("git-header-btn");
+                selectAllBtn.AddToClassList("git-header-btn--left");
+                selectAllBtn.clicked += SelectAllChangedFiles;
+
+                var deselectAllBtn = new Button { text = "Deselect All" };
+                deselectAllBtn.AddToClassList("rex-button");
+                deselectAllBtn.AddToClassList("git-header-btn");
+                deselectAllBtn.clicked += DeselectAllChangedFiles;
+
+                buttonContainer.Add(selectAllBtn);
+                buttonContainer.Add(deselectAllBtn);
+                listHeader.Add(buttonContainer);
+                changedFilesFoldout.Add(listHeader);
+
+                changedFilesScroll = new ScrollView(ScrollViewMode.Vertical);
+                changedFilesScroll.AddToClassList("rex-result-list");
+                changedFilesScroll.AddToClassList("git-changed-files-scroll");
+                
+                changedFilesFoldout.Add(changedFilesScroll);
+                foldoutContainer.Add(changedFilesFoldout);
+            }
+
             RefreshLayout();
         }
 
-        private void BuildNoRepoLayout()
+        private void LoadStyleSheet(VisualElement root, string packagePath, string assetsPath)
         {
-            var noRepoScroll = new ScrollView(ScrollViewMode.Vertical);
-            noRepoScroll.style.flexGrow = 1;
-            noRepoContainer.Add(noRepoScroll);
-
-            var box = new VisualElement();
-            box.AddToClassList("rex-box");
-            box.style.alignItems = Align.Center;
-            box.style.paddingTop = 20;
-            box.style.paddingBottom = 20;
-            box.style.paddingLeft = 20;
-            box.style.paddingRight = 20;
-            noRepoScroll.Add(box);
-
-            var warningLabel = new Label("No Git repository found in the project root or parent directories.");
-            warningLabel.style.whiteSpace = WhiteSpace.Normal;
-            warningLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-            warningLabel.style.marginBottom = 15;
-            box.Add(warningLabel);
-
-            var detectBtn = new Button { text = "Scan for Repository" };
-            detectBtn.AddToClassList("rex-action-button");
-            detectBtn.AddToClassList("rex-action-button--pack");
-            detectBtn.style.width = 200;
-            detectBtn.style.height = 30;
-            detectBtn.clicked += RefreshLayout;
-            box.Add(detectBtn);
-        }
-
-        private void BuildMainLayout()
-        {
-            // --- SCROLLABLE CONTENT AREA ---
-            var mainScrollView = new ScrollView(ScrollViewMode.Vertical);
-            mainScrollView.style.flexGrow = 1;
-            mainScrollView.style.marginTop = 4;
-            mainScrollView.style.marginBottom = 4;
-            mainScrollView.contentContainer.style.flexGrow = 1; // Allow children to expand
-            mainContentContainer.Add(mainScrollView);
-
-            // --- REPOSITORY INFO ---
-            var infoBox = new VisualElement();
-            infoBox.AddToClassList("rex-box");
-            infoBox.style.flexShrink = 0; // Prevent status area from shrinking
-
-            var infoLabel = new Label("REPOSITORY STATUS");
-            infoLabel.AddToClassList("rex-section-label");
-            infoBox.Add(infoLabel);
-
-            repoPathLabel = new Label("Path: --");
-            repoPathLabel.style.fontSize = 10;
-            repoPathLabel.style.color = new Color(0.7f, 0.7f, 0.7f);
-            infoBox.Add(repoPathLabel);
-
-            branchStatusLabel = new Label("Branch: --");
-            branchStatusLabel.style.fontSize = 12;
-            branchStatusLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            infoBox.Add(branchStatusLabel);
-
-            syncStatusLabel = new Label("Sync: --");
-            syncStatusLabel.style.fontSize = 11;
-            infoBox.Add(syncStatusLabel);
-
-            mainScrollView.Add(infoBox);
-
-            // --- CHANGED FILES LIST (RexFoldout + RexList) ---
-            changedFilesFoldout = new RexFoldout("Changed Files", count: 0, defaultExpanded: true);
-            changedFilesFoldout.style.marginTop = 6;
-            changedFilesFoldout.style.flexGrow = 1;
-            changedFilesFoldout.style.flexShrink = 0;
-            changedFilesFoldout.contentContainer.style.flexGrow = 1;
-            changedFilesFoldout.contentContainer.style.flexShrink = 0;
-
-            var listHeader = new VisualElement();
-            listHeader.style.flexDirection = FlexDirection.Row;
-            listHeader.style.justifyContent = Justify.SpaceBetween;
-            listHeader.style.alignItems = Align.Center;
-            listHeader.style.paddingLeft = 6;
-            listHeader.style.paddingRight = 6;
-            listHeader.style.paddingBottom = 4;
-            listHeader.style.borderBottomWidth = 1;
-            listHeader.style.borderBottomColor = new Color(0.2f, 0.2f, 0.2f);
-            listHeader.style.marginBottom = 4;
-
-            var headerLabel = new Label("Changed Files");
-            headerLabel.AddToClassList("rex-section-label");
-            headerLabel.style.marginBottom = 0;
-            listHeader.Add(headerLabel);
-
-            var buttonContainer = new VisualElement();
-            buttonContainer.style.flexDirection = FlexDirection.Row;
-
-            var selectAllBtn = new Button { text = "Select All" };
-            selectAllBtn.AddToClassList("rex-button");
-            selectAllBtn.style.marginRight = 4;
-            selectAllBtn.style.height = 18;
-            selectAllBtn.style.fontSize = 9;
-            selectAllBtn.style.paddingLeft = 6;
-            selectAllBtn.style.paddingRight = 6;
-            selectAllBtn.clicked += SelectAllChangedFiles;
-
-            var deselectAllBtn = new Button { text = "Deselect All" };
-            deselectAllBtn.AddToClassList("rex-button");
-            deselectAllBtn.style.height = 18;
-            deselectAllBtn.style.fontSize = 9;
-            deselectAllBtn.style.paddingLeft = 6;
-            deselectAllBtn.style.paddingRight = 6;
-            deselectAllBtn.clicked += DeselectAllChangedFiles;
-
-            buttonContainer.Add(selectAllBtn);
-            buttonContainer.Add(deselectAllBtn);
-            listHeader.Add(buttonContainer);
-            changedFilesFoldout.Add(listHeader);
-
-            changedFilesScroll = new ScrollView(ScrollViewMode.Vertical);
-            changedFilesScroll.AddToClassList("rex-result-list");
-            changedFilesScroll.style.flexGrow = 1;
-            changedFilesScroll.style.flexShrink = 0;
-            changedFilesScroll.style.minHeight = 120; // Default minimum height for the list
-            
-            changedFilesFoldout.Add(changedFilesScroll);
-            mainScrollView.Add(changedFilesFoldout);
-
-            // --- OPERATIONS PANEL ---
-            var opsBox = new VisualElement();
-            opsBox.AddToClassList("rex-box");
-            opsBox.style.flexShrink = 0; // Prevent operations area from shrinking
-            opsBox.style.minHeight = 180; // Set minimum height to prevent squashing
-
-            var opsLabel = new Label("OPERATIONS");
-            opsLabel.AddToClassList("rex-section-label");
-            opsBox.Add(opsLabel);
-
-            var buttonRow = new VisualElement();
-            buttonRow.AddToClassList("rex-row");
-
-            fetchBtn = new Button { text = "Fetch" };
-            fetchBtn.style.flexGrow = 1;
-            fetchBtn.clicked += async () => await RunFetchAsync(false);
-            buttonRow.Add(fetchBtn);
-
-            pullBtn = new Button { text = "Pull" };
-            pullBtn.style.flexGrow = 1;
-            pullBtn.clicked += async () => await RunPullAsync();
-            buttonRow.Add(pullBtn);
-
-            pushBtn = new Button { text = "Push" };
-            pushBtn.style.flexGrow = 1;
-            pushBtn.clicked += async () => await RunPushAsync();
-            buttonRow.Add(pushBtn);
-
-            opsBox.Add(buttonRow);
-
-            // Commit Section
-            commitMsgField = new TextField("Commit Message");
-            commitMsgField.multiline = true;
-            commitMsgField.style.height = 60;
-            commitMsgField.style.marginTop = 10;
-            opsBox.Add(commitMsgField);
-
-            var commitActionRow = new VisualElement();
-            commitActionRow.AddToClassList("rex-row");
-            commitActionRow.style.marginTop = 8;
-
-            commitBtn = new Button { text = "COMMIT SELECTED" };
-            commitBtn.AddToClassList("rex-action-button");
-            commitBtn.AddToClassList("rex-action-button--pack");
-            commitBtn.style.flexGrow = 1;
-            commitBtn.style.height = 36;
-            commitBtn.style.marginTop = 0;
-            commitBtn.clicked += async () => await RunCommitAsync();
-            commitActionRow.Add(commitBtn);
-
-            discardBtn = new Button { text = "DISCARD SELECTED" };
-            discardBtn.AddToClassList("rex-action-button");
-            discardBtn.AddToClassList("rex-action-button--pack");
-            discardBtn.style.backgroundColor = new Color(0.7f, 0.2f, 0.2f);
-            discardBtn.style.flexGrow = 1;
-            discardBtn.style.height = 36;
-            discardBtn.style.marginTop = 0;
-            discardBtn.style.marginLeft = 5;
-            discardBtn.clicked += async () => await RunDiscardSelectedAsync();
-            commitActionRow.Add(discardBtn);
-
-            opsBox.Add(commitActionRow);
-
-            mainContentContainer.Add(opsBox);
+            StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(packagePath);
+            if (styleSheet == null)
+            {
+                styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(assetsPath);
+            }
+            if (styleSheet != null)
+            {
+                root.styleSheets.Add(styleSheet);
+            }
         }
 
         private async void RefreshLayout()
@@ -365,9 +254,7 @@ namespace RexTools.GitIntegration.Editor
             if (currentChangedFileLines.Count == 0)
             {
                 var cleanLabel = new Label("No changed files (Working directory clean)");
-                cleanLabel.style.color = new Color(0.5f, 0.5f, 0.5f);
-                cleanLabel.style.fontSize = 10;
-                cleanLabel.style.paddingLeft = 4;
+                cleanLabel.AddToClassList("git-row-path");
                 changedFilesScroll.Add(cleanLabel);
             }
             else
@@ -388,7 +275,7 @@ namespace RexTools.GitIntegration.Editor
                     // Checkbox (Tick)
                     var toggle = new Toggle();
                     toggle.value = !deselectedFiles.Contains(cleanPath);
-                    toggle.style.marginRight = 4;
+                    toggle.AddToClassList("git-row-checkbox");
                     toggle.RegisterValueChangedCallback(evt =>
                     {
                         if (evt.newValue)
@@ -405,19 +292,16 @@ namespace RexTools.GitIntegration.Editor
 
                     // Prefix Label
                     var prefixLabel = new Label($"[{prefix.Trim()}]");
-                    prefixLabel.style.width = 32;
-                    prefixLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-                    prefixLabel.style.fontSize = 10;
-                    prefixLabel.style.paddingLeft = 4;
+                    prefixLabel.AddToClassList("git-row-prefix");
 
                     if (prefix.Contains("M"))
-                        prefixLabel.style.color = new Color(1.0f, 0.7f, 0.2f); // Orange/Yellow
+                        prefixLabel.AddToClassList("git-row-prefix--modified");
                     else if (prefix.Contains("D"))
-                        prefixLabel.style.color = new Color(1.0f, 0.35f, 0.35f); // Red
+                        prefixLabel.AddToClassList("git-row-prefix--deleted");
                     else if (prefix.Contains("A") || prefix.Contains("?"))
-                        prefixLabel.style.color = new Color(0.3f, 0.8f, 0.4f); // Green
+                        prefixLabel.AddToClassList("git-row-prefix--added");
                     else
-                        prefixLabel.style.color = new Color(0.8f, 0.8f, 0.8f);
+                        prefixLabel.AddToClassList("git-row-prefix--fallback");
 
                     row.Add(prefixLabel);
 
@@ -427,26 +311,14 @@ namespace RexTools.GitIntegration.Editor
                     {
                         var assetIcon = new Image();
                         assetIcon.image = iconTexture;
-                        assetIcon.style.width = 16;
-                        assetIcon.style.height = 16;
-                        assetIcon.style.marginRight = 4;
+                        assetIcon.AddToClassList("git-row-icon");
                         row.Add(assetIcon);
                     }
 
                     // File path label
                     var pathLabel = new Label(path);
                     pathLabel.AddToClassList("rex-result-name-btn");
-                    pathLabel.style.flexGrow = 1;
-                    pathLabel.style.flexShrink = 1;
-                    pathLabel.style.overflow = Overflow.Hidden;
-                    pathLabel.style.textOverflow = TextOverflow.Ellipsis;
-                    pathLabel.style.fontSize = 10;
-                    pathLabel.style.color = new Color(0.85f, 0.85f, 0.85f);
-                    pathLabel.style.paddingLeft = 4;
-
-                    // Hover effect
-                    pathLabel.RegisterCallback<MouseOverEvent>(e => pathLabel.style.color = new Color(0.4f, 0.8f, 1.0f));
-                    pathLabel.RegisterCallback<MouseOutEvent>(e => pathLabel.style.color = new Color(0.85f, 0.85f, 0.85f));
+                    pathLabel.AddToClassList("git-row-path");
 
                     pathLabel.RegisterCallback<ClickEvent>(e =>
                     {

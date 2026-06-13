@@ -1,0 +1,126 @@
+.git-no-repo-box {
+    align-items: center;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+.git-no-repo-warning {
+    white-space: normal;
+    -unity-text-align: middle-center;
+    margin-bottom: 15px;
+}
+.git-scan-btn {
+    width: 200px;
+    height: 30px;
+}
+.git-main-scroll {
+    flex-grow: 1;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+.git-repo-path {
+    font-size: 10px;
+    color: rgb(179, 179, 179);
+}
+.git-branch-status {
+    font-size: 12px;
+    -unity-font-style: bold;
+}
+.git-sync-status {
+    font-size: 11px;
+}
+.git-foldout-container {
+    margin-top: 6px;
+    flex-grow: 1;
+    flex-shrink: 0;
+}
+.git-list-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-bottom: 4px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(51, 51, 51);
+    margin-bottom: 4px;
+}
+.git-list-header-label {
+    margin-bottom: 0px;
+}
+.git-header-btn-row {
+    flex-direction: row;
+}
+.git-header-btn {
+    height: 18px;
+    font-size: 9px;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+.git-header-btn--left {
+    margin-right: 4px;
+}
+.git-changed-files-scroll {
+    flex-grow: 1;
+    flex-shrink: 0;
+    min-height: 120px;
+}
+.git-row-checkbox {
+    margin-right: 4px;
+}
+.git-row-prefix {
+    width: 32px;
+    -unity-font-style: bold;
+    font-size: 10px;
+    padding-left: 4px;
+}
+.git-row-prefix--modified {
+    color: rgb(255, 179, 51);
+}
+.git-row-prefix--deleted {
+    color: rgb(255, 89, 89);
+}
+.git-row-prefix--added {
+    color: rgb(77, 204, 102);
+}
+.git-row-prefix--fallback {
+    color: rgb(204, 204, 204);
+}
+.git-row-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+}
+.git-row-path {
+    flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 10px;
+    color: rgb(217, 217, 217);
+    padding-left: 4px;
+}
+.git-row-path:hover {
+    color: rgb(102, 204, 255);
+}
+.git-ops-box {
+    flex-shrink: 0;
+    min-height: 180px;
+}
+.git-commit-msg-field {
+    height: 60px;
+    margin-top: 10px;
+}
+.git-commit-action-row {
+    margin-top: 8px;
+}
+.git-action-btn {
+    flex-grow: 1;
+    height: 36px;
+    margin-top: 0px;
+}
+.git-discard-btn {
+    background-color: rgb(179, 51, 51);
+    margin-left: 5px;
+}

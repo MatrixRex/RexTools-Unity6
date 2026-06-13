@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Git Integration: Refactored `GitIntegrationWindow.cs` to separate non-UI Git operations, path parsing, and file deletions into `GitRunner.cs`, reducing the window's size by ~32% and consolidating business logic.
+- Git Integration: Migrated the layout of `GitIntegrationWindow.cs` to `GitIntegrationWindow.uxml` and separated all C# inline styles into a dedicated `GitIntegrationStyles.uss` stylesheet, reducing the C# file size by an additional 128 lines (~42% reduction overall).
 - Git Integration: Removed horizontal scrollability on the changed files ScrollView to prevent hijacking mouse vertical scrolling, and added ellipsis truncation (`...`) to file path labels.
 - Git Integration: Removed the individual row discard (delete) buttons in the changed files list, relying instead on the global "DISCARD SELECTED" button.
 - Git Integration: Skip folder entries and list all changed files recursively (using `--untracked-files=all` status mode) while automatically staging, committing, and discarding parent folder `.meta` files to match standard Git client behavior.

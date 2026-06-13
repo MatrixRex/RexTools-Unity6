@@ -15,7 +15,7 @@ All tools open via `Tools/Rex Tools/<Tool Name>` (see `readme.md` for full list)
 - **Preset save/load:** Use `RexPresetManager.CreatePresetButtons()` / `SavePreset()` / `ShowPresetSelector()` from `Editor/Core/RexPresetManager.cs`
 - **Icons:** 1x in `Editor/Icons/{Name}.png`, 2x in `Editor/Icons/{Name}@2x.png`
 - **Namespaces** follow folder paths (e.g. `RexTools.BatchMaterialEditor.Editor.Tabs`, `RexTools.AutoLODSetup.Editor`)
-- **Single-file tools** are the norm; most tools are one large `.cs` file
+- **Architecture files:** Smaller, utility-focused tools can remain single-file. However, larger/complex tools should split visual layout (.uxml), styling (.uss), and code-behind (.cs) to improve readability and support future feature expansions.
 
 ## Commands
 
