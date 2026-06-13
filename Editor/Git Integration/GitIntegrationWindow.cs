@@ -332,7 +332,7 @@ namespace RexTools.GitIntegration.Editor
             if (changedFilesScroll != null)
             {
                 rawChangedFileLines = await GitRunner.GetChangedFilesAsync();
-                currentChangedFileLines = FilterAndDeduplicateChangedFiles(rawChangedFileLines);
+                currentChangedFileLines = GitRunner.FilterAndDeduplicateChangedFiles(rawChangedFileLines);
                 RebuildChangedFilesListUI();
             }
 
@@ -353,51 +353,6 @@ namespace RexTools.GitIntegration.Editor
             
             // Sync status to playmode toolbar button
             GitToolbarExtender.ForceRefresh();
-        }
-
-        private List<string> FilterAndDeduplicateChangedFiles(List<string> rawLines)
-        {
-            var cleanPathsSeen = new HashSet<string>();
-            var filtered = new List<string>();
-
-            foreach (var line in rawLines)
-            {
-                if (line.Length < 3) continue;
-                string cleanPath = GetFilePathFromLine(line);
-                if (string.IsNullOrEmpty(cleanPath)) continue;
-
-                // Skip directories directly listed by git
-                if (cleanPath.EndsWith("/") || cleanPath.EndsWith("\\")) continue;
-
-                // Strip .meta if present
-                string baseCleanPath = cleanPath;
-                if (cleanPath.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
-                {
-                    baseCleanPath = cleanPath.Substring(0, cleanPath.Length - 5);
-                }
-
-                // If the base clean path is a directory (e.g. folder .meta), skip it
-                if (IsDirectoryPath(baseCleanPath)) continue;
-
-                if (!cleanPathsSeen.Contains(baseCleanPath))
-                {
-                    cleanPathsSeen.Add(baseCleanPath);
-                    
-                    // If this was a .meta entry itself, format a new porcelain line
-                    // that points to the base asset but keeps the status prefix.
-                    if (cleanPath.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
-                    {
-                        string prefix = line.Substring(0, 2);
-                        filtered.Add($"{prefix} {baseCleanPath}");
-                    }
-                    else
-                    {
-                        filtered.Add(line);
-                    }
-                }
-            }
-
-            return filtered;
         }
 
         private void RebuildChangedFilesListUI()
@@ -423,7 +378,7 @@ namespace RexTools.GitIntegration.Editor
 
                     string prefix = fileLine.Substring(0, 2);
                     string path = fileLine.Substring(2).Trim();
-                    string cleanPath = GetFilePathFromLine(fileLine);
+                    string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
 
                     var row = new VisualElement();
                     row.AddToClassList("rex-result-item");
@@ -521,45 +476,13 @@ namespace RexTools.GitIntegration.Editor
         {
             foreach (var fileLine in currentChangedFileLines)
             {
-                string cleanPath = GetFilePathFromLine(fileLine);
+                string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
                 if (!string.IsNullOrEmpty(cleanPath))
                 {
                     deselectedFiles.Add(cleanPath);
                 }
             }
             RebuildChangedFilesListUI();
-        }
-
-        private bool IsDirectoryPath(string basePath)
-        {
-            string repoRoot = GitRunner.FindRepositoryRoot();
-            string fullPath = Path.Combine(repoRoot, basePath).Replace("\\", "/");
-            if (Directory.Exists(fullPath)) return true;
-
-            if (basePath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase) || 
-                basePath.StartsWith("Packages/", StringComparison.OrdinalIgnoreCase))
-            {
-                if (string.IsNullOrEmpty(Path.GetExtension(basePath)))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private List<string> GetParentDirectories(string path)
-        {
-            var parents = new List<string>();
-            string dir = Path.GetDirectoryName(path);
-            while (!string.IsNullOrEmpty(dir))
-            {
-                dir = dir.Replace("\\", "/");
-                if (dir == "Assets" || dir == "Packages" || dir == "") break;
-                parents.Add(dir);
-                dir = Path.GetDirectoryName(dir);
-            }
-            return parents;
         }
 
         private Texture GetAssetIcon(string cleanPath)
@@ -638,213 +561,12 @@ namespace RexTools.GitIntegration.Editor
             }
         }
 
-        private string UnquotePath(string p)
-        {
-            if (string.IsNullOrEmpty(p)) return string.Empty;
-            p = p.Trim();
-            if (p.StartsWith("\"") && p.EndsWith("\"") && p.Length >= 2)
-            {
-                p = p.Substring(1, p.Length - 2);
-            }
-            return p.Trim();
-        }
-
-        private string GetFilePathFromLine(string fileLine)
-        {
-            if (fileLine.Length < 3) return string.Empty;
-            string prefix = fileLine.Substring(0, 2);
-            string path = fileLine.Substring(2).Trim();
-            
-            path = UnquotePath(path);
-            string cleanPath = path;
-            if (prefix.Contains("R")) // Renamed "old -> new"
-            {
-                int arrow = path.IndexOf("->");
-                if (arrow != -1)
-                {
-                    cleanPath = path.Substring(arrow + 2).Trim();
-                    cleanPath = UnquotePath(cleanPath);
-                }
-            }
-            return cleanPath;
-        }
-
-        private List<string> GetPathsFromLine(string fileLine)
-        {
-            var paths = new List<string>();
-            if (fileLine.Length < 3) return paths;
-            string prefix = fileLine.Substring(0, 2);
-            string path = fileLine.Substring(2).Trim();
-            
-            path = UnquotePath(path);
-            if (prefix.Contains("R")) // Renamed "old -> new"
-            {
-                int arrow = path.IndexOf("->");
-                if (arrow != -1)
-                {
-                    string oldPath = path.Substring(0, arrow).Trim();
-                    string newPath = path.Substring(arrow + 2).Trim();
-                    paths.Add(UnquotePath(oldPath));
-                    paths.Add(UnquotePath(newPath));
-                }
-                else
-                {
-                    paths.Add(path);
-                }
-            }
-            else
-            {
-                paths.Add(path);
-            }
-            return paths;
-        }
-
-        private async Task DiscardChangesForCleanPathAsync(string cleanPath)
-        {
-            var rawLinesToDiscard = new List<string>();
-            foreach (var rawLine in rawChangedFileLines)
-            {
-                string rawCleanPath = GetFilePathFromLine(rawLine);
-                string baseCleanPath = rawCleanPath;
-                if (rawCleanPath.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
-                {
-                    baseCleanPath = rawCleanPath.Substring(0, rawCleanPath.Length - 5);
-                }
-
-                if (baseCleanPath == cleanPath)
-                {
-                    rawLinesToDiscard.Add(rawLine);
-                }
-            }
-
-            // Check parent directories of this cleanPath to see if we should discard their .meta files
-            var parents = GetParentDirectories(cleanPath);
-            foreach (var parent in parents)
-            {
-                string parentMeta = parent + ".meta";
-                
-                // Check if this parent .meta is modified/untracked
-                bool isParentMetaChanged = false;
-                string parentMetaRawLine = null;
-                foreach (var rawLine in rawChangedFileLines)
-                {
-                    string rawCleanPath = GetFilePathFromLine(rawLine);
-                    if (rawCleanPath == parentMeta)
-                    {
-                        isParentMetaChanged = true;
-                        parentMetaRawLine = rawLine;
-                        break;
-                    }
-                }
-
-                if (isParentMetaChanged)
-                {
-                    // Check if there are any OTHER changed files under this parent folder
-                    // (excluding the current cleanPath we are discarding, and excluding the parent .meta files themselves)
-                    bool hasOtherChanges = false;
-                    foreach (var rawLine in rawChangedFileLines)
-                    {
-                        string rawCleanPath = GetFilePathFromLine(rawLine);
-                        
-                        // Skip the file we are currently discarding and its .meta
-                        string baseClean = rawCleanPath;
-                        if (rawCleanPath.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
-                        {
-                            baseClean = rawCleanPath.Substring(0, rawCleanPath.Length - 5);
-                        }
-                        if (baseClean == cleanPath) continue;
-
-                        // Skip parent directories and their .meta files
-                        if (baseClean == parent || baseClean.StartsWith(parent + "/", StringComparison.OrdinalIgnoreCase))
-                        {
-                            // If baseClean is a parent directory (no extension) or its .meta, skip it
-                            // otherwise it's a real file change under parent
-                            string ext = Path.GetExtension(baseClean);
-                            if (string.IsNullOrEmpty(ext)) continue;
-                            
-                            hasOtherChanges = true;
-                            break;
-                        }
-                    }
-
-                    if (!hasOtherChanges && parentMetaRawLine != null)
-                    {
-                        rawLinesToDiscard.Add(parentMetaRawLine);
-                    }
-                }
-            }
-
-            foreach (var fileLine in rawLinesToDiscard)
-            {
-                string prefix = fileLine.Substring(0, 2);
-                var paths = GetPathsFromLine(fileLine);
-                foreach (var path in paths)
-                {
-                    if (prefix.Contains("?"))
-                    {
-                        DeleteFileOrDirectory(path);
-                    }
-                    else
-                    {
-                        // 1. Unstage the file
-                        await GitRunner.RunCommandAsync($"reset HEAD -- \"{path}\"", null, null);
-                        // 2. Try checkout from HEAD
-                        int exitCode = await GitRunner.RunCommandAsync($"checkout HEAD -- \"{path}\"", null, null);
-                        // 3. If it wasn't in HEAD (failed checkout), delete it
-                        if (exitCode != 0)
-                        {
-                            DeleteFileOrDirectory(path);
-                        }
-                    }
-                }
-            }
-        }
-
-        private void DeleteFileOrDirectory(string path)
-        {
-            string repoRoot = GitRunner.FindRepositoryRoot();
-            string fullPath = Path.Combine(repoRoot, path).Replace("\\", "/");
-            
-            // If it's an asset in the project, try AssetDatabase.DeleteAsset
-            string projectRoot = Directory.GetCurrentDirectory().Replace("\\", "/");
-            if (fullPath.StartsWith(projectRoot, StringComparison.OrdinalIgnoreCase))
-            {
-                string relativeAssetPath = fullPath.Substring(projectRoot.Length).TrimStart('/');
-                if (relativeAssetPath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase) || 
-                    relativeAssetPath.StartsWith("Packages/", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (AssetDatabase.DeleteAsset(relativeAssetPath))
-                    {
-                        return;
-                    }
-                }
-            }
-
-            // Fallback/Non-asset deletion
-            if (File.Exists(fullPath))
-            {
-                File.Delete(fullPath);
-                if (File.Exists(fullPath + ".meta"))
-                {
-                    File.Delete(fullPath + ".meta");
-                }
-            }
-            else if (Directory.Exists(fullPath))
-            {
-                Directory.Delete(fullPath, true);
-                if (File.Exists(fullPath + ".meta"))
-                {
-                    File.Delete(fullPath + ".meta");
-                }
-            }
-        }
-
         private async Task RunDiscardSelectedAsync()
         {
             var selectedCleanPaths = new List<string>();
             foreach (var fileLine in currentChangedFileLines)
             {
-                string cleanPath = GetFilePathFromLine(fileLine);
+                string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
                 if (!deselectedFiles.Contains(cleanPath))
                 {
                     selectedCleanPaths.Add(cleanPath);
@@ -864,10 +586,7 @@ namespace RexTools.GitIntegration.Editor
             {
                 SetUIExecuting(true);
                 Log("> Discarding selected files...");
-                foreach (var cleanPath in selectedCleanPaths)
-                {
-                    await DiscardChangesForCleanPathAsync(cleanPath);
-                }
+                await GitRunner.DiscardChangesAsync(selectedCleanPaths, rawChangedFileLines);
                 Log("Discard completed.");
                 SetUIExecuting(false);
                 await RefreshStatusAsync();
@@ -927,7 +646,7 @@ namespace RexTools.GitIntegration.Editor
             bool hasSelected = false;
             foreach (var fileLine in currentChangedFileLines)
             {
-                string cleanPath = GetFilePathFromLine(fileLine);
+                string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
                 if (!deselectedFiles.Contains(cleanPath))
                 {
                     hasSelected = true;
@@ -1010,10 +729,10 @@ namespace RexTools.GitIntegration.Editor
                 return;
             }
 
-            var selectedCleanPaths = new HashSet<string>();
+            var selectedCleanPaths = new List<string>();
             foreach (var fileLine in currentChangedFileLines)
             {
-                string cleanPath = GetFilePathFromLine(fileLine);
+                string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
                 if (!deselectedFiles.Contains(cleanPath))
                 {
                     selectedCleanPaths.Add(cleanPath);
@@ -1027,70 +746,18 @@ namespace RexTools.GitIntegration.Editor
             }
 
             SetUIExecuting(true);
-            
-            Log("> git reset");
-            await GitRunner.RunCommandAsync("reset", Log, LogError);
 
-            var pathsToStage = new List<string>();
-            foreach (var rawLine in rawChangedFileLines)
-            {
-                string rawCleanPath = GetFilePathFromLine(rawLine);
-                string baseCleanPath = rawCleanPath;
-                if (rawCleanPath.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
-                {
-                    baseCleanPath = rawCleanPath.Substring(0, rawCleanPath.Length - 5);
-                }
+            bool success = await GitRunner.CommitChangesAsync(
+                selectedCleanPaths, 
+                rawChangedFileLines, 
+                message, 
+                Log, 
+                LogError
+            );
 
-                if (selectedCleanPaths.Contains(baseCleanPath))
-                {
-                    pathsToStage.AddRange(GetPathsFromLine(rawLine));
-                }
-            }
-
-            // Automatically find and stage parent folder .meta files if they are modified/untracked
-            var parentMetasToStage = new HashSet<string>();
-            foreach (var path in pathsToStage)
+            if (success)
             {
-                var parents = GetParentDirectories(path);
-                foreach (var parent in parents)
-                {
-                    string parentMeta = parent + ".meta";
-                    foreach (var rawLine in rawChangedFileLines)
-                    {
-                        string rawCleanPath = GetFilePathFromLine(rawLine);
-                        if (rawCleanPath == parentMeta)
-                        {
-                            parentMetasToStage.Add(parentMeta);
-                            break;
-                        }
-                    }
-                }
-            }
-            pathsToStage.AddRange(parentMetasToStage);
-
-            string addArgs = "add -- " + string.Join(" ", pathsToStage.Select(p => $"\"{p}\""));
-            Log($"> git {addArgs}");
-            int addExit = await GitRunner.RunCommandAsync(addArgs, Log, LogError);
-            
-            if (addExit == 0)
-            {
-                string escapedMessage = message.Replace("\"", "\\\"");
-                Log($"> git commit -m \"{escapedMessage}\"");
-                int commitExit = await GitRunner.RunCommandAsync($"commit -m \"{escapedMessage}\"", Log, LogError);
-                
-                if (commitExit == 0)
-                {
-                    Log("Commit successful.");
-                    commitMsgField.value = "";
-                }
-                else
-                {
-                    LogError($"Commit failed with exit code {commitExit}");
-                }
-            }
-            else
-            {
-                LogError($"Stage failed with exit code {addExit}");
+                commitMsgField.value = "";
             }
 
             SetUIExecuting(false);
