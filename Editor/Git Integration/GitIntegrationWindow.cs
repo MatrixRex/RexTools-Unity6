@@ -1268,15 +1268,30 @@ namespace RexTools.GitIntegration.Editor
                 Log("> git fetch");
             }
 
+            var outputLines = new List<string>();
             int exitCode = await GitRunner.RunCommandAsync("fetch", 
-                line => { if (!silent) Log(line); }, 
-                line => { if (!silent) LogError(line); }
+                line => { if (!silent) { Log(line); outputLines.Add(line); } }, 
+                line => { if (!silent) { Log(line); outputLines.Add(line); } }
             );
 
             if (!silent)
             {
                 Log($"Fetch finished with exit code {exitCode}");
                 SetUIExecuting(false);
+
+                if (exitCode != 0)
+                {
+                    string errorSummary = outputLines.Count > 0 ? string.Join("\n", outputLines.TakeLast(5)) : "Unknown error.";
+                    EditorUtility.DisplayDialog("Git Fetch Failed", 
+                        $"Failed to fetch updates from remote repository (Exit Code: {exitCode}).\n\nDetails:\n{errorSummary}", 
+                        "OK");
+                }
+                else
+                {
+                    EditorUtility.DisplayDialog("Git Fetch Succeeded", 
+                        "Successfully fetched updates from remote tracking branches.", 
+                        "OK");
+                }
             }
             await RefreshStatusAsync();
         }
@@ -1287,11 +1302,29 @@ namespace RexTools.GitIntegration.Editor
             SetUIExecuting(true);
             Log("> git pull");
 
-            int exitCode = await GitRunner.RunCommandAsync("pull", Log, LogError);
+            var outputLines = new List<string>();
+            int exitCode = await GitRunner.RunCommandAsync("pull", 
+                line => { Log(line); outputLines.Add(line); }, 
+                line => { Log(line); outputLines.Add(line); }
+            );
             Log($"Pull finished with exit code {exitCode}");
             
             SetUIExecuting(false);
             await RefreshStatusAsync();
+
+            if (exitCode != 0)
+            {
+                string errorSummary = outputLines.Count > 0 ? string.Join("\n", outputLines.TakeLast(5)) : "Unknown error.";
+                EditorUtility.DisplayDialog("Git Pull Failed", 
+                    $"Failed to pull changes from remote repository (Exit Code: {exitCode}).\n\nDetails:\n{errorSummary}", 
+                    "OK");
+            }
+            else
+            {
+                EditorUtility.DisplayDialog("Git Pull Succeeded", 
+                    "Successfully pulled and merged changes from remote repository.", 
+                    "OK");
+            }
         }
 
         private async Task RunPushAsync()
@@ -1300,11 +1333,29 @@ namespace RexTools.GitIntegration.Editor
             SetUIExecuting(true);
             Log("> git push");
 
-            int exitCode = await GitRunner.RunCommandAsync("push", Log, LogError);
+            var outputLines = new List<string>();
+            int exitCode = await GitRunner.RunCommandAsync("push", 
+                line => { Log(line); outputLines.Add(line); }, 
+                line => { Log(line); outputLines.Add(line); }
+            );
             Log($"Push finished with exit code {exitCode}");
             
             SetUIExecuting(false);
             await RefreshStatusAsync();
+
+            if (exitCode != 0)
+            {
+                string errorSummary = outputLines.Count > 0 ? string.Join("\n", outputLines.TakeLast(5)) : "Unknown error.";
+                EditorUtility.DisplayDialog("Git Push Failed", 
+                    $"Failed to push changes to remote repository (Exit Code: {exitCode}).\n\nDetails:\n{errorSummary}", 
+                    "OK");
+            }
+            else
+            {
+                EditorUtility.DisplayDialog("Git Push Succeeded", 
+                    "Successfully pushed committed changes to remote repository.", 
+                    "OK");
+            }
         }
 
         private async Task RunCommitAsync()
@@ -1336,17 +1387,28 @@ namespace RexTools.GitIntegration.Editor
 
             SetUIExecuting(true);
 
+            var outputLines = new List<string>();
             bool success = await GitRunner.CommitChangesAsync(
                 selectedCleanPaths, 
                 rawChangedFileLines, 
                 message, 
-                Log, 
-                LogError
+                line => { Log(line); outputLines.Add(line); }, 
+                line => { Log(line); outputLines.Add(line); }
             );
 
             if (success)
             {
                 commitMsgField.value = "";
+                EditorUtility.DisplayDialog("Commit Succeeded", 
+                    "Selected changes have been successfully committed.", 
+                    "OK");
+            }
+            else
+            {
+                string errorSummary = outputLines.Count > 0 ? string.Join("\n", outputLines.TakeLast(5)) : "Commit process failed.";
+                EditorUtility.DisplayDialog("Commit Failed", 
+                    $"Failed to commit changes.\n\nDetails:\n{errorSummary}", 
+                    "OK");
             }
 
             SetUIExecuting(false);
