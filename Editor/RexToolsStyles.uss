@@ -879,3 +879,8 @@
 .rex-field-clear-btn:hover .rex-button__icon {
     tint-color: white;
 }
+
+/* Scene Pack / PropertyField list adjustments */
+.rex-list-property-field {
+    padding-left: 15px;
+}
