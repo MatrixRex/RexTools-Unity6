@@ -25,7 +25,7 @@ namespace RexTools.GitIntegration.Editor
         private ScrollView listViewScroll;
         private FolderTreeNode rootTreeNode;
         private readonly Dictionary<string, Toggle> flatFileToggles = new Dictionary<string, Toggle>();
-        private RexFoldout changedFilesFoldout;
+        private Label changedFilesHeaderLabel;
         
         private VisualElement mainContentContainer;
         private VisualElement noRepoContainer;
@@ -151,19 +151,17 @@ namespace RexTools.GitIntegration.Editor
             commitBtn.clicked += async () => await RunCommitAsync();
             discardBtn.clicked += async () => await RunDiscardSelectedAsync();
 
-            // Dynamically build foldout list inside the foldout placeholder
+            // Dynamically build list inside the container placeholder
             var foldoutContainer = root.Q<VisualElement>("changed-files-foldout-container");
             if (foldoutContainer != null)
             {
-                changedFilesFoldout = new RexFoldout("Changed Files", count: 0, defaultExpanded: true);
-                
                 var listHeader = new VisualElement();
                 listHeader.AddToClassList("git-list-header");
 
-                var headerLabel = new Label("Changed Files");
-                headerLabel.AddToClassList("rex-section-label");
-                headerLabel.AddToClassList("git-list-header-label");
-                listHeader.Add(headerLabel);
+                changedFilesHeaderLabel = new Label("Changed Files");
+                changedFilesHeaderLabel.AddToClassList("rex-section-label");
+                changedFilesHeaderLabel.AddToClassList("git-list-header-label");
+                listHeader.Add(changedFilesHeaderLabel);
 
                 var buttonContainer = new VisualElement();
                 buttonContainer.AddToClassList("git-header-btn-row");
@@ -196,7 +194,7 @@ namespace RexTools.GitIntegration.Editor
                 buttonContainer.Add(expandAllBtn);
                 buttonContainer.Add(collapseAllBtn);
                 listHeader.Add(buttonContainer);
-                changedFilesFoldout.Add(listHeader);
+                foldoutContainer.Add(listHeader);
 
                 treeViewScroll = new ScrollView(ScrollViewMode.Vertical);
                 treeViewScroll.AddToClassList("rex-result-list");
@@ -206,9 +204,8 @@ namespace RexTools.GitIntegration.Editor
                 listViewScroll.AddToClassList("rex-result-list");
                 listViewScroll.AddToClassList("git-changed-files-scroll");
 
-                changedFilesFoldout.Add(treeViewScroll);
-                changedFilesFoldout.Add(listViewScroll);
-                foldoutContainer.Add(changedFilesFoldout);
+                foldoutContainer.Add(treeViewScroll);
+                foldoutContainer.Add(listViewScroll);
             }
 
             RefreshLayout();
@@ -675,7 +672,10 @@ namespace RexTools.GitIntegration.Editor
             treeViewScroll.Clear();
             listViewScroll.Clear();
             flatFileToggles.Clear();
-            changedFilesFoldout.SetCount(currentChangedFileLines.Count);
+            if (changedFilesHeaderLabel != null)
+            {
+                changedFilesHeaderLabel.text = $"Changed Files ({currentChangedFileLines.Count})";
+            }
 
             if (currentChangedFileLines.Count == 0)
             {
