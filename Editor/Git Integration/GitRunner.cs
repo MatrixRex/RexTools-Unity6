@@ -664,5 +664,23 @@ namespace RexTools.GitIntegration.Editor
                 return false;
             }
         }
+
+        /// <summary>
+        /// Retrieves the commit history log with graph characters and metadata.
+        /// </summary>
+        public static Task<List<string>> GetCommitHistoryAsync(int skip, int limit)
+        {
+            var list = new List<string>();
+            if (!HasGitRepository()) return Task.FromResult(list);
+            
+            return RunCommandAsync($"log --graph --pretty=format:\"%h%x09%s%x09%an%x09%ad\" --date=relative --skip={skip} -n {limit}",
+                line =>
+                {
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        list.Add(line);
+                    }
+                }).ContinueWith(t => list);
+        }
     }
 }
