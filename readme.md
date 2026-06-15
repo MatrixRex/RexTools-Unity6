@@ -94,6 +94,15 @@ A utility for bulk-assigning texture maps to multiple materials at once. It auto
     7.  Toggle off individual properties/materials to exclude them, or select a custom override texture from the asset picker.
     8.  Click **APPLY** to set the target shader and textures on all materials.
 
+### 📦 Scene Pack
+A custom asset type that represents a grouped list of scene assets. Double-clicking a Scene Pack asset or using its custom inspector UI lets you quickly load multiple scenes into the Unity Editor at once.
+
+*   **Usage**:
+    1.  Right-click in the Project window and select `Create > Rex Tools > Scene Pack` to create a new Scene Pack asset.
+    2.  Select the created asset, and configure your list of scene assets in the inspector.
+    3.  Double-click the Scene Pack asset (or select it and click **OPEN SCENE PACK (REPLACE)** in its inspector) to load the first scene as Single (replacing the active scenes) and all other scenes additively.
+    4.  Alternatively, click **OPEN SCENE PACK (ADDITIVE)** to load all scenes additively, keeping your currently active scenes open.
+
 ---
 
 ## 🚀 Getting Started

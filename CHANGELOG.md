@@ -22,8 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - USS: Resolved unknown USS property warnings (`text-transform`, `gap`, `user-select`, `pointer-events`) and cursor warnings by using margin-based spacing and Unity-supported cursors.
 - Core: Fixed unused field/variable warnings in `AnimationEventCopierWindow` and `ShaderGraphSearchExtension`.
 - Unused Assets Finder: Replaced obsolete `FindObjectsOfType` calls with `FindObjectsByType`.
+- Scene Pack: Fixed layout alignment by adding padding to prevent the list foldout arrow from going out of bounds.
 
 ### Added
+- Scene Pack: A custom asset type that represents a list of SceneAssets with custom icon support, allowing users to open all configured scenes at once by double-clicking the asset or using the 'Open Scene Pack' buttons in its custom inspector UI.
 - Core: Added a "clear" button component to `RexTextureField` slots that appears when a texture is bound, enabling fast clearing with mouse propagation prevention to avoid opening Unity's object selector.
 - Core: `RexTexturePreview` — reusable styled texture preview component featuring an image container and a maximize button to view the texture full-size.
 - Texture Repacker: Unified all preview areas (combined preview in PACK, mixed preview in MIX, and channel extraction previews in UNPACK) to use the new `RexTexturePreview` component.
