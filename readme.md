@@ -71,15 +71,18 @@ A utility for packing multiple textures into individual RGBA channels or extract
 
 
 ### 🐙 Git Integration
-A lightweight, background-threaded Git client built directly into the Unity Editor. It displays your current branch directly on the Unity play control strip and lets you stage, commit, fetch, pull, and push without leaving Unity.
+A lightweight, background-threaded Git client built directly into the Unity Editor. It displays your current branch directly on the Unity play control strip and lets you stage, commit, fetch, pull, and push without leaving Unity. It supports a hierarchical **Tree View** for grouping changed files by project folders, alongside a flat **List View** option.
 
 *   **Usage**:
     1.  Look at the Unity play controls bar to see the current active branch (e.g., `Git: main`).
     2.  Click the branch button or go to `Tools > Rex Tools > Git Integration` to open the full window.
     3.  See your repository path, current branch, and synchronization counts (Ahead/Behind).
-    4.  Use **Fetch**, **Pull**, and **Push** buttons to sync with remote branches.
-    5.  Enter a commit message and click **STAGE & COMMIT ALL** to commit local modifications.
-    6.  The console log at the bottom displays live output from background Git processes.
+    4.  The changed files list defaults to the **Tree View** tab, showing modified files grouped under their parent folders. Collapse/expand folders using their arrows.
+    5.  Use the **Expand All** and **Collapse All** buttons to quickly manage the folder tree view.
+    6.  Checking/unchecking folder checkboxes recursively updates all files and subfolders nested inside.
+    7.  Toggle to the **List View** tab to view files in a flat list layout.
+    8.  Use **Fetch**, **Pull**, and **Push** buttons to sync with remote branches.
+    9.  Enter a commit message and click **COMMIT SELECTED** to stage and commit checked files, or click **DISCARD SELECTED** to discard their local changes.
 
 ### 🎨 Batch Material Processor
 A utility for bulk-assigning texture maps to multiple materials at once. It automatically finds texture files inside a directory using custom suffix matching, runs a dry-run preview, and applies the target shader and matched textures in one click.

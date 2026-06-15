@@ -12,9 +12,41 @@ namespace RexTools.GitIntegration.Editor
     /// <summary>
     /// Static helper class for detecting Git repositories and running Git commands asynchronously.
     /// </summary>
+    [InitializeOnLoad]
     public static class GitRunner
     {
         private static string cachedRepoPath;
+        private static readonly List<Process> runningProcesses = new List<Process>();
+        private static volatile bool isAssemblyReloading = false;
+
+        static GitRunner()
+        {
+            AssemblyReloadEvents.beforeAssemblyReload += CleanupRunningProcesses;
+        }
+
+        private static void CleanupRunningProcesses()
+        {
+            isAssemblyReloading = true;
+            lock (runningProcesses)
+            {
+                foreach (var process in runningProcesses)
+                {
+                    try
+                    {
+                        if (!process.HasExited)
+                        {
+                            process.Kill();
+                        }
+                    }
+                    catch { }
+                    finally
+                    {
+                        try { process.Dispose(); } catch { }
+                    }
+                }
+                runningProcesses.Clear();
+            }
+        }
 
         /// <summary>
         /// Gets or sets whether a Git network command (fetch, pull, push) is currently executing.
@@ -62,12 +94,13 @@ namespace RexTools.GitIntegration.Editor
             if (string.IsNullOrEmpty(repoRoot))
             {
                 onErrorLine?.Invoke("Error: No Git repository root found.");
-                tcs.SetResult(-1);
+                tcs.TrySetResult(-1);
                 return tcs.Task;
             }
 
             Task.Run(() =>
             {
+                Process process = null;
                 try
                 {
                     var startInfo = new ProcessStartInfo
@@ -81,28 +114,65 @@ namespace RexTools.GitIntegration.Editor
                         CreateNoWindow = true
                     };
 
-                    var process = new Process { StartInfo = startInfo };
+                    if (isAssemblyReloading)
+                    {
+                        tcs.TrySetResult(-1);
+                        return;
+                    }
+
+                    process = new Process { StartInfo = startInfo };
+                    
                     process.OutputDataReceived += (s, e) =>
                     {
+                        if (isAssemblyReloading) return;
                         if (e.Data != null)
                         {
                             string data = e.Data;
-                            EditorApplication.delayCall += () => onOutputLine?.Invoke(data);
-                        }
-                    };
-                    process.ErrorDataReceived += (s, e) =>
-                    {
-                        if (e.Data != null)
-                        {
-                            string data = e.Data;
-                            EditorApplication.delayCall += () => (onErrorLine ?? onOutputLine)?.Invoke(data);
+                            EditorApplication.delayCall += () =>
+                            {
+                                if (isAssemblyReloading) return;
+                                onOutputLine?.Invoke(data);
+                            };
                         }
                     };
 
+                    process.ErrorDataReceived += (s, e) =>
+                    {
+                        if (isAssemblyReloading) return;
+                        if (e.Data != null)
+                        {
+                            string data = e.Data;
+                            EditorApplication.delayCall += () =>
+                            {
+                                if (isAssemblyReloading) return;
+                                (onErrorLine ?? onOutputLine)?.Invoke(data);
+                            };
+                        }
+                    };
+
+                    lock (runningProcesses)
+                    {
+                        if (isAssemblyReloading)
+                        {
+                            tcs.TrySetResult(-1);
+                            return;
+                        }
+                        runningProcesses.Add(process);
+                    }
+
                     if (!process.Start())
                     {
-                        EditorApplication.delayCall += () => (onErrorLine ?? onOutputLine)?.Invoke("Failed to start process 'git'.");
-                        tcs.SetResult(-1);
+                        lock (runningProcesses)
+                        {
+                            runningProcesses.Remove(process);
+                        }
+                        if (isAssemblyReloading) return;
+                        EditorApplication.delayCall += () =>
+                        {
+                            if (isAssemblyReloading) return;
+                            (onErrorLine ?? onOutputLine)?.Invoke("Failed to start process 'git'.");
+                        };
+                        tcs.TrySetResult(-1);
                         return;
                     }
 
@@ -111,17 +181,37 @@ namespace RexTools.GitIntegration.Editor
 
                     process.WaitForExit();
                     int exitCode = process.ExitCode;
+
+                    lock (runningProcesses)
+                    {
+                        runningProcesses.Remove(process);
+                    }
                     process.Close();
 
-                    EditorApplication.delayCall += () => tcs.SetResult(exitCode);
+                    if (isAssemblyReloading) return;
+                    EditorApplication.delayCall += () =>
+                    {
+                        if (isAssemblyReloading) return;
+                        tcs.TrySetResult(exitCode);
+                    };
                 }
                 catch (Exception ex)
                 {
+                    if (process != null)
+                    {
+                        lock (runningProcesses)
+                        {
+                            runningProcesses.Remove(process);
+                        }
+                    }
+
                     string msg = ex.Message;
+                    if (isAssemblyReloading) return;
                     EditorApplication.delayCall += () =>
                     {
+                        if (isAssemblyReloading) return;
                         (onErrorLine ?? onOutputLine)?.Invoke($"Exception executing git: {msg}");
-                        tcs.SetResult(-1);
+                        tcs.TrySetResult(-1);
                     };
                 }
             });

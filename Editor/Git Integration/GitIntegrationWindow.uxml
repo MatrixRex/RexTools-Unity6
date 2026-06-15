@@ -15,10 +15,12 @@
             <!-- Repository Status Box -->
             <ui:VisualElement class="rex-box" style="flex-shrink: 0;">
                 <ui:Label text="REPOSITORY STATUS" class="rex-section-label" />
-                <ui:Label name="repo-path-label" text="Path: --" class="git-repo-path" />
                 <ui:Label name="branch-status-label" text="Branch: --" class="git-branch-status" />
                 <ui:Label name="sync-status-label" text="Sync: --" class="git-sync-status" />
             </ui:VisualElement>
+
+            <!-- Tab Group Placeholder -->
+            <ui:VisualElement name="tab-group-container" class="git-tab-group-container" />
 
             <!-- Foldout Zone placeholder for RexFoldout in C# -->
             <ui:VisualElement name="changed-files-foldout-container" class="git-foldout-container" />

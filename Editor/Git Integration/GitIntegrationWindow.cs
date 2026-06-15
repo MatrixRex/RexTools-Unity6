@@ -12,7 +12,6 @@ namespace RexTools.GitIntegration.Editor
 {
     public class GitIntegrationWindow : EditorWindow
     {
-        private Label repoPathLabel;
         private Label branchStatusLabel;
         private Label syncStatusLabel;
         
@@ -22,7 +21,10 @@ namespace RexTools.GitIntegration.Editor
         private Button commitBtn;
         private Button discardBtn;
         private TextField commitMsgField;
-        private ScrollView changedFilesScroll;
+        private ScrollView treeViewScroll;
+        private ScrollView listViewScroll;
+        private FolderTreeNode rootTreeNode;
+        private readonly Dictionary<string, Toggle> flatFileToggles = new Dictionary<string, Toggle>();
         private RexFoldout changedFilesFoldout;
         
         private VisualElement mainContentContainer;
@@ -39,6 +41,15 @@ namespace RexTools.GitIntegration.Editor
         private HashSet<string> deselectedFiles = new HashSet<string>();
         private List<string> currentChangedFileLines = new List<string>();
         private List<string> rawChangedFileLines = new List<string>();
+
+        private RexTabGroup tabGroup;
+        private int currentTabIndex = 0; // 0 = Tree View, 1 = List View
+        private HashSet<string> collapsedFolders = new HashSet<string>();
+        private int updatingCheckboxesCount = 0;
+        private Button expandAllBtn;
+        private Button collapseAllBtn;
+        private readonly Dictionary<string, Texture> iconCache = new Dictionary<string, Texture>();
+        private bool isRefreshingStatus = false;
 
         [MenuItem("Tools/Rex Tools/Git Integration")]
         public static void ShowWindow()
@@ -112,9 +123,16 @@ namespace RexTools.GitIntegration.Editor
             // Query elements
             mainContentContainer = root.Q<VisualElement>("main-content-container");
             noRepoContainer = root.Q<VisualElement>("no-repo-container");
-            repoPathLabel = root.Q<Label>("repo-path-label");
             branchStatusLabel = root.Q<Label>("branch-status-label");
             syncStatusLabel = root.Q<Label>("sync-status-label");
+
+            var tabPlaceholder = root.Q<VisualElement>("tab-group-container");
+            if (tabPlaceholder != null)
+            {
+                tabGroup = new RexTabGroup(new[] { "Tree View", "List View" });
+                tabGroup.OnTabChanged += SwitchTab;
+                tabPlaceholder.Add(tabGroup);
+            }
 
             fetchBtn = root.Q<Button>("fetch-btn");
             pullBtn = root.Q<Button>("pull-btn");
@@ -159,22 +177,42 @@ namespace RexTools.GitIntegration.Editor
                 var deselectAllBtn = new Button { text = "Deselect All" };
                 deselectAllBtn.AddToClassList("rex-button");
                 deselectAllBtn.AddToClassList("git-header-btn");
+                deselectAllBtn.AddToClassList("git-header-btn--left");
                 deselectAllBtn.clicked += DeselectAllChangedFiles;
+
+                expandAllBtn = new Button { text = "Expand All" };
+                expandAllBtn.AddToClassList("rex-button");
+                expandAllBtn.AddToClassList("git-header-btn");
+                expandAllBtn.AddToClassList("git-header-btn--left");
+                expandAllBtn.clicked += ExpandAllFolders;
+
+                collapseAllBtn = new Button { text = "Collapse All" };
+                collapseAllBtn.AddToClassList("rex-button");
+                collapseAllBtn.AddToClassList("git-header-btn");
+                collapseAllBtn.clicked += CollapseAllFolders;
 
                 buttonContainer.Add(selectAllBtn);
                 buttonContainer.Add(deselectAllBtn);
+                buttonContainer.Add(expandAllBtn);
+                buttonContainer.Add(collapseAllBtn);
                 listHeader.Add(buttonContainer);
                 changedFilesFoldout.Add(listHeader);
 
-                changedFilesScroll = new ScrollView(ScrollViewMode.Vertical);
-                changedFilesScroll.AddToClassList("rex-result-list");
-                changedFilesScroll.AddToClassList("git-changed-files-scroll");
-                
-                changedFilesFoldout.Add(changedFilesScroll);
+                treeViewScroll = new ScrollView(ScrollViewMode.Vertical);
+                treeViewScroll.AddToClassList("rex-result-list");
+                treeViewScroll.AddToClassList("git-changed-files-scroll");
+
+                listViewScroll = new ScrollView(ScrollViewMode.Vertical);
+                listViewScroll.AddToClassList("rex-result-list");
+                listViewScroll.AddToClassList("git-changed-files-scroll");
+
+                changedFilesFoldout.Add(treeViewScroll);
+                changedFilesFoldout.Add(listViewScroll);
                 foldoutContainer.Add(changedFilesFoldout);
             }
 
             RefreshLayout();
+            SwitchTab(0);
         }
 
         private void LoadStyleSheet(VisualElement root, string packagePath, string assetsPath)
@@ -196,7 +234,6 @@ namespace RexTools.GitIntegration.Editor
             {
                 mainContentContainer.RemoveFromClassList("rex-hidden");
                 noRepoContainer.AddToClassList("rex-hidden");
-                repoPathLabel.text = $"Path: {GitRunner.FindRepositoryRoot()}";
                 await RefreshStatusAsync();
             }
             else
@@ -208,89 +245,386 @@ namespace RexTools.GitIntegration.Editor
 
         private async Task RefreshStatusAsync()
         {
-            if (!GitRunner.HasGitRepository() || isExecuting) return;
+            if (!GitRunner.HasGitRepository() || isExecuting || isRefreshingStatus) return;
 
-            AssetDatabase.Refresh();
-
-            string branch = await GitRunner.GetCurrentBranchAsync();
-            var (ahead, behind) = await GitRunner.GetSyncCountsAsync();
-
-            branchStatusLabel.text = $"Branch: {branch}";
-            
-            // Rebuild the changed files list first to get correct count
-            if (changedFilesScroll != null)
+            isRefreshingStatus = true;
+            if (treeViewScroll != null && listViewScroll != null)
             {
-                rawChangedFileLines = await GitRunner.GetChangedFilesAsync();
-                currentChangedFileLines = GitRunner.FilterAndDeduplicateChangedFiles(rawChangedFileLines);
-                RebuildChangedFilesListUI();
+                treeViewScroll.Clear();
+                listViewScroll.Clear();
+
+                var loadingLabel = new Label("Refreshing Git status... [/]");
+                loadingLabel.AddToClassList("git-row-path");
+                treeViewScroll.Add(loadingLabel);
+
+                var loadingLabelList = new Label("Refreshing Git status... [/]");
+                loadingLabelList.AddToClassList("git-row-path");
+                listViewScroll.Add(loadingLabelList);
             }
 
-            int modifiedCount = currentChangedFileLines.Count;
-            
-            string syncText = "";
-            if (ahead == 0 && behind == 0)
-                syncText = "Local is up-to-date with remote.";
-            else
-                syncText = $"Ahead: {ahead} commits | Behind: {behind} commits.";
+            try
+            {
+                iconCache.Clear();
+                AssetDatabase.Refresh();
 
-            if (modifiedCount > 0)
-                syncText += $" ({modifiedCount} local uncommitted files)";
-            else
-                syncText += " (Clean working directory)";
+                string branch = await GitRunner.GetCurrentBranchAsync();
+                var (ahead, behind) = await GitRunner.GetSyncCountsAsync();
 
-            syncStatusLabel.text = syncText;
-            
-            // Sync status to playmode toolbar button
-            GitToolbarExtender.ForceRefresh();
+                branchStatusLabel.text = $"Branch: {branch}";
+                
+                // Rebuild the changed files list first to get correct count
+                if (treeViewScroll != null)
+                {
+                    rawChangedFileLines = await GitRunner.GetChangedFilesAsync();
+                    currentChangedFileLines = GitRunner.FilterAndDeduplicateChangedFiles(rawChangedFileLines);
+                    RebuildChangedFilesListUI();
+                }
+
+                int modifiedCount = currentChangedFileLines.Count;
+                
+                string syncText = "";
+                if (ahead == 0 && behind == 0)
+                    syncText = "Local is up-to-date with remote.";
+                else
+                    syncText = $"Ahead: {ahead} commits | Behind: {behind} commits.";
+
+                if (modifiedCount > 0)
+                    syncText += $" ({modifiedCount} local uncommitted files)";
+                else
+                    syncText += " (Clean working directory)";
+
+                syncStatusLabel.text = syncText;
+                
+                // Sync status to playmode toolbar button
+                GitToolbarExtender.ForceRefresh();
+            }
+            finally
+            {
+                isRefreshingStatus = false;
+            }
         }
 
-        private void RebuildChangedFilesListUI()
+        private void SwitchTab(int index)
         {
-            if (changedFilesScroll == null) return;
-            
-            changedFilesScroll.Clear();
-            changedFilesFoldout.SetCount(currentChangedFileLines.Count);
-
-            if (currentChangedFileLines.Count == 0)
+            currentTabIndex = index;
+            if (tabGroup != null)
             {
-                var cleanLabel = new Label("No changed files (Working directory clean)");
-                cleanLabel.AddToClassList("git-row-path");
-                changedFilesScroll.Add(cleanLabel);
+                tabGroup.SetSelectedTabWithoutNotify(index);
             }
-            else
+
+            if (expandAllBtn != null && collapseAllBtn != null)
             {
-                foreach (var fileLine in currentChangedFileLines)
+                expandAllBtn.style.display = index == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                collapseAllBtn.style.display = index == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (treeViewScroll != null && listViewScroll != null)
+            {
+                treeViewScroll.style.display = index == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                listViewScroll.style.display = index == 1 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            SyncCheckboxStates();
+        }
+
+        private void ExpandAllFolders()
+        {
+            collapsedFolders.Clear();
+            if (rootTreeNode != null)
+            {
+                SetTreeExpandedRecursive(rootTreeNode, true);
+            }
+        }
+
+        private void CollapseAllFolders()
+        {
+            foreach (var fileLine in currentChangedFileLines)
+            {
+                string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
+                var parents = GitRunner.GetParentDirectories(cleanPath);
+                foreach (var parent in parents)
                 {
-                    if (fileLine.Length < 3) continue;
+                    collapsedFolders.Add(parent);
+                }
+            }
+            if (rootTreeNode != null)
+            {
+                SetTreeExpandedRecursive(rootTreeNode, false);
+            }
+        }
 
-                    string prefix = fileLine.Substring(0, 2);
-                    string path = fileLine.Substring(2).Trim();
-                    string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
+        private void SetTreeExpandedRecursive(FolderTreeNode node, bool expanded)
+        {
+            foreach (var child in node.children)
+            {
+                if (child.isFolder)
+                {
+                    if (expanded)
+                    {
+                        collapsedFolders.Remove(child.fullPath);
+                        if (child.arrowLabel != null) child.arrowLabel.text = "▼";
+                        if (child.contentContainer != null) child.contentContainer.style.display = DisplayStyle.Flex;
+                    }
+                    else
+                    {
+                        collapsedFolders.Add(child.fullPath);
+                        if (child.arrowLabel != null) child.arrowLabel.text = "▶";
+                        if (child.contentContainer != null) child.contentContainer.style.display = DisplayStyle.None;
+                    }
+                    SetTreeExpandedRecursive(child, expanded);
+                }
+            }
+        }
 
+        private void SyncCheckboxStates()
+        {
+            updatingCheckboxesCount++;
+            try
+            {
+                if (currentTabIndex == 0) // Tree View
+                {
+                    if (rootTreeNode != null)
+                    {
+                        SyncTreeCheckboxesRecursive(rootTreeNode);
+                    }
+                }
+                else // List View
+                {
+                    foreach (var kvp in flatFileToggles)
+                    {
+                        if (kvp.Value != null)
+                        {
+                            kvp.Value.SetValueWithoutNotify(!deselectedFiles.Contains(kvp.Key));
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                updatingCheckboxesCount--;
+            }
+        }
+
+        private bool SyncTreeCheckboxesRecursive(FolderTreeNode node)
+        {
+            bool allChecked = true;
+            foreach (var child in node.children)
+            {
+                if (child.isFolder)
+                {
+                    bool childAllChecked = SyncTreeCheckboxesRecursive(child);
+                    if (child.checkbox != null)
+                    {
+                        child.checkbox.SetValueWithoutNotify(childAllChecked);
+                    }
+                    if (!childAllChecked)
+                    {
+                        allChecked = false;
+                    }
+                }
+                else
+                {
+                    bool isChecked = !deselectedFiles.Contains(child.cleanPath);
+                    if (child.checkbox != null)
+                    {
+                        child.checkbox.SetValueWithoutNotify(isChecked);
+                    }
+                    if (!isChecked)
+                    {
+                        allChecked = false;
+                    }
+                }
+            }
+            return allChecked;
+        }
+
+        private void InsertPathIntoTree(FolderTreeNode root, string fileLine)
+        {
+            string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
+            string[] parts = cleanPath.Split('/');
+            FolderTreeNode current = root;
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                string part = parts[i];
+                bool isLast = (i == parts.Length - 1);
+
+                FolderTreeNode child = current.children.Find(c => c.name == part);
+                if (child == null)
+                {
+                    child = new FolderTreeNode
+                    {
+                        name = part,
+                        fullPath = string.Join("/", parts.Take(i + 1)),
+                        isFolder = !isLast,
+                        fileLine = isLast ? fileLine : null,
+                        cleanPath = isLast ? cleanPath : null,
+                        parent = current
+                    };
+                    current.children.Add(child);
+                }
+                current = child;
+            }
+        }
+
+        private bool IsAllChildrenChecked(FolderTreeNode node)
+        {
+            foreach (var child in node.children)
+            {
+                if (child.isFolder)
+                {
+                    if (child.checkbox != null && !child.checkbox.value) return false;
+                }
+                else
+                {
+                    if (deselectedFiles.Contains(child.cleanPath)) return false;
+                }
+            }
+            return true;
+        }
+
+        private void SetCheckboxesRecursive(FolderTreeNode node, bool value)
+        {
+            updatingCheckboxesCount++;
+            try
+            {
+                foreach (var child in node.children)
+                {
+                    if (child.checkbox != null) child.checkbox.SetValueWithoutNotify(value);
+                    if (child.isFolder)
+                    {
+                        SetCheckboxesRecursive(child, value);
+                    }
+                    else
+                    {
+                        if (value)
+                            deselectedFiles.Remove(child.cleanPath);
+                        else
+                            deselectedFiles.Add(child.cleanPath);
+                    }
+                }
+            }
+            finally
+            {
+                updatingCheckboxesCount--;
+            }
+        }
+
+        private void UpdateParentCheckboxes(FolderTreeNode node)
+        {
+            updatingCheckboxesCount++;
+            try
+            {
+                FolderTreeNode p = node.parent;
+                while (p != null && p.parent != null) // parent.parent != null skips virtual root
+                {
+                    if (p.checkbox != null)
+                    {
+                        p.checkbox.SetValueWithoutNotify(IsAllChildrenChecked(p));
+                    }
+                    p = p.parent;
+                }
+            }
+            finally
+            {
+                updatingCheckboxesCount--;
+            }
+        }
+
+        private void RenderTree(FolderTreeNode node, VisualElement container, int indentLevel)
+        {
+            foreach (var child in node.children)
+            {
+                if (child.isFolder)
+                {
+                    var folderContainer = new VisualElement();
+
+                    var folderRow = new VisualElement();
+                    folderRow.AddToClassList("git-folder-row");
+                    folderRow.style.paddingLeft = indentLevel * 12;
+
+                    bool isCollapsed = collapsedFolders.Contains(child.fullPath);
+                    var arrow = new Label(isCollapsed ? "▶" : "▼");
+                    arrow.AddToClassList("git-folder-arrow");
+                    arrow.RegisterCallback<ClickEvent>(evt =>
+                    {
+                        bool collapsed = collapsedFolders.Contains(child.fullPath);
+                        if (collapsed)
+                        {
+                            collapsedFolders.Remove(child.fullPath);
+                            arrow.text = "▼";
+                            child.contentContainer.style.display = DisplayStyle.Flex;
+                        }
+                        else
+                        {
+                            collapsedFolders.Add(child.fullPath);
+                            arrow.text = "▶";
+                            child.contentContainer.style.display = DisplayStyle.None;
+                        }
+                    });
+                    folderRow.Add(arrow);
+                    child.arrowLabel = arrow;
+
+                    var toggle = new Toggle();
+                    toggle.AddToClassList("git-row-checkbox");
+                    toggle.value = IsAllChildrenChecked(child);
+                    toggle.RegisterValueChangedCallback(evt =>
+                    {
+                        if (updatingCheckboxesCount > 0) return;
+                        SetCheckboxesRecursive(child, evt.newValue);
+                        UpdateParentCheckboxes(child);
+                        UpdateCommitButtonState();
+                    });
+                    folderRow.Add(toggle);
+                    child.checkbox = toggle;
+
+                    var folderIcon = new Image();
+                    folderIcon.image = EditorGUIUtility.IconContent("Folder Icon")?.image;
+                    folderIcon.AddToClassList("git-row-icon");
+                    folderRow.Add(folderIcon);
+
+                    var nameLabel = new Label(child.name);
+                    nameLabel.AddToClassList("rex-section-label");
+                    nameLabel.style.marginBottom = 0;
+                    nameLabel.style.marginLeft = 4;
+                    folderRow.Add(nameLabel);
+
+                    folderContainer.Add(folderRow);
+
+                    var childContainer = new VisualElement();
+                    childContainer.style.display = isCollapsed ? DisplayStyle.None : DisplayStyle.Flex;
+                    folderContainer.Add(childContainer);
+                    child.contentContainer = childContainer;
+
+                    RenderTree(child, childContainer, indentLevel + 1);
+                    container.Add(folderContainer);
+                }
+                else
+                {
                     var row = new VisualElement();
                     row.AddToClassList("rex-result-item");
                     row.style.flexDirection = FlexDirection.Row;
                     row.style.alignItems = Align.Center;
+                    row.style.paddingLeft = (indentLevel * 12) + 12;
 
-                    // Checkbox (Tick)
                     var toggle = new Toggle();
-                    toggle.value = !deselectedFiles.Contains(cleanPath);
+                    toggle.value = !deselectedFiles.Contains(child.cleanPath);
                     toggle.AddToClassList("git-row-checkbox");
                     toggle.RegisterValueChangedCallback(evt =>
                     {
+                        if (updatingCheckboxesCount > 0) return;
                         if (evt.newValue)
-                        {
-                            deselectedFiles.Remove(cleanPath);
-                        }
+                            deselectedFiles.Remove(child.cleanPath);
                         else
-                        {
-                            deselectedFiles.Add(cleanPath);
-                        }
+                            deselectedFiles.Add(child.cleanPath);
+
+                        UpdateParentCheckboxes(child);
                         UpdateCommitButtonState();
                     });
                     row.Add(toggle);
+                    child.checkbox = toggle;
 
-                    // Prefix Label
+                    string prefix = child.fileLine.Substring(0, 2);
                     var prefixLabel = new Label($"[{prefix.Trim()}]");
                     prefixLabel.AddToClassList("git-row-prefix");
 
@@ -305,8 +639,7 @@ namespace RexTools.GitIntegration.Editor
 
                     row.Add(prefixLabel);
 
-                    // Asset Icon
-                    Texture iconTexture = GetAssetIcon(cleanPath);
+                    Texture iconTexture = GetAssetIcon(child.cleanPath);
                     if (iconTexture != null)
                     {
                         var assetIcon = new Image();
@@ -315,14 +648,13 @@ namespace RexTools.GitIntegration.Editor
                         row.Add(assetIcon);
                     }
 
-                    // File path label
-                    var pathLabel = new Label(path);
+                    var pathLabel = new Label(child.name);
                     pathLabel.AddToClassList("rex-result-name-btn");
                     pathLabel.AddToClassList("git-row-path");
 
                     pathLabel.RegisterCallback<ClickEvent>(e =>
                     {
-                        var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(cleanPath);
+                        var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(child.cleanPath);
                         if (asset != null)
                         {
                             Selection.activeObject = asset;
@@ -331,9 +663,126 @@ namespace RexTools.GitIntegration.Editor
                     });
                     row.Add(pathLabel);
 
-                    changedFilesScroll.Add(row);
+                    container.Add(row);
                 }
             }
+        }
+
+        private void RebuildChangedFilesListUI()
+        {
+            if (treeViewScroll == null || listViewScroll == null) return;
+            
+            treeViewScroll.Clear();
+            listViewScroll.Clear();
+            flatFileToggles.Clear();
+            changedFilesFoldout.SetCount(currentChangedFileLines.Count);
+
+            if (currentChangedFileLines.Count == 0)
+            {
+                var cleanLabel = new Label("No changed files (Working directory clean)");
+                cleanLabel.AddToClassList("git-row-path");
+                treeViewScroll.Add(cleanLabel);
+                
+                var cleanLabelList = new Label("No changed files (Working directory clean)");
+                cleanLabelList.AddToClassList("git-row-path");
+                listViewScroll.Add(cleanLabelList);
+                
+                rootTreeNode = null;
+                UpdateCommitButtonState();
+                return;
+            }
+
+            // 1. Build and render Hierarchical Tree (into treeViewScroll)
+            rootTreeNode = new FolderTreeNode { name = "Root", isFolder = true };
+            foreach (var fileLine in currentChangedFileLines)
+            {
+                InsertPathIntoTree(rootTreeNode, fileLine);
+            }
+            RenderTree(rootTreeNode, treeViewScroll, 0);
+
+            // 2. Build and render Flat List (into listViewScroll)
+            foreach (var fileLine in currentChangedFileLines)
+            {
+                if (fileLine.Length < 3) continue;
+
+                string prefix = fileLine.Substring(0, 2);
+                string path = fileLine.Substring(2).Trim();
+                string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
+
+                var row = new VisualElement();
+                row.AddToClassList("rex-result-item");
+                row.style.flexDirection = FlexDirection.Row;
+                row.style.alignItems = Align.Center;
+
+                // Checkbox (Tick)
+                var toggle = new Toggle();
+                toggle.AddToClassList("git-row-checkbox");
+                toggle.RegisterValueChangedCallback(evt =>
+                {
+                    if (updatingCheckboxesCount > 0) return;
+                    if (evt.newValue)
+                    {
+                        deselectedFiles.Remove(cleanPath);
+                    }
+                    else
+                    {
+                        deselectedFiles.Add(cleanPath);
+                    }
+                    UpdateCommitButtonState();
+                });
+                row.Add(toggle);
+                flatFileToggles[cleanPath] = toggle;
+
+                // Prefix Label
+                var prefixLabel = new Label($"[{prefix.Trim()}]");
+                prefixLabel.AddToClassList("git-row-prefix");
+
+                if (prefix.Contains("M"))
+                    prefixLabel.AddToClassList("git-row-prefix--modified");
+                else if (prefix.Contains("D"))
+                    prefixLabel.AddToClassList("git-row-prefix--deleted");
+                else if (prefix.Contains("A") || prefix.Contains("?"))
+                    prefixLabel.AddToClassList("git-row-prefix--added");
+                else
+                    prefixLabel.AddToClassList("git-row-prefix--fallback");
+
+                row.Add(prefixLabel);
+
+                // Asset Icon
+                Texture iconTexture = GetAssetIcon(cleanPath);
+                if (iconTexture != null)
+                {
+                    var assetIcon = new Image();
+                    assetIcon.image = iconTexture;
+                    assetIcon.AddToClassList("git-row-icon");
+                    row.Add(assetIcon);
+                }
+
+                // File path label
+                var pathLabel = new Label(path);
+                pathLabel.AddToClassList("rex-result-name-btn");
+                pathLabel.AddToClassList("git-row-path");
+
+                pathLabel.RegisterCallback<ClickEvent>(e =>
+                {
+                    var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(cleanPath);
+                    if (asset != null)
+                    {
+                        Selection.activeObject = asset;
+                        EditorGUIUtility.PingObject(asset);
+                    }
+                });
+                row.Add(pathLabel);
+
+                listViewScroll.Add(row);
+            }
+
+            // Sync visual states to current selection
+            SyncCheckboxStates();
+
+            // Setup active view visibility
+            treeViewScroll.style.display = currentTabIndex == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            listViewScroll.style.display = currentTabIndex == 1 ? DisplayStyle.Flex : DisplayStyle.None;
 
             UpdateCommitButtonState();
         }
@@ -341,7 +790,8 @@ namespace RexTools.GitIntegration.Editor
         private void SelectAllChangedFiles()
         {
             deselectedFiles.Clear();
-            RebuildChangedFilesListUI();
+            SyncCheckboxStates();
+            UpdateCommitButtonState();
         }
 
         private void DeselectAllChangedFiles()
@@ -354,10 +804,23 @@ namespace RexTools.GitIntegration.Editor
                     deselectedFiles.Add(cleanPath);
                 }
             }
-            RebuildChangedFilesListUI();
+            SyncCheckboxStates();
+            UpdateCommitButtonState();
         }
 
         private Texture GetAssetIcon(string cleanPath)
+        {
+            if (iconCache.TryGetValue(cleanPath, out Texture cachedIcon))
+            {
+                return cachedIcon;
+            }
+
+            Texture resolvedIcon = GetAssetIconDirect(cleanPath);
+            iconCache[cleanPath] = resolvedIcon;
+            return resolvedIcon;
+        }
+
+        private Texture GetAssetIconDirect(string cleanPath)
         {
             // 1. Explicitly check if it's a folder/directory first
             string repoRoot = GitRunner.FindRepositoryRoot();
@@ -471,13 +934,40 @@ namespace RexTools.GitIntegration.Editor
 
             double currentTime = EditorApplication.timeSinceStartup;
 
-            if (isExecuting)
+            if (isExecuting || isRefreshingStatus)
             {
                 if (currentTime - lastSpinnerTime > 0.15)
                 {
                     lastSpinnerTime = currentTime;
                     spinnerIndex = (spinnerIndex + 1) % SpinnerFrames.Length;
-                    syncStatusLabel.text = $"Executing Git command... [{SpinnerFrames[spinnerIndex]}]";
+                    string spinner = SpinnerFrames[spinnerIndex];
+                    
+                    if (isExecuting)
+                    {
+                        syncStatusLabel.text = $"Executing Git command... [{spinner}]";
+                    }
+                    else if (isRefreshingStatus)
+                    {
+                        syncStatusLabel.text = $"Refreshing Git status... [{spinner}]";
+                        
+                        // Update the text of the loading label in the scroll views
+                        if (treeViewScroll != null && treeViewScroll.childCount > 0)
+                        {
+                            var label = treeViewScroll[0] as Label;
+                            if (label != null && label.text.StartsWith("Refreshing Git status..."))
+                            {
+                                label.text = $"Refreshing Git status... [{spinner}]";
+                            }
+                        }
+                        if (listViewScroll != null && listViewScroll.childCount > 0)
+                        {
+                            var label = listViewScroll[0] as Label;
+                            if (label != null && label.text.StartsWith("Refreshing Git status..."))
+                            {
+                                label.text = $"Refreshing Git status... [{spinner}]";
+                            }
+                        }
+                    }
                 }
                 return;
             }
@@ -634,6 +1124,23 @@ namespace RexTools.GitIntegration.Editor
 
             SetUIExecuting(false);
             await RefreshStatusAsync();
+        }
+
+        private class FolderTreeNode
+        {
+            public string name;
+            public string fullPath;
+            public bool isFolder;
+            public string fileLine;
+            public string cleanPath;
+            public List<FolderTreeNode> children = new List<FolderTreeNode>();
+            public FolderTreeNode parent;
+            
+            // Cached UI Elements
+            public VisualElement rowElement;
+            public Toggle checkbox;
+            public VisualElement contentContainer;
+            public Label arrowLabel;
         }
     }
 }

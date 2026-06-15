@@ -124,3 +124,25 @@
     background-color: rgb(179, 51, 51);
     margin-left: 5px;
 }
+.git-tab-group-container {
+    margin-top: 6px;
+    margin-left: 4px;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+.git-folder-row {
+    flex-direction: row;
+    align-items: center;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+.git-folder-arrow {
+    width: 12px;
+    -unity-text-align: middle-center;
+    font-size: 8px;
+    color: rgb(150, 150, 150);
+    cursor: link;
+}
+.git-folder-arrow:hover {
+    color: rgb(255, 255, 255);
+}

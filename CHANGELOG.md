@@ -18,7 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Git Integration: Hierarchical collapsible folder tree view as the default view, and list view on a separate tab (using `RexTabGroup`).
+- Git Integration: Bulk directory operations where checking/unchecking a folder checkbox recursively updates all files/folders nested inside it.
+- Git Integration: Added 'Expand All' and 'Collapse All' buttons to quickly expand or collapse all directory nodes in the tree view.
+- Git Integration: Optimized UI rebuilding and tab switching performance using a dual ScrollView layout (`treeViewScroll` and `listViewScroll`), in-place checkbox syncing, in-place folder expand/collapse updates, and a local icon cache (`iconCache`) to bypass slow disk checks and `AssetDatabase` queries.
+- Git Integration: Added an animated loading state showing a spinner directly in the changed files list and status bar when refreshing Git status, preventing the appearance of a frozen UI.
+
 ### Fixed
+- Git Integration: Fixed an `InvalidOperationException` on `TaskCompletionSource` during background process execution by switching to `TrySetResult`, registering active Git processes for termination on assembly reload (`AssemblyReloadEvents.beforeAssemblyReload`), and suppressing completion/callback delegation during domain reloads.
 - USS: Resolved unknown USS property warnings (`text-transform`, `gap`, `user-select`, `pointer-events`) and cursor warnings by using margin-based spacing and Unity-supported cursors.
 - Core: Fixed unused field/variable warnings in `AnimationEventCopierWindow` and `ShaderGraphSearchExtension`.
 - Unused Assets Finder: Replaced obsolete `FindObjectsOfType` calls with `FindObjectsByType`.
@@ -48,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch Material Processor: A standalone tool for batch setting material shaders and auto-assigning texture maps from a selected directory using customizable suffix rules and dry-run preview.
 
 ### Changed
+- Git Integration: Optimized checkbox selection/deselection performance by migrating to a bottom-up linear-time O(N) tree sync, optimizing ancestor state checks, and introducing a nested updating state counter to prevent event callback recursion, keeping checkmark updates visual-only in-memory and eliminating UI freezes.
+- Git Integration: Removed the repository path display label from the header status box to keep the layout minimal and clean.
 - Git Integration: Refactored `GitIntegrationWindow.cs` to separate non-UI Git operations, path parsing, and file deletions into `GitRunner.cs`, reducing the window's size by ~32% and consolidating business logic.
 - Git Integration: Migrated the layout of `GitIntegrationWindow.cs` to `GitIntegrationWindow.uxml` and separated all C# inline styles into a dedicated `GitIntegrationStyles.uss` stylesheet, reducing the C# file size by an additional 128 lines (~42% reduction overall).
 - Git Integration: Removed horizontal scrollability on the changed files ScrollView to prevent hijacking mouse vertical scrolling, and added ellipsis truncation (`...`) to file path labels.
