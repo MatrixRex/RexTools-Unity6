@@ -43,13 +43,25 @@ namespace RexTools.GitIntegration.Editor
         private List<string> rawChangedFileLines = new List<string>();
 
         private RexTabGroup tabGroup;
-        private int currentTabIndex = 0; // 0 = Tree View, 1 = List View
+        private int currentTabIndex = 0; // 0 = Changes, 1 = History
         private HashSet<string> collapsedFolders = new HashSet<string>();
         private int updatingCheckboxesCount = 0;
         private Button expandAllBtn;
         private Button collapseAllBtn;
         private readonly Dictionary<string, Texture> iconCache = new Dictionary<string, Texture>();
         private bool isRefreshingStatus = false;
+
+        private ScrollView historyScroll;
+        private Button loadMoreBtn;
+        private Button treeToggleBtn;
+        private Button listToggleBtn;
+        private int currentHistoryOffset = 0;
+        private List<string> historyLines = new List<string>();
+        private VisualElement changesSubToggleContainer;
+        private VisualElement changesContainer;
+        private VisualElement operationsBox;
+        private bool isFirstHistoryLoad = true;
+        private int currentSubViewIndex = 0; // 0 = Tree, 1 = List
 
         [MenuItem("Tools/Rex Tools/Git Integration")]
         public static void ShowWindow()
@@ -129,8 +141,8 @@ namespace RexTools.GitIntegration.Editor
             var tabPlaceholder = root.Q<VisualElement>("tab-group-container");
             if (tabPlaceholder != null)
             {
-                tabGroup = new RexTabGroup(new[] { "Tree View", "List View" });
-                tabGroup.OnTabChanged += SwitchTab;
+                tabGroup = new RexTabGroup(new[] { "Changes", "History" });
+                tabGroup.OnTabChanged += SwitchMainTab;
                 tabPlaceholder.Add(tabGroup);
             }
 
@@ -208,8 +220,58 @@ namespace RexTools.GitIntegration.Editor
                 foldoutContainer.Add(listViewScroll);
             }
 
+            // Build changes sub-toggle container
+            changesSubToggleContainer = new VisualElement();
+            changesSubToggleContainer.AddToClassList("git-changes-sub-toggle-container");
+            
+            var toggleLabel = new Label("View Mode:");
+            toggleLabel.style.fontSize = 10;
+            toggleLabel.style.color = new Color(0.6f, 0.6f, 0.6f);
+            changesSubToggleContainer.Add(toggleLabel);
+
+            treeToggleBtn = new Button { text = "Tree" };
+            treeToggleBtn.AddToClassList("rex-button");
+            treeToggleBtn.AddToClassList("git-changes-sub-toggle-btn");
+            treeToggleBtn.clicked += () => SwitchChangesViewMode(0);
+            changesSubToggleContainer.Add(treeToggleBtn);
+
+            listToggleBtn = new Button { text = "List" };
+            listToggleBtn.AddToClassList("rex-button");
+            listToggleBtn.AddToClassList("git-changes-sub-toggle-btn");
+            listToggleBtn.clicked += () => SwitchChangesViewMode(1);
+            changesSubToggleContainer.Add(listToggleBtn);
+
+            // Find main elements for containment
+            changesContainer = new VisualElement();
+            changesContainer.style.flexGrow = 1;
+
+            var originalScroll = root.Q<ScrollView>("main-scroll-view");
+            if (originalScroll != null)
+            {
+                originalScroll.parent.Insert(originalScroll.parent.IndexOf(originalScroll), changesContainer);
+                changesContainer.Add(changesSubToggleContainer);
+                changesContainer.Add(originalScroll);
+            }
+
+            operationsBox = root.Q<VisualElement>("main-content-container").Q<VisualElement>(null, "git-ops-box");
+
+            // Build History Scroll Container
+            historyScroll = new ScrollView(ScrollViewMode.Vertical);
+            historyScroll.AddToClassList("git-history-scroll");
+            historyScroll.style.display = DisplayStyle.None;
+
+            var mainContent = root.Q<VisualElement>("main-content-container");
+            if (operationsBox != null)
+            {
+                operationsBox.parent.Insert(operationsBox.parent.IndexOf(operationsBox), historyScroll);
+            }
+            else
+            {
+                mainContent.Add(historyScroll);
+            }
+
             RefreshLayout();
-            SwitchTab(0);
+            SwitchMainTab(0);
         }
 
         private void LoadStyleSheet(VisualElement root, string packagePath, string assetsPath)
