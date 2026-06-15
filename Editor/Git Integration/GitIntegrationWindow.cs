@@ -363,27 +363,192 @@ namespace RexTools.GitIntegration.Editor
             }
         }
 
-        private void SwitchTab(int index)
+        private void SwitchMainTab(int index)
         {
             currentTabIndex = index;
-            if (tabGroup != null)
+            if (changesContainer != null)
             {
-                tabGroup.SetSelectedTabWithoutNotify(index);
+                changesContainer.style.display = index == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+            if (historyScroll != null)
+            {
+                historyScroll.style.display = index == 1 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+            if (operationsBox != null)
+            {
+                operationsBox.style.display = index == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (index == 0)
+            {
+                SwitchChangesViewMode(currentSubViewIndex);
+            }
+            else if (index == 1)
+            {
+                if (isFirstHistoryLoad)
+                {
+                    isFirstHistoryLoad = false;
+                    _ = RefreshHistoryAsync(true);
+                }
+            }
+        }
+
+        private void SwitchChangesViewMode(int viewMode)
+        {
+            currentSubViewIndex = viewMode;
+            if (treeToggleBtn != null && listToggleBtn != null)
+            {
+                if (viewMode == 0)
+                {
+                    treeToggleBtn.AddToClassList("git-changes-sub-toggle-btn--active");
+                    listToggleBtn.RemoveFromClassList("git-changes-sub-toggle-btn--active");
+                }
+                else
+                {
+                    listToggleBtn.AddToClassList("git-changes-sub-toggle-btn--active");
+                    treeToggleBtn.RemoveFromClassList("git-changes-sub-toggle-btn--active");
+                }
             }
 
             if (expandAllBtn != null && collapseAllBtn != null)
             {
-                expandAllBtn.style.display = index == 0 ? DisplayStyle.Flex : DisplayStyle.None;
-                collapseAllBtn.style.display = index == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                expandAllBtn.style.display = viewMode == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                collapseAllBtn.style.display = viewMode == 0 ? DisplayStyle.Flex : DisplayStyle.None;
             }
 
             if (treeViewScroll != null && listViewScroll != null)
             {
-                treeViewScroll.style.display = index == 0 ? DisplayStyle.Flex : DisplayStyle.None;
-                listViewScroll.style.display = index == 1 ? DisplayStyle.Flex : DisplayStyle.None;
+                treeViewScroll.style.display = viewMode == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                listViewScroll.style.display = viewMode == 1 ? DisplayStyle.Flex : DisplayStyle.None;
             }
 
             SyncCheckboxStates();
+        }
+
+        private async Task RefreshHistoryAsync(bool resetOffset)
+        {
+            if (resetOffset)
+            {
+                currentHistoryOffset = 0;
+                historyLines.Clear();
+                if (historyScroll != null) historyScroll.Clear();
+            }
+
+            if (currentHistoryOffset == 0 && historyScroll != null)
+            {
+                var header = new VisualElement();
+                header.AddToClassList("git-history-header");
+
+                var gCol = new Label("Graph") { style = { width = 80 } };
+                gCol.AddToClassList("git-history-header-cell");
+                header.Add(gCol);
+
+                var sCol = new Label("Commit") { style = { width = 70 } };
+                sCol.AddToClassList("git-history-header-cell");
+                header.Add(sCol);
+
+                var mCol = new Label("Message") { style = { flexGrow = 1 } };
+                mCol.AddToClassList("git-history-header-cell");
+                header.Add(mCol);
+
+                var dCol = new Label("Date") { style = { width = 90 } };
+                dCol.AddToClassList("git-history-header-cell");
+                header.Add(dCol);
+
+                historyScroll.Add(header);
+            }
+
+            var newLines = await GitRunner.GetCommitHistoryAsync(currentHistoryOffset, 50);
+            historyLines.AddRange(newLines);
+            currentHistoryOffset += newLines.Count;
+
+            RenderHistoryRows(newLines);
+
+            if (newLines.Count == 50)
+            {
+                if (loadMoreBtn == null)
+                {
+                    loadMoreBtn = new Button(() => _ = RefreshHistoryAsync(false)) { text = "Load More" };
+                    loadMoreBtn.AddToClassList("rex-button");
+                    loadMoreBtn.AddToClassList("git-history-load-more-btn");
+                }
+                if (historyScroll != null)
+                {
+                    historyScroll.Remove(loadMoreBtn);
+                    historyScroll.Add(loadMoreBtn);
+                }
+            }
+            else if (loadMoreBtn != null && historyScroll != null)
+            {
+                historyScroll.Remove(loadMoreBtn);
+            }
+        }
+
+        private void RenderHistoryRows(List<string> lines)
+        {
+            if (historyScroll == null) return;
+
+            foreach (var line in lines)
+            {
+                string[] parts = line.Split('\t');
+                string graphPart = "";
+                string sha = "";
+                string message = "";
+                string date = "";
+
+                if (parts.Length == 1)
+                {
+                    graphPart = parts[0];
+                }
+                else if (parts.Length > 1)
+                {
+                    int lastSpace = parts[0].LastIndexOf(' ');
+                    graphPart = lastSpace != -1 ? parts[0].Substring(0, lastSpace) : "";
+                    sha = lastSpace != -1 ? parts[0].Substring(lastSpace + 1) : parts[0];
+                    message = parts[1];
+                    if (parts.Length > 3)
+                    {
+                        date = parts[3];
+                    }
+                }
+
+                var row = new VisualElement();
+                row.AddToClassList("git-history-row");
+
+                var gLabel = new Label(graphPart) { style = { width = 80 } };
+                gLabel.AddToClassList("git-history-cell-graph");
+                row.Add(gLabel);
+
+                var sLabel = new Label(sha) { style = { width = 70 } };
+                sLabel.AddToClassList("git-history-cell-sha");
+                if (!string.IsNullOrEmpty(sha))
+                {
+                    string currentSha = sha;
+                    sLabel.RegisterCallback<ClickEvent>(evt =>
+                    {
+                        GUIUtility.systemCopyBuffer = currentSha;
+                        Log($"Copied commit SHA {currentSha} to clipboard.");
+                    });
+                }
+                row.Add(sLabel);
+
+                var mLabel = new Label(message) { style = { flexGrow = 1 } };
+                mLabel.AddToClassList("git-history-cell-message");
+                row.Add(mLabel);
+
+                var dLabel = new Label(date) { style = { width = 90 } };
+                dLabel.AddToClassList("git-history-cell-date");
+                row.Add(dLabel);
+
+                if (loadMoreBtn != null)
+                {
+                    historyScroll.Insert(historyScroll.IndexOf(loadMoreBtn), row);
+                }
+                else
+                {
+                    historyScroll.Add(row);
+                }
+            }
         }
 
         private void ExpandAllFolders()
@@ -440,7 +605,7 @@ namespace RexTools.GitIntegration.Editor
             updatingCheckboxesCount++;
             try
             {
-                if (currentTabIndex == 0) // Tree View
+                if (currentSubViewIndex == 0) // Tree View
                 {
                     if (rootTreeNode != null)
                     {
@@ -843,8 +1008,8 @@ namespace RexTools.GitIntegration.Editor
             SyncCheckboxStates();
 
             // Setup active view visibility
-            treeViewScroll.style.display = currentTabIndex == 0 ? DisplayStyle.Flex : DisplayStyle.None;
-            listViewScroll.style.display = currentTabIndex == 1 ? DisplayStyle.Flex : DisplayStyle.None;
+            treeViewScroll.style.display = currentSubViewIndex == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            listViewScroll.style.display = currentSubViewIndex == 1 ? DisplayStyle.Flex : DisplayStyle.None;
 
             UpdateCommitButtonState();
         }
