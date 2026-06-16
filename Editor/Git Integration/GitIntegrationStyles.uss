@@ -225,3 +225,16 @@
     background-color: rgb(70, 70, 70);
     color: rgb(255, 255, 255);
 }
+
+.git-btn-badge-dot {
+    position: absolute;
+    top: 3px;
+    right: 5px;
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background-color: rgb(255, 89, 89);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+

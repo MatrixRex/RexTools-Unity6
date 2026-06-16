@@ -71,7 +71,7 @@ A utility for packing multiple textures into individual RGBA channels or extract
 
 
 ### 🐙 Git Integration
-A lightweight, background-threaded Git client built directly into the Unity Editor. It displays your current branch directly on the Unity play control strip and lets you stage, commit, fetch, pull, and push without leaving Unity. It supports a hierarchical **Tree View** for grouping changed files by project folders, alongside a flat **List View** option.
+A lightweight, background-threaded Git client built directly into the Unity Editor. It displays your current branch directly on the Unity play control strip and lets you stage, commit, fetch, pull, and push without leaving Unity. It supports a hierarchical **Tree View** for grouping changed files by project folders, alongside a flat **List View** option. Visual notification badges (red dots) and built-in icons highlight pending actions (modified files, unpushed commits, and remote updates to pull).
 
 *   **Usage**:
     1.  Look at the Unity play controls bar to see the current active branch (e.g., `Git: main`).

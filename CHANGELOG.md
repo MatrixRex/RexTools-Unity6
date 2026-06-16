@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Git Integration: Added 'Expand All' and 'Collapse All' buttons to quickly expand or collapse all directory nodes in the tree view.
 - Git Integration: Optimized UI rebuilding and tab switching performance using a dual ScrollView layout (`treeViewScroll` and `listViewScroll`), in-place checkbox syncing, in-place folder expand/collapse updates, and a local icon cache (`iconCache`) to bypass slow disk checks and `AssetDatabase` queries.
 - Git Integration: Added an animated loading state showing a spinner directly in the changed files list and status bar when refreshing Git status, preventing the appearance of a frozen UI.
+- Git Integration: Added visual notification badges (red dots) on the Changes and History tabs to indicate local modifications and unpushed/unpulled commits.
+- Git Integration: Upgraded Fetch, Pull, and Push action buttons to feature built-in Unity version control icons and styled them matching the rex-button design system.
+- Git Integration: Added notification badges (dots) over the Pull and Push buttons that automatically appear when there are incoming changes (behind > 0) or outgoing changes (ahead > 0).
 
 ### Fixed
 - Git Integration: Fixed an `InvalidOperationException` on `TaskCompletionSource` during background process execution by switching to `TrySetResult`, registering active Git processes for termination on assembly reload (`AssemblyReloadEvents.beforeAssemblyReload`), and suppressing completion/callback delegation during domain reloads.

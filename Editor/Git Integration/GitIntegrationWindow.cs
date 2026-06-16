@@ -62,6 +62,8 @@ namespace RexTools.GitIntegration.Editor
         private VisualElement operationsBox;
         private bool isFirstHistoryLoad = true;
         private int currentSubViewIndex = 0; // 0 = Tree, 1 = List
+        private VisualElement pullBadge;
+        private VisualElement pushBadge;
 
         [MenuItem("Tools/Rex Tools/Git Integration")]
         public static void ShowWindow()
@@ -152,6 +154,23 @@ namespace RexTools.GitIntegration.Editor
             commitBtn = root.Q<Button>("commit-btn");
             discardBtn = root.Q<Button>("discard-btn");
             commitMsgField = root.Q<TextField>("commit-msg-field");
+
+            // Setup buttons with icons and labels
+            SetupButtonWithIcon(fetchBtn, "Fetch", GetFetchIcon());
+            SetupButtonWithIcon(pullBtn, "Pull", GetPullIcon());
+            SetupButtonWithIcon(pushBtn, "Push", GetPushIcon());
+
+            // Initialize and append badges to Pull and Push buttons
+            pullBadge = new VisualElement();
+            pullBadge.AddToClassList("git-btn-badge-dot");
+            pullBadge.style.display = DisplayStyle.None;
+            pullBtn.Add(pullBadge);
+
+            pushBadge = new VisualElement();
+            pushBadge.AddToClassList("git-btn-badge-dot");
+            pushBadge.style.display = DisplayStyle.None;
+            pushBtn.Add(pushBadge);
+
 
             // Bind button callbacks
             var scanBtn = root.Q<Button>("scan-btn");
@@ -353,6 +372,23 @@ namespace RexTools.GitIntegration.Editor
                     syncText += " (Clean working directory)";
 
                 syncStatusLabel.text = syncText;
+
+                // Update notification badges (dots)
+                if (tabGroup != null)
+                {
+                    tabGroup.SetTabBadge(0, modifiedCount > 0);
+                    tabGroup.SetTabBadge(1, ahead > 0 || behind > 0);
+                }
+
+                if (pullBadge != null)
+                {
+                    pullBadge.style.display = behind > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                }
+
+                if (pushBadge != null)
+                {
+                    pushBadge.style.display = ahead > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                }
                 
                 // Sync status to playmode toolbar button
                 GitToolbarExtender.ForceRefresh();
@@ -1245,6 +1281,54 @@ namespace RexTools.GitIntegration.Editor
 
             commitBtn.SetEnabled(hasSelected);
             discardBtn.SetEnabled(hasSelected);
+        }
+
+        private Texture2D GetPullIcon()
+        {
+            var content = EditorGUIUtility.IconContent("d_CollabPull") ?? 
+                          EditorGUIUtility.IconContent("CollabPull") ?? 
+                          EditorGUIUtility.IconContent("d_Download-Available") ??
+                          EditorGUIUtility.IconContent("d_Download");
+            return content?.image as Texture2D;
+        }
+
+        private Texture2D GetPushIcon()
+        {
+            var content = EditorGUIUtility.IconContent("d_CollabPush") ?? 
+                          EditorGUIUtility.IconContent("CollabPush") ?? 
+                          EditorGUIUtility.IconContent("d_Upload-Available") ??
+                          EditorGUIUtility.IconContent("d_Upload");
+            return content?.image as Texture2D;
+        }
+
+        private Texture2D GetFetchIcon()
+        {
+            var content = EditorGUIUtility.IconContent("d_Refresh") ?? 
+                          EditorGUIUtility.IconContent("Refresh");
+            return content?.image as Texture2D;
+        }
+
+        private void SetupButtonWithIcon(Button button, string labelText, Texture2D iconTexture)
+        {
+            if (button == null) return;
+            
+            button.Clear();
+            button.text = "";
+            button.style.position = Position.Relative;
+            
+            button.AddToClassList("rex-button");
+            
+            if (iconTexture != null)
+            {
+                button.AddToClassList("rex-button--with-icon");
+                var iconImage = new Image { image = iconTexture, pickingMode = PickingMode.Ignore };
+                iconImage.AddToClassList("rex-button__icon");
+                button.Add(iconImage);
+            }
+            
+            var label = new Label(labelText) { pickingMode = PickingMode.Ignore };
+            label.AddToClassList("rex-button__label");
+            button.Add(label);
         }
 
         private void Log(string text)
