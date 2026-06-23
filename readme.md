@@ -33,6 +33,17 @@ Adds alignment and distribution tools to the ShaderGraph editor context menu. Qu
     4.  **Align**: Choose **Left**, **Right**, **Up**, or **Down** to snap nodes to a common edge.
     5.  **Distribute**: Choose **Horizontal** or **Vertical** to evenly space nodes with a consistent gap.
 
+### ⚡ ShaderGraph Custom Function Sync
+Automatically synchronizes and generates input and output ports (slots) for a `CustomFunctionNode` in the ShaderGraph editor based on the signature of its referenced HLSL file, preserving existing connections.
+
+*   **Usage**:
+    1.  Open any ShaderGraph.
+    2.  Create a **Custom Function** node and set its type to **File**.
+    3.  Assign your `.hlsl` source file to the node and set the **Name** of the function.
+    4.  Right-click the selected Custom Function node to open the context menu.
+    5.  Select **Rex Tools > Sync Ports from HLSL**.
+    6.  The input and output ports will automatically populate based on the HLSL function parameters, maintaining any existing connections for matching ports.
+
 ### 📸 Quick Shot
 A high-resolution screenshot utility that allows you to capture the Scene view or Game view with custom scaling and transparency.
 

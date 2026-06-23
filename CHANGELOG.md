@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- ShaderGraph Custom Function Sync: Added a context menu action `Rex Tools/Sync Ports from HLSL` to automatically synchronize and generate input/output slots for `CustomFunctionNode` based on an HLSL file signature, preserving existing connections.
 - Git Integration: Hierarchical collapsible folder tree view as the default view, and list view on a separate tab (using `RexTabGroup`).
 - Git Integration: Bulk directory operations where checking/unchecking a folder checkbox recursively updates all files/folders nested inside it.
 - Git Integration: Added 'Expand All' and 'Collapse All' buttons to quickly expand or collapse all directory nodes in the tree view.
