@@ -1285,27 +1285,38 @@ namespace RexTools.GitIntegration.Editor
 
         private Texture2D GetPullIcon()
         {
-            var content = EditorGUIUtility.IconContent("d_CollabPull") ?? 
-                          EditorGUIUtility.IconContent("CollabPull") ?? 
-                          EditorGUIUtility.IconContent("d_Download-Available") ??
-                          EditorGUIUtility.IconContent("d_Download");
-            return content?.image as Texture2D;
+#if UNITY_6000_0_OR_NEWER
+            return GetIcon("d_scrolldown");
+#else
+            return GetIcon("d_CollabPull", "CollabPull", "d_Download-Available", "d_Download");
+#endif
         }
 
         private Texture2D GetPushIcon()
         {
-            var content = EditorGUIUtility.IconContent("d_CollabPush") ?? 
-                          EditorGUIUtility.IconContent("CollabPush") ?? 
-                          EditorGUIUtility.IconContent("d_Upload-Available") ??
-                          EditorGUIUtility.IconContent("d_Upload");
-            return content?.image as Texture2D;
+#if UNITY_6000_0_OR_NEWER
+            return GetIcon("d_scrollup");
+#else
+            return GetIcon("d_CollabPush", "CollabPush", "d_Upload-Available", "d_Upload");
+#endif
         }
 
         private Texture2D GetFetchIcon()
         {
-            var content = EditorGUIUtility.IconContent("d_Refresh") ?? 
-                          EditorGUIUtility.IconContent("Refresh");
-            return content?.image as Texture2D;
+            return GetIcon("d_Refresh", "Refresh");
+        }
+
+        private Texture2D GetIcon(params string[] names)
+        {
+            foreach (var name in names)
+            {
+                var content = EditorGUIUtility.IconContent(name);
+                if (content != null && content.image != null)
+                {
+                    return content.image as Texture2D;
+                }
+            }
+            return null;
         }
 
         private void SetupButtonWithIcon(Button button, string labelText, Texture2D iconTexture)
