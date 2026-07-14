@@ -112,6 +112,16 @@ namespace Rextools.ShaderGraphOrganizer.Editor
             evt.menu.AppendAction("Distribute/Vertical",
                 action => DistributeNodes(graphView, DistributeDirection.Vertical),
                 hasMultipleNodes ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+
+            // Add Auto Align Inputs item when right-clicking over a node
+            var targetNode = GetNodeFromEventTarget(evt.target as VisualElement);
+            if (targetNode != null)
+            {
+                var inputNodes = GetConnectedInputNodes(targetNode);
+                evt.menu.AppendAction("Auto Align Inputs",
+                    action => AutoAlignInputs(graphView, targetNode, inputNodes),
+                    inputNodes.Count > 0 ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+            }
         }
 
         private static List<Node> GetSelectedNodes(GraphView graphView)
@@ -271,6 +281,119 @@ namespace Rextools.ShaderGraphOrganizer.Editor
             }
 
             graphView.MarkDirtyRepaint();
+        }
+
+        private static Node GetNodeFromEventTarget(VisualElement target)
+        {
+            var element = target;
+            while (element != null)
+            {
+                if (element is Node node)
+                {
+                    return node;
+                }
+                element = element.parent;
+            }
+            return null;
+        }
+
+        private static List<Node> GetConnectedInputNodes(Node targetNode)
+        {
+            var inputNodes = new List<Node>();
+            if (targetNode == null) return inputNodes;
+
+            var ports = new List<Port>();
+            FindPorts(targetNode.inputContainer, ports);
+
+            // Sort ports by their visual vertical position (top to bottom)
+            ports.Sort((a, b) => a.worldBound.y.CompareTo(b.worldBound.y));
+
+            foreach (var port in ports)
+            {
+                if (port.connections == null) continue;
+                foreach (var edge in port.connections)
+                {
+                    var outputPort = edge.output;
+                    if (outputPort != null && outputPort.node is Node inputNode)
+                    {
+                        if (!inputNodes.Contains(inputNode))
+                        {
+                            inputNodes.Add(inputNode);
+                        }
+                    }
+                }
+            }
+
+            return inputNodes;
+        }
+
+        private static void FindPorts(VisualElement element, List<Port> ports)
+        {
+            if (element is Port port)
+            {
+                ports.Add(port);
+            }
+            else
+            {
+                int count = element.childCount;
+                for (int i = 0; i < count; i++)
+                {
+                    FindPorts(element[i], ports);
+                }
+            }
+        }
+
+        private const float AlignSpacing = 80f;
+
+        private static void AutoAlignInputs(GraphView graphView, Node targetNode, List<Node> inputNodes)
+        {
+            if (targetNode == null || inputNodes == null || inputNodes.Count == 0) return;
+
+            // Record undo
+            Undo.IncrementCurrentGroup();
+
+            var targetRect = targetNode.GetPosition();
+
+            // Calculate the total height of all input nodes and gaps
+            float totalHeight = 0f;
+            foreach (var node in inputNodes)
+            {
+                totalHeight += node.GetPosition().height;
+            }
+            totalHeight += (inputNodes.Count - 1) * DistributeGap;
+
+            // Calculate starting Y position to center the input nodes relative to the target node
+            float targetCenterY = targetRect.y + (targetRect.height / 2f);
+            float currentY = targetCenterY - (totalHeight / 2f);
+
+            // Align and distribute each input node
+            foreach (var node in inputNodes)
+            {
+                var rect = node.GetPosition();
+                rect.x = targetRect.x - rect.width - AlignSpacing;
+                rect.y = currentY;
+                node.SetPosition(rect);
+                currentY += rect.height + DistributeGap;
+            }
+
+            // Update selection to select only the aligned input nodes
+            graphView.ClearSelection();
+            foreach (var node in inputNodes)
+            {
+                graphView.AddToSelection(node);
+            }
+
+            // Mark the graph as dirty so positions are saved
+            try
+            {
+                var markDirtyMethod = materialGraphViewType.GetMethod(
+                    "MarkDirtyRepaint", BindingFlags.Public | BindingFlags.Instance);
+                markDirtyMethod?.Invoke(graphView, null);
+            }
+            catch
+            {
+                graphView.MarkDirtyRepaint();
+            }
         }
 
         private enum AlignDirection
