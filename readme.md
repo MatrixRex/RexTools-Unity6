@@ -32,6 +32,8 @@ Adds alignment and distribution tools to the ShaderGraph editor context menu. Qu
     3.  Right-click to open the context menu.
     4.  **Align**: Choose **Left**, **Right**, **Up**, or **Down** to snap nodes to a common edge.
     5.  **Distribute**: Choose **Horizontal** or **Vertical** to evenly space nodes with a consistent gap.
+    6.  **Auto Align Inputs**: Right-click over any node with connected inputs. Select **Auto Align Inputs** to align the connected nodes horizontally, distribute them vertically with a consistent gap, and center the entire stack relative to the target node.
+
 
 ### ⚡ ShaderGraph Custom Function Sync
 Automatically synchronizes and generates input and output ports (slots) for a `CustomFunctionNode` in the ShaderGraph editor based on the signature of its referenced HLSL file, preserving existing connections.
@@ -43,6 +45,16 @@ Automatically synchronizes and generates input and output ports (slots) for a `C
     4.  Right-click the selected Custom Function node to open the context menu.
     5.  Select **Rex Tools > Sync Ports from HLSL**.
     6.  The input and output ports will automatically populate based on the HLSL function parameters, maintaining any existing connections for matching ports.
+
+### 👁️ ShaderGraph Output Preview
+Adds a contextual menu action to preview any output slot of a selected node by connecting it directly to the Master Stack's **Emission** block (if a Lit shader) or **Base Color** block (if an Unlit shader). It automatically handles conflicting connection cleanup and updates the graph immediately.
+
+*   **Usage**:
+    1.  Open any ShaderGraph.
+    2.  Select any node that has output ports.
+    3.  Right-click the selected node to open the context menu.
+    4.  Navigate to **Rex Tools > Preview Output** and select the specific output slot you want to preview.
+    5.  The connection will automatically draw from that slot to the appropriate Master Stack input block for instant previewing.
 
 ### 📸 Quick Shot
 A high-resolution screenshot utility that allows you to capture the Scene view or Game view with custom scaling and transparency.

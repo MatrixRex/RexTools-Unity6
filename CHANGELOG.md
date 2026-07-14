@@ -5,20 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.0] - 2026-03-03
-
-### Added
-- Texture Repacker: New **Mix** tab for blending textures with modes (Multiply, Add, Screen, etc.).
-- Texture Repacker: High-resolution **Live Preview** window for inspecting details at original size.
-- ShaderGraph Search: Connection-based node navigator with back/forward traversal and branch memory.
-
-### Fixed
-- Texture Repacker: Fixed UI clipping issues and improved field scaling in smaller windows.
-- RexToolsStyles: Enhanced responsive layout constraints for multi-column tool grids.
-
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-14
+
 ### Added
+- ShaderGraph Organizer: Added "Auto Align Inputs" context menu action when right-clicking a node, which aligns connected input nodes horizontally, distributes them vertically, centers the stack relative to the target node, and updates the graph selection.
+- ShaderGraph Output Preview: Added a context menu option to preview any output slot of a selected node by connecting it directly to the master stack's Base Color (Unlit) or Emission (Lit) input blocks, with automatic validation, conflicting connection cleanup, full undo support, and a `Restore Connection` action to revert the preview and restore original inputs.
 - ShaderGraph Custom Function Sync: Added a context menu action `Rex Tools/Sync Ports from HLSL` to automatically synchronize and generate input/output slots for `CustomFunctionNode` based on an HLSL file signature, preserving existing connections.
 - Git Integration: Hierarchical collapsible folder tree view as the default view, and list view on a separate tab (using `RexTabGroup`).
 - Git Integration: Bulk directory operations where checking/unchecking a folder checkbox recursively updates all files/folders nested inside it.
@@ -28,15 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Git Integration: Added visual notification badges (red dots) on the Changes and History tabs to indicate local modifications and unpushed/unpulled commits.
 - Git Integration: Upgraded Fetch, Pull, and Push action buttons to feature built-in Unity version control icons and styled them matching the rex-button design system.
 - Git Integration: Added notification badges (dots) over the Pull and Push buttons that automatically appear when there are incoming changes (behind > 0) or outgoing changes (ahead > 0).
-
-### Fixed
-- Git Integration: Fixed an `InvalidOperationException` on `TaskCompletionSource` during background process execution by switching to `TrySetResult`, registering active Git processes for termination on assembly reload (`AssemblyReloadEvents.beforeAssemblyReload`), and suppressing completion/callback delegation during domain reloads.
-- USS: Resolved unknown USS property warnings (`text-transform`, `gap`, `user-select`, `pointer-events`) and cursor warnings by using margin-based spacing and Unity-supported cursors.
-- Core: Fixed unused field/variable warnings in `AnimationEventCopierWindow` and `ShaderGraphSearchExtension`.
-- Unused Assets Finder: Replaced obsolete `FindObjectsOfType` calls with `FindObjectsByType`.
-- Scene Pack: Fixed layout alignment by adding padding to prevent the list foldout arrow from going out of bounds.
-
-### Added
 - Scene Pack: A custom asset type that represents a list of SceneAssets with custom icon support, allowing users to open all configured scenes at once by double-clicking the asset or using the 'Open Scene Pack' buttons in its custom inspector UI.
 - Core: Added a "clear" button component to `RexTextureField` slots that appears when a texture is bound, enabling fast clearing with mouse propagation prevention to avoid opening Unity's object selector.
 - Core: `RexTexturePreview` — reusable styled texture preview component featuring an image container and a maximize button to view the texture full-size.
@@ -89,6 +73,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch Material Editor: Removed the focus button from the scanner list; the ObjectFields are now interactive and can be clicked to ping/focus the material in the Project window, while remaining read-only.
 - Unused Assets Finder: Refactored the subfolders tree view section to use the custom `RexFoldout` component with a scrollable list area inside, wrapped the screen content in a main ScrollView, wrapped the tab results inside a scrollarea with a max-height limit, refactored the scan and delete-all buttons to use the custom `RexActionButton` component, and moved the delete-all button (renamed to "DELETE SELECTED") to the bottom of the window as a full-width sticky action button.
 - Unused Assets Finder: Consolidated the legacy IMGUI implementation and the UI Toolkit implementation into a single `UnusedAssetsFinder.cs` file.
+
+### Fixed
+- Git Integration: Fixed an `InvalidOperationException` on `TaskCompletionSource` during background process execution by switching to `TrySetResult`, registering active Git processes for termination on assembly reload (`AssemblyReloadEvents.beforeAssemblyReload`), and suppressing completion/callback delegation during domain reloads.
+- USS: Resolved unknown USS property warnings (`text-transform`, `gap`, `user-select`, `pointer-events`) and cursor warnings by using margin-based spacing and Unity-supported cursors.
+- Core: Fixed unused field/variable warnings in `AnimationEventCopierWindow` and `ShaderGraphSearchExtension`.
+- Unused Assets Finder: Replaced obsolete `FindObjectsOfType` calls with `FindObjectsByType`.
+- Scene Pack: Fixed layout alignment by adding padding to prevent the list foldout arrow from going out of bounds.
+
+## [0.5.0] - 2026-03-03
+
+### Added
+- Texture Repacker: New **Mix** tab for blending textures with modes (Multiply, Add, Screen, etc.).
+- Texture Repacker: High-resolution **Live Preview** window for inspecting details at original size.
+- ShaderGraph Search: Connection-based node navigator with back/forward traversal and branch memory.
+
+### Fixed
+- Texture Repacker: Fixed UI clipping issues and improved field scaling in smaller windows.
+- RexToolsStyles: Enhanced responsive layout constraints for multi-column tool grids.
 
 ## [0.4.0] - 2026-02-23
 
