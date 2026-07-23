@@ -8,9 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Palette Texture Modifier: Added Auto Save mode (`Auto Save Texture on Change / Undo`) to automatically overwrite texture assets on disk on color/grid modifications and Undo/Redo operations. Added "Reset Grid Colors" and "Reset Selected" buttons to restore cells to their original texture colors.
 - Palette Texture Modifier: New tool for editing low-resolution palette textures (16x16, 32x32, 64x64) with interactive grid canvas (`PaletteCanvasElement`), custom cell segmentation, live Color Picker and Hex editing, cell merging and splitting, full Undo/Redo integration, and PNG asset file overwriting.
 
 ### Optimized
+- Palette Texture Modifier: Optimized Auto Save with instant in-memory canvas rendering (0ms UI lag during live color slider dragging) and debounced 350ms disk writes/asset reimports via `EditorApplication.update` loop.
 - ShaderGraph Tools: Gated background `OnEditorUpdate` execution in `ShaderGraphSearchExtension`, `ShaderGraphOutputPreviewExtension`, `ShaderGraphOrganizerExtension`, and `ShaderGraphCustomFunctionSyncExtension` to only run when a Shader Graph window is focused (`EditorWindow.focusedWindow`), eliminating per-frame `Resources.FindObjectsOfTypeAll` heap scans and GC overhead when working elsewhere in Unity Editor.
 
 

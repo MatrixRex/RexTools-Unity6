@@ -130,7 +130,7 @@ A custom asset type that represents a grouped list of scene assets. Double-click
     4.  Alternatively, click **OPEN SCENE PACK (ADDITIVE)** to load all scenes additively, keeping your currently active scenes open.
 
 ### 🎨 Palette Texture Modifier
-A dedicated editor for single-color palette textures (16x16, 32x32, 64x64). Segments textures into an interactive color grid canvas, supporting cell selection, color picker editing, cell merging, cell splitting, full Undo/Redo, and PNG asset overwriting.
+A dedicated editor for single-color palette textures (16x16, 32x32, 64x64). Segments textures into an interactive color grid canvas, supporting cell selection, color picker editing, cell merging, cell splitting, Auto Save mode on change/undo, Reset to original colors, full Undo/Redo, and PNG asset overwriting.
 
 *   **Usage**:
     1.  Go to `Tools > Rex Tools > Palette Texture Modifier`.
@@ -139,7 +139,9 @@ A dedicated editor for single-color palette textures (16x16, 32x32, 64x64). Segm
     4.  Click or drag-select cells on the interactive canvas (Shift-click to multi-select, Alt-click for eyedropper sampling).
     5.  Alter cell colors using the **Color Picker** or **Hex** input field.
     6.  Combine contiguous cell selections using **Merge Selected**, or restore merged cells using **Split Cell**.
-    7.  Click **SAVE & OVERWRITE** to update the original PNG asset file on disk, or **Save As Copy...** to export to a new PNG file.
+    7.  Toggle **Auto Save Texture on Change / Undo** to automatically overwrite the target texture file on disk whenever modifications or Undo/Redo operations occur.
+    8.  Use **Reset Grid Colors** or **Reset Selected** to revert cells back to their original texture colors.
+    9.  Click **SAVE & OVERWRITE** to manually update the original PNG asset file on disk, or **Save As Copy...** to export to a new PNG file.
 
 
 ---

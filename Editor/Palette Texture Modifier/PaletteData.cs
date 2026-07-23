@@ -10,6 +10,7 @@ namespace RexTools.PaletteTextureModifier.Editor
         public string id = Guid.NewGuid().ToString();
         public RectInt gridRect = new RectInt(0, 0, 1, 1);
         public Color color = Color.white;
+        public Color originalColor = Color.white;
 
         public PaletteCell Clone()
         {
@@ -17,7 +18,8 @@ namespace RexTools.PaletteTextureModifier.Editor
             {
                 id = this.id,
                 gridRect = this.gridRect,
-                color = this.color
+                color = this.color,
+                originalColor = this.originalColor
             };
         }
     }
@@ -67,7 +69,8 @@ namespace RexTools.PaletteTextureModifier.Editor
                     {
                         id = Guid.NewGuid().ToString(),
                         gridRect = new RectInt(c, r, 1, 1),
-                        color = cellColor
+                        color = cellColor,
+                        originalColor = cellColor
                     };
                     cells.Add(cell);
                 }
@@ -108,6 +111,7 @@ namespace RexTools.PaletteTextureModifier.Editor
             int minX = int.MaxValue, minY = int.MaxValue;
             int maxX = int.MinValue, maxY = int.MinValue;
             Color avgColor = Color.clear;
+            Color avgOriginalColor = Color.clear;
 
             foreach (var c in cellsToMerge)
             {
@@ -117,9 +121,11 @@ namespace RexTools.PaletteTextureModifier.Editor
                 maxX = Mathf.Max(maxX, c.gridRect.x + c.gridRect.width);
                 maxY = Mathf.Max(maxY, c.gridRect.y + c.gridRect.height);
                 avgColor += c.color;
+                avgOriginalColor += c.originalColor;
             }
 
             avgColor /= cellsToMerge.Count;
+            avgOriginalColor /= cellsToMerge.Count;
             var mergedRect = new RectInt(minX, minY, maxX - minX, maxY - minY);
 
             var overlapped = GetCellsInRect(mergedRect);
@@ -132,7 +138,8 @@ namespace RexTools.PaletteTextureModifier.Editor
             {
                 id = Guid.NewGuid().ToString(),
                 gridRect = mergedRect,
-                color = avgColor
+                color = avgColor,
+                originalColor = avgOriginalColor
             };
 
             cells.Add(mergedCell);
@@ -150,6 +157,7 @@ namespace RexTools.PaletteTextureModifier.Editor
             int w = cellToSplit.gridRect.width;
             int h = cellToSplit.gridRect.height;
             Color col = cellToSplit.color;
+            Color origCol = cellToSplit.originalColor;
 
             cells.Remove(cellToSplit);
 
@@ -161,13 +169,42 @@ namespace RexTools.PaletteTextureModifier.Editor
                     {
                         id = Guid.NewGuid().ToString(),
                         gridRect = new RectInt(c, r, 1, 1),
-                        color = col
+                        color = col,
+                        originalColor = origCol
                     };
                     cells.Add(newCell);
                     newCells.Add(newCell);
                 }
             }
             return true;
+        }
+
+        public void ResetCellColor(PaletteCell cell)
+        {
+            if (cell != null)
+            {
+                cell.color = cell.originalColor;
+            }
+        }
+
+        public void ResetCells(IEnumerable<PaletteCell> cellsToReset)
+        {
+            if (cellsToReset == null) return;
+            foreach (var cell in cellsToReset)
+            {
+                if (cell != null)
+                {
+                    cell.color = cell.originalColor;
+                }
+            }
+        }
+
+        public void ResetAllGridColors()
+        {
+            foreach (var cell in cells)
+            {
+                cell.color = cell.originalColor;
+            }
         }
 
         public void AutoDetectFromTexture(Texture2D tex, int targetCols = 8, int targetRows = 8)
@@ -211,9 +248,9 @@ namespace RexTools.PaletteTextureModifier.Editor
             foreach (var cell in cells)
             {
                 float startXNorm = (float)cell.gridRect.x / gridColumns;
-                float startYNorm = (float)cell.gridRect.y / gridRows;
+                float startYNorm = (float)(gridRows - (cell.gridRect.y + cell.gridRect.height)) / gridRows;
                 float endXNorm = (float)(cell.gridRect.x + cell.gridRect.width) / gridColumns;
-                float endYNorm = (float)(cell.gridRect.y + cell.gridRect.height) / gridRows;
+                float endYNorm = (float)(gridRows - cell.gridRect.y) / gridRows;
 
                 int pxStart = Mathf.Clamp(Mathf.FloorToInt(startXNorm * width), 0, width - 1);
                 int pxEnd = Mathf.Clamp(Mathf.CeilToInt(endXNorm * width), pxStart + 1, width);
@@ -237,9 +274,9 @@ namespace RexTools.PaletteTextureModifier.Editor
         private Color SampleAverageColor(Texture2D tex, int col, int row, int colSpan, int rowSpan, int totalCols, int totalRows)
         {
             float startXNorm = (float)col / totalCols;
-            float startYNorm = (float)row / totalRows;
+            float startYNorm = (float)(totalRows - (row + rowSpan)) / totalRows;
             float endXNorm = (float)(col + colSpan) / totalCols;
-            float endYNorm = (float)(row + rowSpan) / totalRows;
+            float endYNorm = (float)(totalRows - row) / totalRows;
 
             int pxStart = Mathf.Clamp(Mathf.FloorToInt(startXNorm * tex.width), 0, tex.width - 1);
             int pxEnd = Mathf.Clamp(Mathf.CeilToInt(endXNorm * tex.width), pxStart + 1, tex.width);

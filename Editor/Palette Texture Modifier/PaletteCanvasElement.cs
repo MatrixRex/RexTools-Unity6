@@ -186,12 +186,6 @@ namespace RexTools.PaletteTextureModifier.Editor
                 if (selectedCellIds.Contains(cell.id))
                 {
                     Rect sRect = GetCellScreenRect(cell, width, height, totalCols, totalRows);
-                    
-                    // Fill tint
-                    painter.BeginPath();
-                    DrawRectPath(painter, sRect);
-                    painter.fillColor = new Color(0.2f, 0.6f, 1f, 0.25f);
-                    painter.Fill();
 
                     // Cyan selection border
                     painter.BeginPath();

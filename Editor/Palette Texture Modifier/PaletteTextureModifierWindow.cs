@@ -12,6 +12,7 @@ namespace RexTools.PaletteTextureModifier.Editor
     public class PaletteTextureModifierWindow : EditorWindow
     {
         [SerializeField] private PaletteData paletteData;
+        [SerializeField] private bool autoSave = false;
 
         private Texture2D targetTexture;
         private RexTextureField textureField;
@@ -28,9 +29,15 @@ namespace RexTools.PaletteTextureModifier.Editor
         private TextField hexColorField;
         private RexButton mergeBtn;
         private RexButton splitBtn;
+        private RexButton resetSelectedBtn;
         private Toggle gridLinesToggle;
+        private Toggle autoSaveToggle;
 
         private RexActionButton saveButton;
+
+        private double nextAutoSaveTime = 0;
+        private bool isAutoSavePending = false;
+        private const double AUTO_SAVE_DEBOUNCE_DELAY = 0.35; // 350ms delay for debounced disk auto-save
 
         [MenuItem("Tools/Rex Tools/Palette Texture Modifier")]
         public static void ShowWindow()
@@ -47,11 +54,14 @@ namespace RexTools.PaletteTextureModifier.Editor
                 paletteData.InitializeGrid(8, 8);
             }
             Undo.undoRedoPerformed += OnUndoRedo;
+            EditorApplication.update += HandleDebouncedAutoSave;
         }
 
         private void OnDisable()
         {
             Undo.undoRedoPerformed -= OnUndoRedo;
+            EditorApplication.update -= HandleDebouncedAutoSave;
+            FlushPendingAutoSave();
         }
 
         private void OnUndoRedo()
@@ -60,6 +70,7 @@ namespace RexTools.PaletteTextureModifier.Editor
             {
                 canvasElement.MarkDirtyRepaint();
                 UpdateCellEditPanel();
+                AutoSaveIfEnabled();
             }
         }
 
@@ -217,10 +228,21 @@ namespace RexTools.PaletteTextureModifier.Editor
 
             gridBox.Add(presetRow);
 
+            var gridBtnRow = new VisualElement();
+            gridBtnRow.AddToClassList("rex-row");
+            gridBtnRow.style.marginTop = 6;
+
             var initGridBtn = new RexButton("INITIALIZE GRID FROM TEXTURE");
-            initGridBtn.style.marginTop = 6;
+            initGridBtn.style.flexGrow = 1;
             initGridBtn.OnClick += () => InitGrid(gridColsField.value, gridRowsField.value);
-            gridBox.Add(initGridBtn);
+            gridBtnRow.Add(initGridBtn);
+
+            var resetGridBtn = new RexButton("Reset Grid Colors");
+            resetGridBtn.tooltip = "Reset all cells in this grid back to original colors";
+            resetGridBtn.OnClick += ResetGridColors;
+            gridBtnRow.Add(resetGridBtn);
+
+            gridBox.Add(gridBtnRow);
 
             scrollView.Add(gridBox);
 
@@ -285,7 +307,7 @@ namespace RexTools.PaletteTextureModifier.Editor
 
             cellEditContainer.Add(colorEditRow);
 
-            // Merge & Split buttons row
+            // Merge & Split & Reset buttons row
             var cellOpsRow = new VisualElement();
             cellOpsRow.AddToClassList("rex-row");
             cellOpsRow.style.marginTop = 6;
@@ -299,6 +321,11 @@ namespace RexTools.PaletteTextureModifier.Editor
             splitBtn.tooltip = "Subdivide a merged cell back into individual 1x1 cells";
             splitBtn.OnClick += SplitSelectedCell;
             cellOpsRow.Add(splitBtn);
+
+            resetSelectedBtn = new RexButton("Reset Selected");
+            resetSelectedBtn.tooltip = "Reset selected cell(s) back to original colors";
+            resetSelectedBtn.OnClick += ResetSelectedCells;
+            cellOpsRow.Add(resetSelectedBtn);
 
             var clearSelBtn = new RexButton("Deselect All");
             clearSelBtn.OnClick += () => canvasElement.ClearSelection();
@@ -325,11 +352,28 @@ namespace RexTools.PaletteTextureModifier.Editor
 
             root.Add(bottomActionsContainer);
 
+            // Auto Save Bar
+            var autoSaveBox = new VisualElement();
+            autoSaveBox.AddToClassList("rex-row");
+            autoSaveBox.style.marginTop = 4;
+            autoSaveBox.style.justifyContent = Justify.FlexEnd;
+
+            autoSaveToggle = new Toggle("Auto Save Texture on Change / Undo") { value = autoSave };
+            autoSaveToggle.tooltip = "Automatically save texture modifications to disk on change or undo/redo";
+            autoSaveToggle.RegisterValueChangedCallback(e =>
+            {
+                autoSave = e.newValue;
+                if (autoSave) AutoSaveIfEnabled();
+            });
+            autoSaveBox.Add(autoSaveToggle);
+            root.Add(autoSaveBox);
+
             UpdateCellEditPanel();
         }
 
         private void OnTextureAssigned(Texture2D tex)
         {
+            FlushPendingAutoSave();
             targetTexture = tex;
             if (tex != null)
             {
@@ -390,6 +434,7 @@ namespace RexTools.PaletteTextureModifier.Editor
                 canvasElement.ClearSelection();
                 canvasElement.MarkDirtyRepaint();
             }
+            AutoSaveIfEnabled();
         }
 
         private void AutoDetectGrid()
@@ -404,6 +449,36 @@ namespace RexTools.PaletteTextureModifier.Editor
                 canvasElement.ClearSelection();
                 canvasElement.MarkDirtyRepaint();
             }
+            AutoSaveIfEnabled();
+        }
+
+        private void ResetGridColors()
+        {
+            if (paletteData == null) return;
+            Undo.RecordObject(paletteData, "Reset Grid Colors");
+            paletteData.ResetAllGridColors();
+            if (canvasElement != null)
+            {
+                canvasElement.MarkDirtyRepaint();
+                UpdateCellEditPanel();
+            }
+            AutoSaveIfEnabled();
+        }
+
+        private void ResetSelectedCells()
+        {
+            if (canvasElement == null || paletteData == null) return;
+            var selectedCells = canvasElement.GetSelectedCells();
+            if (selectedCells.Count == 0) return;
+
+            Undo.RecordObject(paletteData, "Reset Selected Cell Colors");
+            paletteData.ResetCells(selectedCells);
+            if (canvasElement != null)
+            {
+                canvasElement.MarkDirtyRepaint();
+                UpdateCellEditPanel();
+            }
+            AutoSaveIfEnabled();
         }
 
         private void UpdateCellEditPanel()
@@ -420,6 +495,7 @@ namespace RexTools.PaletteTextureModifier.Editor
                 hexColorField.SetEnabled(false);
                 mergeBtn.SetEnabled(false);
                 splitBtn.SetEnabled(false);
+                if (resetSelectedBtn != null) resetSelectedBtn.SetEnabled(false);
             }
             else if (count == 1)
             {
@@ -434,6 +510,7 @@ namespace RexTools.PaletteTextureModifier.Editor
 
                 mergeBtn.SetEnabled(false);
                 splitBtn.SetEnabled(cell.gridRect.width > 1 || cell.gridRect.height > 1);
+                if (resetSelectedBtn != null) resetSelectedBtn.SetEnabled(true);
             }
             else
             {
@@ -448,6 +525,7 @@ namespace RexTools.PaletteTextureModifier.Editor
 
                 mergeBtn.SetEnabled(true);
                 splitBtn.SetEnabled(false);
+                if (resetSelectedBtn != null) resetSelectedBtn.SetEnabled(true);
             }
         }
 
@@ -466,6 +544,7 @@ namespace RexTools.PaletteTextureModifier.Editor
 
             hexColorField.SetValueWithoutNotify("#" + ColorUtility.ToHtmlStringRGBA(evt.newValue));
             canvasElement.MarkDirtyRepaint();
+            AutoSaveIfEnabled();
         }
 
         private void OnHexColorChanged(ChangeEvent<string> evt)
@@ -487,6 +566,7 @@ namespace RexTools.PaletteTextureModifier.Editor
 
                 colorPickerField.SetValueWithoutNotify(parsedColor);
                 canvasElement.MarkDirtyRepaint();
+                AutoSaveIfEnabled();
             }
         }
 
@@ -504,6 +584,7 @@ namespace RexTools.PaletteTextureModifier.Editor
             colorPickerField.SetValueWithoutNotify(sampledColor);
             hexColorField.SetValueWithoutNotify("#" + ColorUtility.ToHtmlStringRGBA(sampledColor));
             canvasElement.MarkDirtyRepaint();
+            AutoSaveIfEnabled();
         }
 
         private void MergeSelectedCells()
@@ -519,6 +600,7 @@ namespace RexTools.PaletteTextureModifier.Editor
                 canvasElement.SetSelectedCells(new[] { mergedCell });
                 canvasElement.MarkDirtyRepaint();
                 UpdateCellEditPanel();
+                AutoSaveIfEnabled();
             }
         }
 
@@ -535,7 +617,61 @@ namespace RexTools.PaletteTextureModifier.Editor
                 canvasElement.SetSelectedCells(newCells);
                 canvasElement.MarkDirtyRepaint();
                 UpdateCellEditPanel();
+                AutoSaveIfEnabled();
             }
+        }
+
+        private void AutoSaveIfEnabled()
+        {
+            if (!autoSave || targetTexture == null) return;
+            string assetPath = AssetDatabase.GetAssetPath(targetTexture);
+            if (string.IsNullOrEmpty(assetPath)) return;
+
+            ScheduleDebouncedAutoSave();
+        }
+
+        private void ScheduleDebouncedAutoSave()
+        {
+            nextAutoSaveTime = EditorApplication.timeSinceStartup + AUTO_SAVE_DEBOUNCE_DELAY;
+            isAutoSavePending = true;
+        }
+
+        private void HandleDebouncedAutoSave()
+        {
+            if (!isAutoSavePending) return;
+            if (EditorApplication.timeSinceStartup >= nextAutoSaveTime)
+            {
+                isAutoSavePending = false;
+                SaveAndOverwriteTextureSilent();
+            }
+        }
+
+        public void FlushPendingAutoSave()
+        {
+            if (isAutoSavePending)
+            {
+                isAutoSavePending = false;
+                SaveAndOverwriteTextureSilent();
+            }
+        }
+
+        private void SaveAndOverwriteTextureSilent()
+        {
+            if (targetTexture == null) return;
+            string assetPath = AssetDatabase.GetAssetPath(targetTexture);
+            if (string.IsNullOrEmpty(assetPath)) return;
+
+            string fullPath = Path.Combine(Directory.GetCurrentDirectory(), assetPath);
+
+            int exportW = targetTexture.width > 0 ? targetTexture.width : paletteData.GridColumns * 8;
+            int exportH = targetTexture.height > 0 ? targetTexture.height : paletteData.GridRows * 8;
+
+            Texture2D renderedTex = paletteData.RenderToTexture(exportW, exportH);
+            byte[] pngBytes = renderedTex.EncodeToPNG();
+            DestroyImmediate(renderedTex);
+
+            File.WriteAllBytes(fullPath, pngBytes);
+            AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
         }
 
         private void SaveAndOverwriteTexture()
