@@ -38,7 +38,9 @@ namespace RexTools.GitIntegration.Editor
         private int spinnerIndex = 0;
         private double lastSpinnerTime = 0.0;
 
-        private HashSet<string> deselectedFiles = new HashSet<string>();
+        private readonly HashSet<string> selectedFiles = new HashSet<string>();
+        private HashSet<string> pendingSelectedGitPaths = null;
+        private List<string> pendingSelectedFolders = null;
         private List<string> currentChangedFileLines = new List<string>();
         private List<string> rawChangedFileLines = new List<string>();
 
@@ -70,6 +72,125 @@ namespace RexTools.GitIntegration.Editor
         {
             var window = GetWindow<GitIntegrationWindow>("Git Integration");
             window.minSize = new Vector2(380, 390);
+        }
+
+        [MenuItem("Assets/Commit Selected", false, 2000)]
+        private static void ContextMenuCommitSelected()
+        {
+            ExecuteContextMenuCommit(includeDependencies: false);
+        }
+
+        [MenuItem("Assets/Commit Selected", true)]
+        private static bool ValidateContextMenuCommitSelected()
+        {
+            return Selection.objects != null && Selection.objects.Length > 0 && GitRunner.HasGitRepository();
+        }
+
+        [MenuItem("Assets/Commit Selected with Dependencies", false, 2001)]
+        private static void ContextMenuCommitSelectedWithDependencies()
+        {
+            ExecuteContextMenuCommit(includeDependencies: true);
+        }
+
+        [MenuItem("Assets/Commit Selected with Dependencies", true)]
+        private static bool ValidateContextMenuCommitSelectedWithDependencies()
+        {
+            return Selection.objects != null && Selection.objects.Length > 0 && GitRunner.HasGitRepository();
+        }
+
+        private static void ExecuteContextMenuCommit(bool includeDependencies)
+        {
+            var targetGitPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var targetFolders = new List<string>();
+
+            if (Selection.objects != null)
+            {
+                var selectedAssetPaths = new List<string>();
+                var folderAssetPaths = new List<string>();
+
+                foreach (var obj in Selection.objects)
+                {
+                    string path = AssetDatabase.GetAssetPath(obj);
+                    if (string.IsNullOrEmpty(path)) continue;
+
+                    if (AssetDatabase.IsValidFolder(path))
+                    {
+                        folderAssetPaths.Add(path);
+                        string gitFolder = ConvertAssetPathToGitPath(path);
+                        targetFolders.Add(gitFolder);
+                        targetGitPaths.Add(gitFolder);
+                        targetGitPaths.Add(gitFolder + ".meta");
+                    }
+                    else
+                    {
+                        selectedAssetPaths.Add(path);
+                        string gitFile = ConvertAssetPathToGitPath(path);
+                        targetGitPaths.Add(gitFile);
+                        targetGitPaths.Add(gitFile + ".meta");
+                    }
+                }
+
+                if (includeDependencies)
+                {
+                    var allAssetPathsToQuery = new HashSet<string>(selectedAssetPaths, StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var folderPath in folderAssetPaths)
+                    {
+                        string[] guids = AssetDatabase.FindAssets("", new[] { folderPath });
+                        foreach (var guid in guids)
+                        {
+                            string assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                            if (!string.IsNullOrEmpty(assetPath) && !AssetDatabase.IsValidFolder(assetPath))
+                            {
+                                allAssetPathsToQuery.Add(assetPath);
+                            }
+                        }
+                    }
+
+                    if (allAssetPathsToQuery.Count > 0)
+                    {
+                        string[] dependencies = AssetDatabase.GetDependencies(allAssetPathsToQuery.ToArray(), recursive: true);
+                        foreach (var depPath in dependencies)
+                        {
+                            if (string.IsNullOrEmpty(depPath)) continue;
+                            string gitDep = ConvertAssetPathToGitPath(depPath);
+                            targetGitPaths.Add(gitDep);
+                            targetGitPaths.Add(gitDep + ".meta");
+                        }
+                    }
+                }
+            }
+
+            OpenWithSelection(targetGitPaths, targetFolders);
+        }
+
+        public static void OpenWithSelection(HashSet<string> targetGitPaths, List<string> targetFolders)
+        {
+            var window = GetWindow<GitIntegrationWindow>("Git Integration");
+            window.minSize = new Vector2(380, 390);
+            window.pendingSelectedGitPaths = targetGitPaths;
+            window.pendingSelectedFolders = targetFolders;
+            window.SwitchMainTab(0);
+            window.Show();
+            window.Focus();
+            _ = window.RefreshStatusAsync();
+        }
+
+        private static string ConvertAssetPathToGitPath(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath)) return string.Empty;
+            assetPath = assetPath.Replace("\\", "/");
+            string repoRoot = GitRunner.FindRepositoryRoot();
+            if (string.IsNullOrEmpty(repoRoot)) return assetPath;
+
+            string projectPath = Directory.GetCurrentDirectory().Replace("\\", "/");
+            string fullPath = Path.Combine(projectPath, assetPath).Replace("\\", "/");
+
+            if (fullPath.StartsWith(repoRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                return fullPath.Substring(repoRoot.Length).TrimStart('/');
+            }
+            return assetPath;
         }
 
         private void OnEnable()
@@ -654,7 +775,7 @@ namespace RexTools.GitIntegration.Editor
                     {
                         if (kvp.Value != null)
                         {
-                            kvp.Value.SetValueWithoutNotify(!deselectedFiles.Contains(kvp.Key));
+                            kvp.Value.SetValueWithoutNotify(selectedFiles.Contains(kvp.Key));
                         }
                     }
                 }
@@ -684,7 +805,7 @@ namespace RexTools.GitIntegration.Editor
                 }
                 else
                 {
-                    bool isChecked = !deselectedFiles.Contains(child.cleanPath);
+                    bool isChecked = selectedFiles.Contains(child.cleanPath);
                     if (child.checkbox != null)
                     {
                         child.checkbox.SetValueWithoutNotify(isChecked);
@@ -729,6 +850,7 @@ namespace RexTools.GitIntegration.Editor
 
         private bool IsAllChildrenChecked(FolderTreeNode node)
         {
+            if (node.children.Count == 0) return false;
             foreach (var child in node.children)
             {
                 if (child.isFolder)
@@ -737,7 +859,7 @@ namespace RexTools.GitIntegration.Editor
                 }
                 else
                 {
-                    if (deselectedFiles.Contains(child.cleanPath)) return false;
+                    if (!selectedFiles.Contains(child.cleanPath)) return false;
                 }
             }
             return true;
@@ -758,9 +880,9 @@ namespace RexTools.GitIntegration.Editor
                     else
                     {
                         if (value)
-                            deselectedFiles.Remove(child.cleanPath);
+                            selectedFiles.Add(child.cleanPath);
                         else
-                            deselectedFiles.Add(child.cleanPath);
+                            selectedFiles.Remove(child.cleanPath);
                     }
                 }
             }
@@ -868,15 +990,15 @@ namespace RexTools.GitIntegration.Editor
                     row.style.paddingLeft = (indentLevel * 12) + 12;
 
                     var toggle = new Toggle();
-                    toggle.value = !deselectedFiles.Contains(child.cleanPath);
+                    toggle.value = selectedFiles.Contains(child.cleanPath);
                     toggle.AddToClassList("git-row-checkbox");
                     toggle.RegisterValueChangedCallback(evt =>
                     {
                         if (updatingCheckboxesCount > 0) return;
                         if (evt.newValue)
-                            deselectedFiles.Remove(child.cleanPath);
+                            selectedFiles.Add(child.cleanPath);
                         else
-                            deselectedFiles.Add(child.cleanPath);
+                            selectedFiles.Remove(child.cleanPath);
 
                         UpdateParentCheckboxes(child);
                         UpdateCommitButtonState();
@@ -985,11 +1107,11 @@ namespace RexTools.GitIntegration.Editor
                     if (updatingCheckboxesCount > 0) return;
                     if (evt.newValue)
                     {
-                        deselectedFiles.Remove(cleanPath);
+                        selectedFiles.Add(cleanPath);
                     }
                     else
                     {
-                        deselectedFiles.Add(cleanPath);
+                        selectedFiles.Remove(cleanPath);
                     }
                     UpdateCommitButtonState();
                 });
@@ -1040,6 +1162,16 @@ namespace RexTools.GitIntegration.Editor
                 listViewScroll.Add(row);
             }
 
+            if (pendingSelectedGitPaths != null || pendingSelectedFolders != null)
+            {
+                ApplyPendingSelection();
+            }
+            else
+            {
+                var existingChangedPaths = new HashSet<string>(currentChangedFileLines.Select(GitRunner.GetFilePathFromLine), StringComparer.OrdinalIgnoreCase);
+                selectedFiles.RemoveWhere(path => !existingChangedPaths.Contains(path));
+            }
+
             // Sync visual states to current selection
             SyncCheckboxStates();
 
@@ -1050,23 +1182,55 @@ namespace RexTools.GitIntegration.Editor
             UpdateCommitButtonState();
         }
 
+        private void ApplyPendingSelection()
+        {
+            selectedFiles.Clear();
+            foreach (var fileLine in currentChangedFileLines)
+            {
+                string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
+                if (string.IsNullOrEmpty(cleanPath)) continue;
+
+                bool shouldSelect = pendingSelectedGitPaths != null && pendingSelectedGitPaths.Contains(cleanPath);
+                if (!shouldSelect && pendingSelectedFolders != null)
+                {
+                    foreach (var folder in pendingSelectedFolders)
+                    {
+                        if (cleanPath.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase))
+                        {
+                            shouldSelect = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (shouldSelect)
+                {
+                    selectedFiles.Add(cleanPath);
+                }
+            }
+
+            pendingSelectedGitPaths = null;
+            pendingSelectedFolders = null;
+        }
+
         private void SelectAllChangedFiles()
         {
-            deselectedFiles.Clear();
+            selectedFiles.Clear();
+            foreach (var fileLine in currentChangedFileLines)
+            {
+                string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
+                if (!string.IsNullOrEmpty(cleanPath))
+                {
+                    selectedFiles.Add(cleanPath);
+                }
+            }
             SyncCheckboxStates();
             UpdateCommitButtonState();
         }
 
         private void DeselectAllChangedFiles()
         {
-            foreach (var fileLine in currentChangedFileLines)
-            {
-                string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
-                if (!string.IsNullOrEmpty(cleanPath))
-                {
-                    deselectedFiles.Add(cleanPath);
-                }
-            }
+            selectedFiles.Clear();
             SyncCheckboxStates();
             UpdateCommitButtonState();
         }
@@ -1165,7 +1329,7 @@ namespace RexTools.GitIntegration.Editor
             foreach (var fileLine in currentChangedFileLines)
             {
                 string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
-                if (!deselectedFiles.Contains(cleanPath))
+                if (selectedFiles.Contains(cleanPath))
                 {
                     selectedCleanPaths.Add(cleanPath);
                 }
@@ -1272,7 +1436,7 @@ namespace RexTools.GitIntegration.Editor
             foreach (var fileLine in currentChangedFileLines)
             {
                 string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
-                if (!deselectedFiles.Contains(cleanPath))
+                if (selectedFiles.Contains(cleanPath))
                 {
                     hasSelected = true;
                     break;
@@ -1468,7 +1632,7 @@ namespace RexTools.GitIntegration.Editor
             foreach (var fileLine in currentChangedFileLines)
             {
                 string cleanPath = GitRunner.GetFilePathFromLine(fileLine);
-                if (!deselectedFiles.Contains(cleanPath))
+                if (selectedFiles.Contains(cleanPath))
                 {
                     selectedCleanPaths.Add(cleanPath);
                 }
