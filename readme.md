@@ -129,6 +129,19 @@ A custom asset type that represents a grouped list of scene assets. Double-click
     3.  Double-click the Scene Pack asset (or select it and click **OPEN SCENE PACK (REPLACE)** in its inspector) to load the first scene as Single (replacing the active scenes) and all other scenes additively.
     4.  Alternatively, click **OPEN SCENE PACK (ADDITIVE)** to load all scenes additively, keeping your currently active scenes open.
 
+### 🎨 Palette Texture Modifier
+A dedicated editor for single-color palette textures (16x16, 32x32, 64x64). Segments textures into an interactive color grid canvas, supporting cell selection, color picker editing, cell merging, cell splitting, full Undo/Redo, and PNG asset overwriting.
+
+*   **Usage**:
+    1.  Go to `Tools > Rex Tools > Palette Texture Modifier`.
+    2.  Assign a target palette texture to the **PALETTE TEXTURE** slot.
+    3.  Set grid dimensions or pick a preset size (**4x4**, **8x8**, **16x16**, **32x32**, or **Auto Detect**), then click **INITIALIZE GRID FROM TEXTURE**.
+    4.  Click or drag-select cells on the interactive canvas (Shift-click to multi-select, Alt-click for eyedropper sampling).
+    5.  Alter cell colors using the **Color Picker** or **Hex** input field.
+    6.  Combine contiguous cell selections using **Merge Selected**, or restore merged cells using **Split Cell**.
+    7.  Click **SAVE & OVERWRITE** to update the original PNG asset file on disk, or **Save As Copy...** to export to a new PNG file.
+
+
 ---
 
 ## 🚀 Getting Started

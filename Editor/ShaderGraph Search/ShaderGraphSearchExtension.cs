@@ -56,6 +56,9 @@ namespace Rextools.ShaderGraphSearch.Editor
         {
             if (materialGraphEditWindowType == null) return;
 
+            var focused = EditorWindow.focusedWindow;
+            if (focused == null || !materialGraphEditWindowType.IsInstanceOfType(focused)) return;
+
             var windows = Resources.FindObjectsOfTypeAll(materialGraphEditWindowType);
             foreach (var window in windows)
             {

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Palette Texture Modifier: New tool for editing low-resolution palette textures (16x16, 32x32, 64x64) with interactive grid canvas (`PaletteCanvasElement`), custom cell segmentation, live Color Picker and Hex editing, cell merging and splitting, full Undo/Redo integration, and PNG asset file overwriting.
+
+### Optimized
+- ShaderGraph Tools: Gated background `OnEditorUpdate` execution in `ShaderGraphSearchExtension`, `ShaderGraphOutputPreviewExtension`, `ShaderGraphOrganizerExtension`, and `ShaderGraphCustomFunctionSyncExtension` to only run when a Shader Graph window is focused (`EditorWindow.focusedWindow`), eliminating per-frame `Resources.FindObjectsOfTypeAll` heap scans and GC overhead when working elsewhere in Unity Editor.
+
+
 ## [0.6.0] - 2026-07-14
 
 ### Added
