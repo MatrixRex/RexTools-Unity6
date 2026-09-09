@@ -37,6 +37,18 @@ namespace RexTools.Animation
             wnd.minSize = new Vector2(400, 450);
         }
 
+        private void OnEnable()
+        {
+            sourceModel = RexProjectPrefs.GetObject<GameObject>("AnimationEventCopier", "SourceModel");
+            targetModel = RexProjectPrefs.GetObject<GameObject>("AnimationEventCopier", "TargetModel");
+        }
+
+        private void OnDisable()
+        {
+            RexProjectPrefs.SetObject("AnimationEventCopier", "SourceModel", sourceModel);
+            RexProjectPrefs.SetObject("AnimationEventCopier", "TargetModel", targetModel);
+        }
+
         public void CreateGUI()
         {
             VisualElement root = rootVisualElement;
@@ -119,13 +131,23 @@ namespace RexTools.Animation
                 headerContainer.Add(header);
             }
 
+            if (sourceModel != null)
+            {
+                sourceField.value = sourceModel;
+            }
             sourceField.RegisterValueChangedCallback(evt => {
                 sourceModel = evt.newValue as GameObject;
+                RexProjectPrefs.SetObject("AnimationEventCopier", "SourceModel", sourceModel);
                 RefreshClips();
             });
 
+            if (targetModel != null)
+            {
+                targetField.value = targetModel;
+            }
             targetField.RegisterValueChangedCallback(evt => {
                 targetModel = evt.newValue as GameObject;
+                RexProjectPrefs.SetObject("AnimationEventCopier", "TargetModel", targetModel);
                 RefreshClips();
             });
 
@@ -137,6 +159,11 @@ namespace RexTools.Animation
             if (btnCopy != null)
             {
                 btnCopy.OnClick += CopyEvents;
+            }
+
+            if (sourceModel != null || targetModel != null)
+            {
+                RefreshClips();
             }
 
             UpdateButtonState();

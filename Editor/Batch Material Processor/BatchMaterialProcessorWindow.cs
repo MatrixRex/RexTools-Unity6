@@ -40,6 +40,16 @@ namespace RexTools.BatchMaterialProcessor.Editor
             wnd.minSize = new Vector2(400, 600);
         }
 
+        private void OnDisable()
+        {
+            if (settings != null)
+            {
+                RexProjectPrefs.SetString("BatchMaterialProcessor", "SearchFolderPath", settings.searchFolderPath);
+                RexProjectPrefs.SetBool("BatchMaterialProcessor", "RecursiveSearch", settings.recursiveSearch);
+                RexProjectPrefs.SetObject("BatchMaterialProcessor", "TargetShader", settings.targetShader);
+            }
+        }
+
         public void CreateGUI()
         {
             if (settings == null)
@@ -47,6 +57,14 @@ namespace RexTools.BatchMaterialProcessor.Editor
                 settings = ScriptableObject.CreateInstance<BatchMaterialProcessorSettings>();
                 settings.name = "BatchMaterialProcessorSettings_Runtime";
             }
+            settings.searchFolderPath = RexProjectPrefs.GetString("BatchMaterialProcessor", "SearchFolderPath", "Assets");
+            settings.recursiveSearch = RexProjectPrefs.GetBool("BatchMaterialProcessor", "RecursiveSearch", false);
+            var savedShader = RexProjectPrefs.GetObject<Shader>("BatchMaterialProcessor", "TargetShader");
+            if (savedShader != null)
+            {
+                settings.targetShader = savedShader;
+            }
+
             if (settings.materials == null) settings.materials = new List<Material>();
             if (settings.suffixMappings == null) settings.suffixMappings = new List<SuffixMapping>();
             if (settings.matchResults == null) settings.matchResults = new List<MaterialMatchResult>();
@@ -177,6 +195,7 @@ namespace RexTools.BatchMaterialProcessor.Editor
                 shaderField.value = settings.targetShader;
                 shaderField.RegisterValueChangedCallback(evt => {
                     settings.targetShader = evt.newValue as Shader;
+                    RexProjectPrefs.SetObject("BatchMaterialProcessor", "TargetShader", settings.targetShader);
                     EditorUtility.SetDirty(settings);
                     LoadSuffixMappings();
                 });
@@ -189,6 +208,7 @@ namespace RexTools.BatchMaterialProcessor.Editor
                 folderSelector.SetPathWithoutNotify(settings.searchFolderPath);
                 folderSelector.OnValueChanged += path => {
                     settings.searchFolderPath = path;
+                    RexProjectPrefs.SetString("BatchMaterialProcessor", "SearchFolderPath", settings.searchFolderPath);
                     EditorUtility.SetDirty(settings);
                 };
                 selectorContainer.Add(folderSelector);
@@ -200,6 +220,7 @@ namespace RexTools.BatchMaterialProcessor.Editor
                 recursiveToggle.value = settings.recursiveSearch;
                 recursiveToggle.RegisterValueChangedCallback(evt => {
                     settings.recursiveSearch = evt.newValue;
+                    RexProjectPrefs.SetBool("BatchMaterialProcessor", "RecursiveSearch", settings.recursiveSearch);
                     EditorUtility.SetDirty(settings);
                 });
             }
@@ -214,7 +235,10 @@ namespace RexTools.BatchMaterialProcessor.Editor
                 tabGroup = new RexTabGroup(new string[] { "Suffixes", "Preview" });
                 tabGroup.style.height = 24;
                 tabGroup.style.marginBottom = 4;
-                tabGroup.OnTabChanged += index => SwitchTab(index == 0);
+                tabGroup.OnTabChanged += index => {
+                    RexProjectPrefs.SetInt("BatchMaterialProcessor", "CurrentTabIndex", index);
+                    SwitchTab(index == 0);
+                };
                 tabsContainer.Add(tabGroup);
             }
 
@@ -242,6 +266,9 @@ namespace RexTools.BatchMaterialProcessor.Editor
                 RefreshSuffixMappingsUI();
             }
             RefreshPreviewTab();
+
+            int savedTab = RexProjectPrefs.GetInt("BatchMaterialProcessor", "CurrentTabIndex", 0);
+            SwitchTab(savedTab == 0);
         }
 
         private void OnInspectorUpdate()

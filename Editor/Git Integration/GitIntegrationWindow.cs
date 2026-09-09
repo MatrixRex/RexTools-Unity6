@@ -195,12 +195,16 @@ namespace RexTools.GitIntegration.Editor
 
         private void OnEnable()
         {
+            currentTabIndex = RexProjectPrefs.GetInt("GitIntegration", "CurrentTabIndex", 0);
+            currentSubViewIndex = RexProjectPrefs.GetInt("GitIntegration", "CurrentSubViewIndex", 0);
             EditorApplication.update += OnEditorUpdate;
             lastFetchTime = EditorApplication.timeSinceStartup;
         }
 
         private void OnDisable()
         {
+            RexProjectPrefs.SetInt("GitIntegration", "CurrentTabIndex", currentTabIndex);
+            RexProjectPrefs.SetInt("GitIntegration", "CurrentSubViewIndex", currentSubViewIndex);
             EditorApplication.update -= OnEditorUpdate;
         }
 
@@ -411,7 +415,8 @@ namespace RexTools.GitIntegration.Editor
             }
 
             RefreshLayout();
-            SwitchMainTab(0);
+            tabGroup?.SetSelectedTabWithoutNotify(currentTabIndex);
+            SwitchMainTab(currentTabIndex);
         }
 
         private void LoadStyleSheet(VisualElement root, string packagePath, string assetsPath)
@@ -523,6 +528,7 @@ namespace RexTools.GitIntegration.Editor
         private void SwitchMainTab(int index)
         {
             currentTabIndex = index;
+            RexProjectPrefs.SetInt("GitIntegration", "CurrentTabIndex", currentTabIndex);
             if (changesContainer != null)
             {
                 changesContainer.style.display = index == 0 ? DisplayStyle.Flex : DisplayStyle.None;
@@ -553,6 +559,7 @@ namespace RexTools.GitIntegration.Editor
         private void SwitchChangesViewMode(int viewMode)
         {
             currentSubViewIndex = viewMode;
+            RexProjectPrefs.SetInt("GitIntegration", "CurrentSubViewIndex", currentSubViewIndex);
             if (treeToggleBtn != null && listToggleBtn != null)
             {
                 if (viewMode == 0)

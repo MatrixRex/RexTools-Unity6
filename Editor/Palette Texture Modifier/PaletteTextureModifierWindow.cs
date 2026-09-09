@@ -48,10 +48,14 @@ namespace RexTools.PaletteTextureModifier.Editor
 
         private void OnEnable()
         {
+            autoSave = RexProjectPrefs.GetBool("PaletteTextureModifier", "AutoSave", false);
+            int cols = RexProjectPrefs.GetInt("PaletteTextureModifier", "GridCols", 8);
+            int rows = RexProjectPrefs.GetInt("PaletteTextureModifier", "GridRows", 8);
+
             if (paletteData == null)
             {
                 paletteData = ScriptableObject.CreateInstance<PaletteData>();
-                paletteData.InitializeGrid(8, 8);
+                paletteData.InitializeGrid(cols, rows);
             }
             Undo.undoRedoPerformed += OnUndoRedo;
             EditorApplication.update += HandleDebouncedAutoSave;
@@ -59,9 +63,22 @@ namespace RexTools.PaletteTextureModifier.Editor
 
         private void OnDisable()
         {
+            SaveSettings();
             Undo.undoRedoPerformed -= OnUndoRedo;
             EditorApplication.update -= HandleDebouncedAutoSave;
             FlushPendingAutoSave();
+        }
+
+        private void SaveSettings()
+        {
+            RexProjectPrefs.SetBool("PaletteTextureModifier", "AutoSave", autoSave);
+            RexProjectPrefs.SetBool("PaletteTextureModifier", "GridLines", gridLinesToggle != null ? gridLinesToggle.value : true);
+            if (paletteData != null)
+            {
+                RexProjectPrefs.SetInt("PaletteTextureModifier", "GridCols", paletteData.GridColumns);
+                RexProjectPrefs.SetInt("PaletteTextureModifier", "GridRows", paletteData.GridRows);
+            }
+            RexProjectPrefs.SetObject("PaletteTextureModifier", "TargetTexture", targetTexture);
         }
 
         private void OnUndoRedo()
@@ -185,12 +202,18 @@ namespace RexTools.PaletteTextureModifier.Editor
 
             gridColsField = new IntegerField("Columns") { value = paletteData.GridColumns };
             gridColsField.AddToClassList("rex-col-left");
-            gridColsField.RegisterValueChangedCallback(e => paletteData.GridColumns = Mathf.Max(1, e.newValue));
+            gridColsField.RegisterValueChangedCallback(e => {
+                paletteData.GridColumns = Mathf.Max(1, e.newValue);
+                RexProjectPrefs.SetInt("PaletteTextureModifier", "GridCols", paletteData.GridColumns);
+            });
             gridRow1.Add(gridColsField);
 
             gridRowsField = new IntegerField("Rows") { value = paletteData.GridRows };
             gridRowsField.AddToClassList("rex-col-right");
-            gridRowsField.RegisterValueChangedCallback(e => paletteData.GridRows = Mathf.Max(1, e.newValue));
+            gridRowsField.RegisterValueChangedCallback(e => {
+                paletteData.GridRows = Mathf.Max(1, e.newValue);
+                RexProjectPrefs.SetInt("PaletteTextureModifier", "GridRows", paletteData.GridRows);
+            });
             gridRow1.Add(gridRowsField);
 
             gridBox.Add(gridRow1);
@@ -258,9 +281,11 @@ namespace RexTools.PaletteTextureModifier.Editor
             canvasTitle.AddToClassList("rex-section-label");
             canvasHeaderRow.Add(canvasTitle);
 
-            gridLinesToggle = new Toggle("Grid Lines") { value = true };
+            bool savedGridLines = RexProjectPrefs.GetBool("PaletteTextureModifier", "GridLines", true);
+            gridLinesToggle = new Toggle("Grid Lines") { value = savedGridLines };
             gridLinesToggle.RegisterValueChangedCallback(e =>
             {
+                RexProjectPrefs.SetBool("PaletteTextureModifier", "GridLines", e.newValue);
                 if (canvasElement != null) canvasElement.DrawGridLines = e.newValue;
             });
             canvasHeaderRow.Add(gridLinesToggle);
@@ -271,6 +296,7 @@ namespace RexTools.PaletteTextureModifier.Editor
 
             canvasElement = new PaletteCanvasElement();
             canvasElement.AddToClassList("palette-canvas-element");
+            canvasElement.DrawGridLines = savedGridLines;
             canvasElement.Data = paletteData;
             canvasElement.OnSelectionChanged += UpdateCellEditPanel;
             canvasElement.OnEyedropperColorSampled += OnColorPickedViaEyedropper;
@@ -363,10 +389,17 @@ namespace RexTools.PaletteTextureModifier.Editor
             autoSaveToggle.RegisterValueChangedCallback(e =>
             {
                 autoSave = e.newValue;
+                RexProjectPrefs.SetBool("PaletteTextureModifier", "AutoSave", autoSave);
                 if (autoSave) AutoSaveIfEnabled();
             });
             autoSaveBox.Add(autoSaveToggle);
             root.Add(autoSaveBox);
+
+            var savedTexture = RexProjectPrefs.GetObject<Texture2D>("PaletteTextureModifier", "TargetTexture");
+            if (savedTexture != null)
+            {
+                textureField.Value = savedTexture;
+            }
 
             UpdateCellEditPanel();
         }
@@ -375,6 +408,7 @@ namespace RexTools.PaletteTextureModifier.Editor
         {
             FlushPendingAutoSave();
             targetTexture = tex;
+            RexProjectPrefs.SetObject("PaletteTextureModifier", "TargetTexture", targetTexture);
             if (tex != null)
             {
                 string path = AssetDatabase.GetAssetPath(tex);

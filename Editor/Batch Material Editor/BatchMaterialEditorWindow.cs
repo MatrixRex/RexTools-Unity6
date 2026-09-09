@@ -116,7 +116,8 @@ namespace RexTools.BatchMaterialEditor.Editor
             replacerTab = new ReplacerTab(this, contentContainer);
             converterTab = new ConverterTab(this, contentContainer);
 
-            SwitchToTab(0);
+            int savedTab = RexProjectPrefs.GetInt("BatchMaterialEditor", "CurrentTabIndex", 0);
+            SwitchToTab(savedTab);
         }
 
         private void OnInspectorUpdate()
@@ -128,6 +129,7 @@ namespace RexTools.BatchMaterialEditor.Editor
 
         public void SwitchToTab(int index)
         {
+            RexProjectPrefs.SetInt("BatchMaterialEditor", "CurrentTabIndex", index);
             scannerTab.SetDisplay(index == 0);
             editorTab.SetDisplay(index == 1);
             replacerTab.SetDisplay(index == 2);

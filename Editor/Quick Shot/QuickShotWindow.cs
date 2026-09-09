@@ -34,10 +34,28 @@ namespace RexTools.QuickShot.Editor
 
         private void OnEnable()
         {
-            if (string.IsNullOrEmpty(exportPath))
-            {
-                exportPath = Path.Combine(Directory.GetCurrentDirectory(), "QuickShots").Replace("\\", "/");
-            }
+            string defaultExport = Path.Combine(Directory.GetCurrentDirectory(), "QuickShots").Replace("\\", "/");
+            exportPath = RexProjectPrefs.GetString("QuickShot", "ExportPath", defaultExport);
+            isSceneMode = RexProjectPrefs.GetBool("QuickShot", "IsSceneMode", false);
+            renderScale = RexProjectPrefs.GetFloat("QuickShot", "RenderScale", 1.0f);
+            transparentBG = RexProjectPrefs.GetBool("QuickShot", "TransparentBG", false);
+            autoReveal = RexProjectPrefs.GetBool("QuickShot", "AutoReveal", false);
+            autoCopy = RexProjectPrefs.GetBool("QuickShot", "AutoCopy", false);
+        }
+
+        private void OnDisable()
+        {
+            SaveSettings();
+        }
+
+        private void SaveSettings()
+        {
+            RexProjectPrefs.SetString("QuickShot", "ExportPath", exportPath);
+            RexProjectPrefs.SetBool("QuickShot", "IsSceneMode", isSceneMode);
+            RexProjectPrefs.SetFloat("QuickShot", "RenderScale", renderScale);
+            RexProjectPrefs.SetBool("QuickShot", "TransparentBG", transparentBG);
+            RexProjectPrefs.SetBool("QuickShot", "AutoReveal", autoReveal);
+            RexProjectPrefs.SetBool("QuickShot", "AutoCopy", autoCopy);
         }
 
         public void CreateGUI()
@@ -98,6 +116,7 @@ namespace RexTools.QuickShot.Editor
             folderSelector.OnValueChanged += path =>
             {
                 exportPath = path;
+                RexProjectPrefs.SetString("QuickShot", "ExportPath", exportPath);
                 if (captureButton != null)
                 {
                     captureButton.IsEnabled = !string.IsNullOrEmpty(path);
@@ -125,6 +144,7 @@ namespace RexTools.QuickShot.Editor
             modeToggle.AddToClassList("rex-col-right");
             modeToggle.RegisterValueChangedCallback(e => {
                 isSceneMode = (ShotMode)e.newValue == ShotMode.Scene;
+                RexProjectPrefs.SetBool("QuickShot", "IsSceneMode", isSceneMode);
                 renderScaleContainer.style.display = isSceneMode ? DisplayStyle.None : DisplayStyle.Flex;
                 transparentToggleContainer.style.display = isSceneMode ? DisplayStyle.None : DisplayStyle.Flex;
             });
@@ -141,7 +161,10 @@ namespace RexTools.QuickShot.Editor
             scaleLabel.AddToClassList("rex-col-label");
             scaleRow.Add(scaleLabel);
             var scaleSlider = new RexSlider(1f, 8f, defaultValue: 1f, value: renderScale, snapIncrement: 0.25f);
-            scaleSlider.OnValueChanged += val => renderScale = val;
+            scaleSlider.OnValueChanged += val => {
+                renderScale = val;
+                RexProjectPrefs.SetFloat("QuickShot", "RenderScale", renderScale);
+            };
             scaleSlider.AddToClassList("rex-col-right");
             scaleRow.Add(scaleSlider);
             renderScaleContainer.Add(scaleRow);
@@ -156,7 +179,10 @@ namespace RexTools.QuickShot.Editor
             bgLabel.AddToClassList("rex-col-label");
             transparentToggleContainer.Add(bgLabel);
             var transparentToggle = new Toggle { value = transparentBG };
-            transparentToggle.RegisterValueChangedCallback(e => transparentBG = e.newValue);
+            transparentToggle.RegisterValueChangedCallback(e => {
+                transparentBG = e.newValue;
+                RexProjectPrefs.SetBool("QuickShot", "TransparentBG", transparentBG);
+            });
             transparentToggle.AddToClassList("rex-col-right");
             transparentToggleContainer.Add(transparentToggle);
             settingsBox.Add(transparentToggleContainer);
@@ -179,6 +205,7 @@ namespace RexTools.QuickShot.Editor
             autoOpenBtn.OnToggleChanged += active =>
             {
                 autoReveal = active;
+                RexProjectPrefs.SetBool("QuickShot", "AutoReveal", autoReveal);
                 autoOpenBtn.Label = $"Auto Open Folder: {(active ? "ON" : "OFF")}";
             };
             postOpsRow.Add(autoOpenBtn);
@@ -189,6 +216,7 @@ namespace RexTools.QuickShot.Editor
             autoCopyBtn.OnToggleChanged += active =>
             {
                 autoCopy = active;
+                RexProjectPrefs.SetBool("QuickShot", "AutoCopy", autoCopy);
                 autoCopyBtn.Label = $"Auto Copy: {(active ? "ON" : "OFF")}";
             };
             postOpsRow.Add(autoCopyBtn);

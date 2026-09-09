@@ -82,6 +82,86 @@ namespace RexTools.TextureRepacker.Editor
             window.minSize = new Vector2(450, 750);
         }
 
+        private void OnEnable()
+        {
+            LoadSettings();
+        }
+
+        private void OnDisable()
+        {
+            SaveSettings();
+        }
+
+        private void LoadSettings()
+        {
+            currentTabIndex = RexProjectPrefs.GetInt("TextureRepacker", "CurrentTabIndex", 0);
+
+            // Pack
+            outputName = RexProjectPrefs.GetString("TextureRepacker", "Pack_OutputName", "PackedTexture");
+            outputPath = RexProjectPrefs.GetString("TextureRepacker", "Pack_OutputPath", "Assets");
+            for (int i = 0; i < 4; i++)
+            {
+                packSlots[i].channelIndex = RexProjectPrefs.GetInt("TextureRepacker", $"Pack_Slot_{i}_Channel", i);
+                packSlots[i].invert = RexProjectPrefs.GetBool("TextureRepacker", $"Pack_Slot_{i}_Invert", false);
+                packSlots[i].useCustom = RexProjectPrefs.GetBool("TextureRepacker", $"Pack_Slot_{i}_UseCustom", false);
+                packSlots[i].customValue = RexProjectPrefs.GetFloat("TextureRepacker", $"Pack_Slot_{i}_CustomValue", 0.5f);
+            }
+
+            // Unpack
+            unpackOutputName = RexProjectPrefs.GetString("TextureRepacker", "Unpack_OutputName", "UnpackedTexture");
+            unpackOutputPath = RexProjectPrefs.GetString("TextureRepacker", "Unpack_OutputPath", "Assets");
+            bool[] defaultModes = { true, true, true, false };
+            string[] defaultSuffixes = { "_R", "_G", "_B", "_A" };
+            for (int i = 0; i < 4; i++)
+            {
+                unpackModes[i] = RexProjectPrefs.GetBool("TextureRepacker", $"Unpack_Mode_{i}", defaultModes[i]);
+                unpackSuffixes[i] = RexProjectPrefs.GetString("TextureRepacker", $"Unpack_Suffix_{i}", defaultSuffixes[i]);
+                unpackInvert[i] = RexProjectPrefs.GetBool("TextureRepacker", $"Unpack_Invert_{i}", false);
+            }
+
+            // Mix
+            mixOutputName = RexProjectPrefs.GetString("TextureRepacker", "Mix_OutputName", "MixedTexture");
+            mixOutputPath = RexProjectPrefs.GetString("TextureRepacker", "Mix_OutputPath", "Assets");
+            mixBaseChannel = RexProjectPrefs.GetInt("TextureRepacker", "Mix_BaseChannel", -1);
+            mixLayerChannel = RexProjectPrefs.GetInt("TextureRepacker", "Mix_LayerChannel", -1);
+            mixBlendMode = (BlendMode)RexProjectPrefs.GetInt("TextureRepacker", "Mix_BlendMode", (int)BlendMode.Multiply);
+            mixOpacity = RexProjectPrefs.GetFloat("TextureRepacker", "Mix_Opacity", 1f);
+        }
+
+        private void SaveSettings()
+        {
+            RexProjectPrefs.SetInt("TextureRepacker", "CurrentTabIndex", currentTabIndex);
+
+            // Pack
+            RexProjectPrefs.SetString("TextureRepacker", "Pack_OutputName", outputName);
+            RexProjectPrefs.SetString("TextureRepacker", "Pack_OutputPath", outputPath);
+            for (int i = 0; i < 4; i++)
+            {
+                RexProjectPrefs.SetInt("TextureRepacker", $"Pack_Slot_{i}_Channel", packSlots[i].channelIndex);
+                RexProjectPrefs.SetBool("TextureRepacker", $"Pack_Slot_{i}_Invert", packSlots[i].invert);
+                RexProjectPrefs.SetBool("TextureRepacker", $"Pack_Slot_{i}_UseCustom", packSlots[i].useCustom);
+                RexProjectPrefs.SetFloat("TextureRepacker", $"Pack_Slot_{i}_CustomValue", packSlots[i].customValue);
+            }
+
+            // Unpack
+            RexProjectPrefs.SetString("TextureRepacker", "Unpack_OutputName", unpackOutputName);
+            RexProjectPrefs.SetString("TextureRepacker", "Unpack_OutputPath", unpackOutputPath);
+            for (int i = 0; i < 4; i++)
+            {
+                RexProjectPrefs.SetBool("TextureRepacker", $"Unpack_Mode_{i}", unpackModes[i]);
+                RexProjectPrefs.SetString("TextureRepacker", $"Unpack_Suffix_{i}", unpackSuffixes[i]);
+                RexProjectPrefs.SetBool("TextureRepacker", $"Unpack_Invert_{i}", unpackInvert[i]);
+            }
+
+            // Mix
+            RexProjectPrefs.SetString("TextureRepacker", "Mix_OutputName", mixOutputName);
+            RexProjectPrefs.SetString("TextureRepacker", "Mix_OutputPath", mixOutputPath);
+            RexProjectPrefs.SetInt("TextureRepacker", "Mix_BaseChannel", mixBaseChannel);
+            RexProjectPrefs.SetInt("TextureRepacker", "Mix_LayerChannel", mixLayerChannel);
+            RexProjectPrefs.SetInt("TextureRepacker", "Mix_BlendMode", (int)mixBlendMode);
+            RexProjectPrefs.SetFloat("TextureRepacker", "Mix_Opacity", mixOpacity);
+        }
+
         public void CreateGUI()
         {
             VisualElement root = rootVisualElement;
@@ -162,6 +242,7 @@ namespace RexTools.TextureRepacker.Editor
         private void SwitchTab(int index)
         {
             currentTabIndex = index;
+            RexProjectPrefs.SetInt("TextureRepacker", "CurrentTabIndex", currentTabIndex);
             packContainer.style.display   = index == 0 ? DisplayStyle.Flex : DisplayStyle.None;
             unpackContainer.style.display = index == 1 ? DisplayStyle.Flex : DisplayStyle.None;
             mixContainer.style.display    = index == 2 ? DisplayStyle.Flex : DisplayStyle.None;
@@ -853,7 +934,10 @@ namespace RexTools.TextureRepacker.Editor
                       chanBtns.Add(btn);
                       chanRow.Add(btn);
                   }
-                  chanBtns[0].IsActive = true;
+                  int activeIdx = (ti == 0 ? mixBaseChannel : mixLayerChannel) + 1;
+                  for (int j = 0; j < chanBtns.Count; j++) {
+                      chanBtns[j].IsActive = (j == activeIdx);
+                  }
                   box.Add(chanRow);
                   mixContainer.Add(box);
               }

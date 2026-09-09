@@ -45,6 +45,20 @@ namespace RexTools.UnusedAssetFinder.Editor
             window.minSize = new Vector2(400, 600);
         }
 
+        private void OnEnable()
+        {
+            folderPath = RexProjectPrefs.GetString("UnusedAssetFinder", "FolderPath", "Assets");
+            recursiveSearch = RexProjectPrefs.GetBool("UnusedAssetFinder", "RecursiveSearch", false);
+            currentTabIndex = RexProjectPrefs.GetInt("UnusedAssetFinder", "CurrentTabIndex", 0);
+        }
+
+        private void OnDisable()
+        {
+            RexProjectPrefs.SetString("UnusedAssetFinder", "FolderPath", folderPath);
+            RexProjectPrefs.SetBool("UnusedAssetFinder", "RecursiveSearch", recursiveSearch);
+            RexProjectPrefs.SetInt("UnusedAssetFinder", "CurrentTabIndex", currentTabIndex);
+        }
+
         public void CreateGUI()
         {
             VisualElement root = rootVisualElement;
@@ -99,6 +113,7 @@ namespace RexTools.UnusedAssetFinder.Editor
             pathField.AddToClassList("rex-flex-grow");
             pathField.OnValueChanged += path => {
                 folderPath = path;
+                RexProjectPrefs.SetString("UnusedAssetFinder", "FolderPath", folderPath);
                 RefreshSubfolders();
             };
 
@@ -108,6 +123,7 @@ namespace RexTools.UnusedAssetFinder.Editor
             recursiveToggle = new Toggle("Recursive Search") { value = recursiveSearch };
             recursiveToggle.RegisterValueChangedCallback(e => {
                 recursiveSearch = e.newValue;
+                RexProjectPrefs.SetBool("UnusedAssetFinder", "RecursiveSearch", recursiveSearch);
                 RefreshSubfolders();
             });
             settingsBox.Add(recursiveToggle);
@@ -212,7 +228,7 @@ namespace RexTools.UnusedAssetFinder.Editor
 
             root.Add(bottomActionRow);
 
-            SwitchTab(0);
+            SwitchTab(currentTabIndex);
             RefreshSubfolders();
         }
 
@@ -262,6 +278,7 @@ namespace RexTools.UnusedAssetFinder.Editor
         private void SwitchTab(int index)
         {
             currentTabIndex = index;
+            RexProjectPrefs.SetInt("UnusedAssetFinder", "CurrentTabIndex", currentTabIndex);
             tabGroup?.SetSelectedTabWithoutNotify(index);
             RefreshResultsList();
         }

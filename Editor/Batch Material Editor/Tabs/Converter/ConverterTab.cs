@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using RexTools.BatchMaterialEditor;
+using RexTools.Editor.Core;
 
 namespace RexTools.BatchMaterialEditor.Editor.Tabs
 {
@@ -37,6 +38,26 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
 
             ui = new ConverterUI(container, activeSwitcherSettings);
 
+            var savedSourceShader = RexProjectPrefs.GetObject<Shader>("BatchMaterialEditor", "Converter_SourceShader");
+            if (savedSourceShader != null)
+            {
+                activeSwitcherSettings.sourceShader = savedSourceShader;
+                activeSwitcherSettings.sourceShaderName = savedSourceShader.name;
+                activeSwitcherSettings.sourceShaderPath = AssetDatabase.GetAssetPath(savedSourceShader);
+                sourceShader = savedSourceShader;
+                ui.SourceDrop.value = savedSourceShader;
+            }
+
+            var savedTargetShader = RexProjectPrefs.GetObject<Shader>("BatchMaterialEditor", "Converter_TargetShader");
+            if (savedTargetShader != null)
+            {
+                activeSwitcherSettings.targetShader = savedTargetShader;
+                activeSwitcherSettings.targetShaderName = savedTargetShader.name;
+                activeSwitcherSettings.targetShaderPath = AssetDatabase.GetAssetPath(savedTargetShader);
+                targetShader = savedTargetShader;
+                ui.TargetDrop.value = savedTargetShader;
+            }
+
             ui.SourceDrop.RegisterValueChangedCallback(evt => {
                 var obj = evt.newValue;
                 if (obj is Material mat) {
@@ -60,6 +81,7 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
                 }
                 sourceShader = activeSwitcherSettings.sourceShader;
                 sourcePreviewMat = activeSwitcherSettings.sourcePreviewMat;
+                RexProjectPrefs.SetObject("BatchMaterialEditor", "Converter_SourceShader", activeSwitcherSettings.sourceShader);
                 EditorUtility.SetDirty(activeSwitcherSettings);
             });
 
@@ -86,6 +108,7 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
                 }
                 targetShader = activeSwitcherSettings.targetShader;
                 targetPreviewMat = activeSwitcherSettings.targetPreviewMat;
+                RexProjectPrefs.SetObject("BatchMaterialEditor", "Converter_TargetShader", activeSwitcherSettings.targetShader);
                 EditorUtility.SetDirty(activeSwitcherSettings);
             });
 

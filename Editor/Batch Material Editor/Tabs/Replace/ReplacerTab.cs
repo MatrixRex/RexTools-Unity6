@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using RexTools.Editor.Core;
 
 namespace RexTools.BatchMaterialEditor.Editor.Tabs
 {
@@ -25,11 +26,15 @@ namespace RexTools.BatchMaterialEditor.Editor.Tabs
             this.window = window;
             ui = new ReplacerUI(container);
 
+            replaceMode = (ReplaceMode)RexProjectPrefs.GetInt("BatchMaterialEditor", "Replacer_Mode", (int)ReplaceMode.Search);
+            ui.ModeField.value = replaceMode;
+
             ui.FindMatField.RegisterValueChangedCallback(evt => { findMat = (Material)evt.newValue; UpdateConvertButtonState(); });
             ui.ReplaceMatField.RegisterValueChangedCallback(evt => { replaceMat = (Material)evt.newValue; UpdateConvertButtonState(); });
             
             ui.ModeField.RegisterValueChangedCallback(evt => { 
                 replaceMode = (ReplaceMode)evt.newValue; 
+                RexProjectPrefs.SetInt("BatchMaterialEditor", "Replacer_Mode", (int)replaceMode);
                 UpdateModeUI();
                 affectedGroups.Clear(); 
                 UpdateConvertButtonState();

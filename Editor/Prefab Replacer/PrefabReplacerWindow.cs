@@ -32,6 +32,20 @@ namespace RexTools.PrefabReplacer.Editor
             window.minSize = new Vector2(500, 600);
         }
 
+        private void OnEnable()
+        {
+            searchFolder = RexProjectPrefs.GetString("PrefabReplacer", "SearchFolder", "Assets");
+            matchLocal = RexProjectPrefs.GetBool("PrefabReplacer", "MatchLocal", true);
+            matchGlobal = RexProjectPrefs.GetBool("PrefabReplacer", "MatchGlobal", false);
+        }
+
+        private void OnDisable()
+        {
+            RexProjectPrefs.SetString("PrefabReplacer", "SearchFolder", searchFolder);
+            RexProjectPrefs.SetBool("PrefabReplacer", "MatchLocal", matchLocal);
+            RexProjectPrefs.SetBool("PrefabReplacer", "MatchGlobal", matchGlobal);
+        }
+
         public void CreateGUI()
         {
             root = rootVisualElement;
@@ -86,6 +100,7 @@ namespace RexTools.PrefabReplacer.Editor
                     }
                 }
                 searchFolder = path;
+                RexProjectPrefs.SetString("PrefabReplacer", "SearchFolder", searchFolder);
             };
             folderRow.Add(folderPathField);
             folderBox.Add(folderRow);
@@ -123,11 +138,23 @@ namespace RexTools.PrefabReplacer.Editor
             var optRow = new VisualElement();
             optRow.AddToClassList("rex-row");
             var localToggle = new Toggle("Match Local Transform") { value = matchLocal };
-            localToggle.RegisterValueChangedCallback(evt => { matchLocal = evt.newValue; if (matchLocal) matchGlobal = false; RefreshOptions(bottomBox); });
+            localToggle.RegisterValueChangedCallback(evt => {
+                matchLocal = evt.newValue;
+                if (matchLocal) matchGlobal = false;
+                RexProjectPrefs.SetBool("PrefabReplacer", "MatchLocal", matchLocal);
+                RexProjectPrefs.SetBool("PrefabReplacer", "MatchGlobal", matchGlobal);
+                RefreshOptions(bottomBox);
+            });
             optRow.Add(localToggle);
 
             var globalToggle = new Toggle("Match Global Transform") { value = matchGlobal };
-            globalToggle.RegisterValueChangedCallback(evt => { matchGlobal = evt.newValue; if (matchGlobal) matchLocal = false; RefreshOptions(bottomBox); });
+            globalToggle.RegisterValueChangedCallback(evt => {
+                matchGlobal = evt.newValue;
+                if (matchGlobal) matchLocal = false;
+                RexProjectPrefs.SetBool("PrefabReplacer", "MatchLocal", matchLocal);
+                RexProjectPrefs.SetBool("PrefabReplacer", "MatchGlobal", matchGlobal);
+                RefreshOptions(bottomBox);
+            });
             optRow.Add(globalToggle);
             bottomBox.Add(optRow);
 
