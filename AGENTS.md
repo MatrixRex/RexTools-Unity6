@@ -23,6 +23,7 @@ No test, lint, typecheck, or build tooling exists. No CI/CD. No pre-commit hooks
 
 ## Workflow conventions
 
+- **Feature Branching:** Never work directly on `main` when developing a new feature. Always create and work in a temporary feature branch (e.g. `feature/<name>`). When work is finished, explicitly ask the user for confirmation to merge into `main` and/or bump the version. Do not commit, merge, clear the branch, or bump version without explicit user confirmation. If user agrees to both, do both; if user agrees to none, do none. Follow `.agent/workflows/feature-workflow.md`.
 - **Commits:** `feat(tool-name): description` (conventional commits). Do NOT automatically stage or commit to Git after each task is done. ONLY stage and commit when the user explicitly asks for it. When doing so, always stage and commit corresponding Unity `.meta` files alongside any new/modified assets or scripts.
 - **Execution:** Task execution must always happen inline in the current session. Do not prompt or ask the user to choose between subagent-driven and inline execution.
 - **Changelog:** Add entries under `[Unreleased]` in `CHANGELOG.md`. See `.agent/workflows/changelog.md`
