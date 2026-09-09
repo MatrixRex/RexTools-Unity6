@@ -87,19 +87,20 @@ Follow the Keep a Changelog standard format:
 
 ---
 
-## 6. Execution and Git Summary
+## 6. Execution and Git Commit
 
 1. Execute all steps inline within the session (do not prompt user to switch execution modes).
-2. Report a clear summary back to the user:
+2. **Auto-commit after version bump**:
+   Automatically stage and commit the release files with the conventional commit message:
+   ```bash
+   git add package.json CHANGELOG.md CHANGELOG.md.meta readme.md
+   git commit -m "chore(release): v<NEW_VERSION>"
+   ```
+   *(Ensure any other modified or newly added release files/`.meta` files are staged).*
+3. Report a clear summary back to the user:
    - Previous version vs. New bumped version.
    - Release type (`major`, `minor`, `patch`).
    - Bulleted summary of release highlights.
+   - Commit hash and message.
    - Modified files list (`package.json`, `CHANGELOG.md`, `readme.md`, etc.).
-3. **Git conventions reminder**:
-   - **DO NOT** automatically stage or commit to Git unless the user explicitly requested it in the prompt.
-   - Provide a suggested conventional commit message for the user:
-     ```bash
-     git commit -m "chore(release): v<NEW_VERSION>"
-     ```
-   - Remind the user that if committing, any new/modified `.meta` files must be staged alongside the changes.
 

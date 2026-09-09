@@ -22,5 +22,5 @@ Refer to `.agent/workflows/release.md` for the automated release workflow.
 4. In `CHANGELOG.md`, rename the existing `## [Unreleased]` header to the new version format: `## [X.Y.Z] - YYYY-MM-DD`.
 5. Create a new empty `## [Unreleased]` section at the top.
 6. Verify and update `readme.md` for any new tools, features, or updated workflows.
-7. Output release summary with suggested commit message.
+7. Automatically stage and commit the release files with message `chore(release): v<NEW_VERSION>`, then output release summary.
 
