@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [0.6.1] - 2026-09-10
+
 ### Added
+- Workflows: Added feature branch & completion workflow (`.agent/workflows/feature-workflow.md`) and updated `AGENTS.md` to prevent developing directly on `main` and enforce user confirmation before merging, branch clearing, or version bumping.
 - Core (RexProjectPrefs): Added persistent per-project tool option and active tab saving stored in `UserSettings/RexToolsSettings.json`. All tools (Quick Shot, Texture Repacker, Unused Assets Finder, Prefab Replacer, Batch Material Processor, Batch Material Editor, Palette Texture Modifier, Git Integration, and Animation Event Copier) now restore their last configured options and active tabs upon reopening without dirtying Git.
 - Git Integration: Added Project window context menu items (`Commit Selected` and `Commit Selected with Dependencies`) to quickly open the Git window with selected files, folders, and asset dependencies ready for staging and commit.
 - Palette Texture Modifier: Added Auto Save mode (`Auto Save Texture on Change / Undo`) to automatically overwrite texture assets on disk on color/grid modifications and Undo/Redo operations. Added "Reset Grid Colors" and "Reset Selected" buttons to restore cells to their original texture colors.
