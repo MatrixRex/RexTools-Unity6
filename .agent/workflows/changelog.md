@@ -15,8 +15,12 @@ description: how to manage the CHANGELOG.md following Keep a Changelog format
 5. Entries should be at the top of the list within their section.
 
 ### Releasing a New Version
-1. Determine the new version number (e.g., `0.0.2`) based on Semantic Versioning.
-2. Update the version in `package.json`.
-3. In `CHANGELOG.md`, rename the existing `## [Unreleased]` header to the new version format: `## [0.0.2] - 2026-01-25`.
-4. Create a new empty `## [Unreleased]` section at the top.
-5. (Optional) Update the comparison links at the footer of the document.
+Refer to `.agent/workflows/release.md` for the automated release workflow.
+1. Determine bump type (`major`, `minor`, `patch`) or read user prompt.
+2. Read current version from `package.json` and compute the bumped version according to Semantic Versioning.
+3. Update `"version"` in `package.json`.
+4. In `CHANGELOG.md`, rename the existing `## [Unreleased]` header to the new version format: `## [X.Y.Z] - YYYY-MM-DD`.
+5. Create a new empty `## [Unreleased]` section at the top.
+6. Verify and update `readme.md` for any new tools, features, or updated workflows.
+7. Output release summary with suggested commit message.
+

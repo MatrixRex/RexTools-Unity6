@@ -25,6 +25,7 @@ No test, lint, typecheck, or build tooling exists. No CI/CD. No pre-commit hooks
 
 - **Commits:** `feat(tool-name): description` (conventional commits). Do NOT automatically stage or commit to Git after each task is done. ONLY stage and commit when the user explicitly asks for it. When doing so, always stage and commit corresponding Unity `.meta` files alongside any new/modified assets or scripts.
 - **Execution:** Task execution must always happen inline in the current session. Do not prompt or ask the user to choose between subagent-driven and inline execution.
-- **Changelog:** Add entries under `[Unreleased]` in `CHANGELOG.md`. On release, rename to version, update `package.json` version, add blank `[Unreleased]` header. See `.agent/workflows/changelog.md`
+- **Changelog:** Add entries under `[Unreleased]` in `CHANGELOG.md`. See `.agent/workflows/changelog.md`
 - **Documentation:** After shipping a tool, update `readme.md` and `CHANGELOG.md`. See `.agent/workflows/document-tool.md`
+- **Release:** When prompted with `release` (or `release major`, `release minor`, `release patch`), follow `.agent/workflows/release.md`. Check current version in `package.json`, bump version according to SemVer, update `package.json`, stamp `CHANGELOG.md` (convert `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and insert a new empty `## [Unreleased]`), verify and update `readme.md` for any new/updated tools or features, and output release summary. Do not auto-commit unless explicitly asked.
 
